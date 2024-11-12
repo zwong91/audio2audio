@@ -1,2 +1,5 @@
 openai
+whisper
 gradio
+onnxruntime
+hyperpyyaml
