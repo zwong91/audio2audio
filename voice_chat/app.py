@@ -127,7 +127,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
             # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
 
             for output_audio_path in tts_generator:
-                yield history, output_audio_path, 22500
+                yield history, output_audio_path, None
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -142,7 +142,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
         tts_generator = text_to_speech(tts_text)
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
         for output_audio_path in tts_generator:
-            yield history, output_audio_path, 22500
+            yield history, output_audio_path, None
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
