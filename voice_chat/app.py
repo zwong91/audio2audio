@@ -135,8 +135,8 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         ([['对所以说你现在的话这个账单的话你既然说能处理那你就想办法处理掉 ', '生成风格: Neutral.;播报内容: 这账单确实有点麻烦。<strong>要么就处理掉，要么再想想别的办法</strong>。你觉得怎么样？']],
         '/private/var/folders/39/wllj512d2dv845j_wdx3vctc0000gn/T/gradio/3048c6c6bd1a2ece1e4362372bcf8864fe2f702eab3ec9916a003508363a28cd/audio.wav', None)
             """
-            for audio_data in tts_generator:
-                audio_data_list.append(audio_data)
+            for target_sr, audio_data in tts_generator:
+                audio_data_list.append(audio_data.flatten())  # 确保音频数据是一维数组
                 yield history, audio_data, None
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
@@ -151,8 +151,8 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         print(f"cur_tts_text: {tts_text}")
         tts_generator = text_to_speech(tts_text)
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
-        for audio_data in tts_generator:
-            audio_data_list.append(audio_data)
+        for target_sr, audio_data in tts_generator:
+            audio_data_list.append(audio_data.flatten())  # 确保音频数据是一维数组
             yield history, audio_data, None
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
