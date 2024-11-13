@@ -1,4 +1,5 @@
 # funaudiollm-app repo
+
 Welcome to the funaudiollm-app repository! This project hosts two exciting applications leveraging advanced audio understand and speech generation models to bring your audio experiences to life:
 
 **Voice Chat** :  This application is designed to provide an interactive and natural chatting experience, making it easier to adopt sophisticated AI-driven dialogues in various settings.
@@ -16,6 +17,7 @@ For `SenseVoice`, visit [SenseVoice repo](https://github.com/FunAudioLLM/SenseVo
 **Clone and install**
 
 - Clone the repo and submodules
+
 ``` sh
 git clone --recursive URL
 # If you failed to clone submodule due to network failures, please run following command until success
@@ -25,35 +27,34 @@ git submodule update --init --recursive
 
 - prepare environments in the submodules according to [cosyvoice](https://github.com/FunAudioLLM/CosyVoice) & [sensevoice](https://github.com/FunAudioLLM/SenseVoice) repo. If you have already prepared the aforementioned resources elsewhere, you can also try modifying the code related to resource path configuration in the app.py file (line 15-18).
 
-
 - execute the code below.
+
 ``` sh
 pip install -r requirements.txt
 ```
 
 ## Basic Usage
+
 **prepare**
 
-
-[dashscope](https://dashscope.aliyun.com/) api token.
+[dashscope](https://platform.openai.com/) api token.
 
 [pem file](https://blog.csdn.net/liuchenbaidu/article/details/136722001)
-
 
 **voice chat**
 
 ``` sh
 cd voice_chat
-sudo CUDA_VISIBLE_DEVICES="0" DS_API_TOKEN="YOUR-DS-API-TOKEN" python app.py >> ./log.txt
+sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-DS-API-TOKEN" python app.py >> ./log.txt
 ```
-https://YOUR-IP-ADDRESS:60001/
+
+<https://YOUR-IP-ADDRESS:60001/>
 
 **voice translation**
 
 ``` sh
 cd voice_translation
-sudo CUDA_VISIBLE_DEVICES="0" DS_API_TOKEN="YOUR-DS-API-TOKEN" python app.py >> ./log.txt
+sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-DS-API-TOKEN" python app.py >> ./log.txt
 ```
-https://YOUR-IP-ADDRESS:60002/
 
-
+<https://YOUR-IP-ADDRESS:60002/>
