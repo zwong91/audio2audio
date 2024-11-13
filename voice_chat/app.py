@@ -66,6 +66,7 @@ default_system = """
 # Create temporary directory for saving files
 os.makedirs("./tmp", exist_ok=True)
 
+target_sr = 22500
 History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
@@ -134,7 +135,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         ([['对所以说你现在的话这个账单的话你既然说能处理那你就想办法处理掉 ', '生成风格: Neutral.;播报内容: 这账单确实有点麻烦。<strong>要么就处理掉，要么再想想别的办法</strong>。你觉得怎么样？']],
         '/private/var/folders/39/wllj512d2dv845j_wdx3vctc0000gn/T/gradio/3048c6c6bd1a2ece1e4362372bcf8864fe2f702eab3ec9916a003508363a28cd/audio.wav', None)
             """
-            for target_sr, audio_data in tts_generator:
+            for audio_data in tts_generator:
                 audio_data_list.append(audio_data)
                 yield history, audio_data, target_sr
         else:
@@ -150,7 +151,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         print(f"cur_tts_text: {tts_text}")
         tts_generator = text_to_speech(tts_text)
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
-        for target_sr, audio_data in tts_generator:
+        for audio_data in tts_generator:
             audio_data_list.append(audio_data)
             yield history, audio_data, target_sr
         processed_tts_text += tts_text
@@ -207,7 +208,7 @@ def preprocess(text):
     texts_merge.append(this_text)
     return texts
 
-def text_to_speech(text, target_sr = 22500):
+def text_to_speech(text):
     pattern = r"生成风格:\s*([^\n;]+)[;\n]+播报内容:\s*(.+)"
     match = re.search(pattern, text)
     if match:
