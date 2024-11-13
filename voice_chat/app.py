@@ -216,7 +216,6 @@ def text_to_speech(text, target_sr = 22500):
     for i in text_list:
         output_generator = cosyvoice.inference_sft(i, speaker_name, stream=True, speed=1.2)
         for output in output_generator:
-            audio_data_list.append(output['tts_speech'].numpy().flatten())
             yield (target_sr, output['tts_speech'].numpy().flatten())
 
 # Gradio Interface
