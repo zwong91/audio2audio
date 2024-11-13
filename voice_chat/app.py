@@ -88,7 +88,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
+def model_chat(audio, history: Optional[History]) -> Tuple[History, str]:
     if audio is None:
         query = ''
         asr_wav_path = None
@@ -167,7 +167,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         audio_file_path = tmpfile.name
     
     # 返回拼接后的音频文件路径
-    return (history, audio_file_path, None)
+    return (history, audio_file_path)
 
 def transcribe(audio):
     samplerate, data = audio
