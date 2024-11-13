@@ -101,10 +101,12 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
 
     # Update OpenAI API call to use the new interface
     response = openai.chat.completions.create(
-        model="gpt-4o-mini",  # Use the latest model for completion
+        model="gpt-4o",  # Use the latest model for completion
         messages=messages,  # 传递整个消息历史
         max_tokens=64,  # 可选，根据需要调整
     )
+
+    audio_data_list = []
 
     processed_tts_text = ""
     punctuation_pattern = r'([!?;。！？])'
@@ -129,8 +131,9 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         ([['对所以说你现在的话这个账单的话你既然说能处理那你就想办法处理掉 ', '生成风格: Neutral.;播报内容: 这账单确实有点麻烦。<strong>要么就处理掉，要么再想想别的办法</strong>。你觉得怎么样？']],
         '/private/var/folders/39/wllj512d2dv845j_wdx3vctc0000gn/T/gradio/3048c6c6bd1a2ece1e4362372bcf8864fe2f702eab3ec9916a003508363a28cd/audio.wav', None)
             """
-            for output_audio_path in tts_generator:
-                yield history, output_audio_path, None
+            for target_sr, audio_data in tts_generator:
+                audio_data_list.append(audio_data)
+                yield history, target_sr, audio_data
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -144,11 +147,18 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         print(f"cur_tts_text: {tts_text}")
         tts_generator = text_to_speech(tts_text)
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
-        for output_audio_path in tts_generator:
-            yield history, output_audio_path, None
+        for target_sr, audio_data in tts_generator:
+            audio_data_list.append(audio_data)
+            yield history, target_sr, audio_data
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
+    
+    # 将所有的音频数据拼接起来
+    concatenated_audio_data = np.concatenate(audio_data_list)
+    
+    # 返回拼接后的音频数据和目标采样率
+    return (history, target_sr, concatenated_audio_data)
 
 def transcribe(audio):
     samplerate, data = audio
@@ -206,6 +216,7 @@ def text_to_speech(text, target_sr = 22500):
     for i in text_list:
         output_generator = cosyvoice.inference_sft(i, speaker_name, stream=True, speed=1.2)
         for output in output_generator:
+            audio_data_list.append(output['tts_speech'].numpy().flatten())
             yield (target_sr, output['tts_speech'].numpy().flatten())
 
 # Gradio Interface

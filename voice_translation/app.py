@@ -29,7 +29,7 @@ from funasr import AutoModel
 DS_API_TOKEN = os.getenv('DS_API_TOKEN')
 dashscope.api_key = DS_API_TOKEN
 
-cosyvoice = CosyVoice('speech_tts/CosyVoice-300M')
+cosyvoice = CosyVoice('iic/CosyVoice-300M')
 asr_model_name_or_path = "iic/SenseVoiceSmall"
 sense_voice_model = AutoModel(model=asr_model_name_or_path,
                   vad_model="fsmn-vad",
