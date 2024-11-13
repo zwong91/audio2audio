@@ -225,7 +225,7 @@ def text_to_speech(text):
 
     text_list = [tts_text]
     for i in text_list:
-        output_generator = cosyvoice.inference_sft(i, speaker_name, stream=True, speed=1.2)
+        output_generator = cosyvoice.inference_sft(i, speaker_name, stream=False, speed=1.2)
         for output in output_generator:
             yield (target_sr, output['tts_speech'].numpy().flatten())
 
