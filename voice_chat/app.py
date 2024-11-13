@@ -203,7 +203,7 @@ def text_to_speech(text):
     for i in text_list:
         output_generator = cosyvoice.inference_sft(i, speaker_name)
         for output in output_generator:
-            yield (16000, output['tts_speech'].numpy().flatten())
+            yield (22500, output['tts_speech'].numpy().flatten())
 
 # Gradio Interface
 with gr.Blocks() as demo:
@@ -211,7 +211,7 @@ with gr.Blocks() as demo:
     chatbot = gr.Chatbot(label='FunAudioLLM')
     with gr.Row():
         audio_input = gr.Audio(sources="microphone", label="Audio Input")
-        audio_output = gr.Audio(label="Audio Output", autoplay=True, streaming=True)
+        audio_output = gr.Audio(label="Audio Output", autoplay=True, streaming=False)
         clear_button = gr.Button("Clear")
 
     audio_input.stop_recording(model_chat, inputs=[audio_input, chatbot], outputs=[chatbot, audio_output, audio_input])
