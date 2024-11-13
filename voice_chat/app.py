@@ -17,13 +17,16 @@ from cosyvoice.cli.cosyvoice import CosyVoice
 from cosyvoice.utils.file_utils import load_wav
 from funasr import AutoModel
 
+# the output sampling rate to 16000hz
+#use torchaudio.resample(22050, 16000)
+
 # Initialize OpenAI API
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
 # Setup models
 speaker_name = '中文女'
-cosyvoice = CosyVoice('MachineS/CosyVoice-300M-SFT-25Hz')
+cosyvoice = CosyVoice('MachineS/CosyVoice-300M-SFT-25Hz', load_jit=True, load_onnx=False, fp16=True)
 asr_model_name_or_path = "iic/SenseVoiceSmall"
 sense_voice_model = AutoModel(
     model=asr_model_name_or_path,
@@ -81,7 +84,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
+def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
     if audio is None:
         query = ''
         asr_wav_path = None
@@ -122,6 +125,10 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
             
             tts_generator = text_to_speech(tts_text)
             # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
+            """
+        ([['对所以说你现在的话这个账单的话你既然说能处理那你就想办法处理掉 ', '生成风格: Neutral.;播报内容: 这账单确实有点麻烦。<strong>要么就处理掉，要么再想想别的办法</strong>。你觉得怎么样？']],
+        '/private/var/folders/39/wllj512d2dv845j_wdx3vctc0000gn/T/gradio/3048c6c6bd1a2ece1e4362372bcf8864fe2f702eab3ec9916a003508363a28cd/audio.wav', None)
+            """
             for output_audio_path in tts_generator:
                 yield history, output_audio_path, None
         else:
@@ -182,7 +189,7 @@ def preprocess(text):
     texts_merge.append(this_text)
     return texts
 
-def text_to_speech(text):
+def text_to_speech(text, target_sr = 22500):
     pattern = r"生成风格:\s*([^\n;]+)[;\n]+播报内容:\s*(.+)"
     match = re.search(pattern, text)
     if match:
@@ -197,9 +204,9 @@ def text_to_speech(text):
 
     text_list = [tts_text]
     for i in text_list:
-        output_generator = cosyvoice.inference_sft(i, speaker_name)
+        output_generator = cosyvoice.inference_sft(i, speaker_name, stream=True, speed=1.2)
         for output in output_generator:
-            yield (22050, output['tts_speech'].numpy().flatten())
+            yield (target_sr, output['tts_speech'].numpy().flatten())
 
 # Gradio Interface
 with gr.Blocks() as demo:
@@ -207,7 +214,7 @@ with gr.Blocks() as demo:
     chatbot = gr.Chatbot(label='FunAudioLLM')
     with gr.Row():
         audio_input = gr.Audio(sources="microphone", label="Audio Input")
-        audio_output = gr.Audio(label="Audio Output", autoplay=True, streaming=False)
+        audio_output = gr.Audio(label="Audio Output", autoplay=True, streaming=True)
         clear_button = gr.Button("Clear")
 
     audio_input.stop_recording(model_chat, inputs=[audio_input, chatbot], outputs=[chatbot, audio_output, audio_input])
