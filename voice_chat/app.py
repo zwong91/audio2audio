@@ -88,7 +88,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-def model_chat(audio, history: Optional[History]) -> Tuple[History, str]:
+def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
     if audio is None:
         query = ''
         asr_wav_path = None
@@ -135,9 +135,9 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str]:
         ([['对所以说你现在的话这个账单的话你既然说能处理那你就想办法处理掉 ', '生成风格: Neutral.;播报内容: 这账单确实有点麻烦。<strong>要么就处理掉，要么再想想别的办法</strong>。你觉得怎么样？']],
         '/private/var/folders/39/wllj512d2dv845j_wdx3vctc0000gn/T/gradio/3048c6c6bd1a2ece1e4362372bcf8864fe2f702eab3ec9916a003508363a28cd/audio.wav', None)
             """
-            for target_sr, audio_data in tts_generator:
-                audio_data_list.append(audio_data.flatten())  # 确保音频数据是一维数组
-                yield history, audio_data, None
+            for output_audio_path in tts_generator:
+                #audio_data_list.append(audio_data)
+                yield history, audio_data, target_sr
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -151,23 +151,23 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str]:
         print(f"cur_tts_text: {tts_text}")
         tts_generator = text_to_speech(tts_text)
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
-        for target_sr, audio_data in tts_generator:
-            audio_data_list.append(audio_data.flatten())  # 确保音频数据是一维数组
-            yield history, audio_data, None
+        for output_audio_path in tts_generator:
+            #audio_data_list.append(audio_data)
+            yield history, audio_data, target_sr
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
     
-    # 将所有的音频数据拼接起来
-    concatenated_audio_data = np.concatenate(audio_data_list)
+    # # 将所有的音频数据拼接起来
+    # concatenated_audio_data = np.concatenate(audio_data_list)
     
-    # 将拼接后的音频数据保存为临时文件
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-        sf.write(tmpfile.name, concatenated_audio_data, target_sr)
-        audio_file_path = tmpfile.name
+    # # 将拼接后的音频数据保存为临时文件
+    # with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+    #     sf.write(tmpfile.name, concatenated_audio_data, target_sr)
+    #     audio_file_path = tmpfile.name
     
-    # 返回拼接后的音频文件路径
-    return (history, audio_file_path)
+    # # 返回拼接后的音频文件路径
+    # return (history, audio_file_path, target_sr)
 
 def transcribe(audio):
     samplerate, data = audio
@@ -208,6 +208,8 @@ def preprocess(text):
     texts_merge.append(this_text)
     return texts
 
+    """output_audio_path = f"./tmp/tts_{uuid4()}.wav" 这里返回的就是22k的音频数据路径
+    """
 def text_to_speech(text):
     pattern = r"生成风格:\s*([^\n;]+)[;\n]+播报内容:\s*(.+)"
     match = re.search(pattern, text)
