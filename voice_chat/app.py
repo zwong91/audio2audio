@@ -20,7 +20,6 @@ from funasr import AutoModel
 import numpy as np
 import tempfile
 import soundfile as sf
-
 # the output sampling rate to 16000hz
 #use torchaudio.resample(22050, 16000)
 
@@ -137,7 +136,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
             """
             for target_sr, audio_data in tts_generator:
                 audio_data_list.append(audio_data)
-                yield history, target_sr, audio_data
+                yield history, audio_data, target_sr
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -153,7 +152,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
         for target_sr, audio_data in tts_generator:
             audio_data_list.append(audio_data)
-            yield history, target_sr, audio_data
+            yield history, audio_data, target_sr
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
@@ -167,7 +166,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         audio_file_path = tmpfile.name
     
     # 返回拼接后的音频文件路径
-    return (history, target_sr, audio_file_path)
+    return (history, audio_file_path, target_sr)
 
 def transcribe(audio):
     samplerate, data = audio
