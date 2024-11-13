@@ -17,6 +17,10 @@ from cosyvoice.cli.cosyvoice import CosyVoice
 from cosyvoice.utils.file_utils import load_wav
 from funasr import AutoModel
 
+import numpy as np
+import tempfile
+import soundfile as sf
+
 # the output sampling rate to 16000hz
 #use torchaudio.resample(22050, 16000)
 
@@ -133,7 +137,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
             """
             for target_sr, audio_data in tts_generator:
                 audio_data_list.append(audio_data)
-                yield history, audio_data, target_sr
+                yield history, target_sr, audio_data
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -149,7 +153,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
         for target_sr, audio_data in tts_generator:
             audio_data_list.append(audio_data)
-            yield history, audio_data, target_sr
+            yield history, target_sr, audio_data
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
@@ -157,8 +161,13 @@ def model_chat(audio, history: Optional[History]) -> Tuple[History, str, str]:
     # 将所有的音频数据拼接起来
     concatenated_audio_data = np.concatenate(audio_data_list)
     
-    # 返回拼接后的音频数据和目标采样率
-    return (history, target_sr, concatenated_audio_data)
+    # 将拼接后的音频数据保存为临时文件
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+        sf.write(tmpfile.name, concatenated_audio_data, target_sr)
+        audio_file_path = tmpfile.name
+    
+    # 返回拼接后的音频文件路径
+    return (history, target_sr, audio_file_path)
 
 def transcribe(audio):
     samplerate, data = audio
