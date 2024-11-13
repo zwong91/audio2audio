@@ -23,7 +23,7 @@ openai.api_key = OPENAI_API_KEY
 
 # Setup models
 speaker_name = '中文女'
-cosyvoice = CosyVoice('iic/CosyVoice-300M-SFT')
+cosyvoice = CosyVoice('MachineS/CosyVoice-300M-SFT-25Hz')
 asr_model_name_or_path = "iic/SenseVoiceSmall"
 sense_voice_model = AutoModel(
     model=asr_model_name_or_path,
@@ -98,9 +98,9 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
 
     # Update OpenAI API call to use the new interface
     response = openai.chat.completions.create(
-        model="gpt-4",  # Use the latest model for completion
+        model="gpt-4o-mini",  # Use the latest model for completion
         messages=messages,  # 传递整个消息历史
-        max_tokens=128,  # 可选，根据需要调整
+        max_tokens=64,  # 可选，根据需要调整
     )
 
     processed_tts_text = ""
