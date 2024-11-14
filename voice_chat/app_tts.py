@@ -109,6 +109,8 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
         max_tokens=64,  # 可选，根据需要调整
     )
 
+    audio_data_list = []
+
     processed_tts_text = ""
     punctuation_pattern = r'([!?;。！？])'
     if response.choices:
@@ -128,7 +130,8 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
             
             tts_generator = text_to_speech(tts_text)
 
-            for output_audio_path in tts_generator:
+            for audio_data in tts_generator:
+                audio_data_list.append(audio_data)
                 yield history, output_audio_path, None
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
@@ -143,10 +146,22 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
         print(f"cur_tts_text: {tts_text}")
         tts_generator = text_to_speech(tts_text)
         for output_audio_path in tts_generator:
+            audio_data_list.append(audio_data)
             yield history, output_audio_path, None
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
+        
+    # 将所有的音频数据拼接起来
+    concatenated_audio_data = np.concatenate(audio_data_list)
+
+    # 将拼接后的音频数据保存为临时文件
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+        sf.write(tmpfile.name, concatenated_audio_data, target_sr)
+        audio_file_path = tmpfile.name
+
+    # 返回拼接后的音频文件路径
+    return (history, audio_file_path, target_sr)
 
 def transcribe(audio):
     samplerate, data = audio

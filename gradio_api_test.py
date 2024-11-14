@@ -4,7 +4,7 @@ from gradio_client import Client, file
 # 记录开始时间
 start_time = time.time()
 
-client = Client("https://3385af0c42ecbb7572.gradio.live")
+client = Client("http://108.136.246.72:60001")
 result = client.predict(
     audio=file('https://funaudiollm.github.io/audios/s2st/zh/zh_prompt.wav'),
     history=[],
