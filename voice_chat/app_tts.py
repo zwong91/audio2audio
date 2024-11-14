@@ -70,6 +70,8 @@ default_system = """
 # Create temporary directory for saving files
 os.makedirs("./tmp", exist_ok=True)
 
+target_sr = 22500
+
 History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
