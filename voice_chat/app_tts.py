@@ -36,8 +36,8 @@ chat.load(compile=False) # 设置为Flase获得更快速度，设置为True获�
 # 使用随机音色
 # speaker = chat.sample_random_speaker()
 # 载入保存好的音色
-speaker = torch.load('../speaker/speaker_5_girl.pth')
-
+#speaker = torch.load('../speaker/speaker_5_girl.pth')
+speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
 
 # Define default system message for the assistant
 default_system = """
