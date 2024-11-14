@@ -7,6 +7,10 @@ import openai
 from typing import List, Optional, Tuple, Dict
 from uuid import uuid4
 
+import numpy as np
+import tempfile
+import soundfile as sf
+
 import sys
 sys.path.insert(1, "../sensevoice")
 sys.path.insert(1, "../")
