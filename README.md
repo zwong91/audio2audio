@@ -45,7 +45,7 @@ pip install -r requirements.txt
 
 ``` sh
 cd voice_chat
-sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-DS-API-TOKEN" python app.py >> ./log.txt
+sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 ```
 
 <https://YOUR-IP-ADDRESS:60001/>
@@ -54,7 +54,7 @@ sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-DS-API-TOKEN" python app.py >
 
 ``` sh
 cd voice_translation
-sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-DS-API-TOKEN" python app.py >> ./log.txt
+sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 ```
 
 <https://YOUR-IP-ADDRESS:60002/>
