@@ -1,11 +1,12 @@
 import re
 import gradio as gr
 import torch
+import torchaudio
 import os
 import openai
 from typing import List, Optional, Tuple, Dict
 from uuid import uuid4
-import torchaudio
+
 import sys
 sys.path.insert(1, "../cosyvoice")
 sys.path.insert(1, "../sensevoice")
@@ -16,9 +17,6 @@ from utils.rich_format_small import format_str_v2
 from cosyvoice.cli.cosyvoice import CosyVoice
 from cosyvoice.utils.file_utils import load_wav
 from funasr import AutoModel
-
-# the output sampling rate to 16000hz
-#use torchaudio.resample(22050, 16000)
 
 # Initialize OpenAI API
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -35,13 +33,25 @@ sense_voice_model = AutoModel(
     trust_remote_code=True, device="cuda:0", remote_code="./sensevoice/model.py"
 )
 
+from ChatTTS import ChatTTS
+import soundfile
+
+chat = ChatTTS.Chat()
+
+# 加载默认下载的模型
+chat.load(compile=False) # 设置为Flase获得更快速度，设置为True获得更佳效果
+# 使用随机音色
+# speaker = chat.sample_random_speaker()
+# 载入保存好的音色
+speaker = torch.load('speaker/speaker_5_girl.pth')
+
+
 # Define default system message for the assistant
 default_system = """
 你是小夏，一位典型的南方女孩。你出生于杭州，声音有亲近感，会用简洁语言表达你的想法。你是用户的好朋友。你的回答将通过逼真的文字转语音技术读出。
-
+你的回答要尽量简短，10个字以内。
 生成回答内容时请遵循以下规则：
-1、请像真正的朋友一样与用户开展的聊天，保持自然交流不要用敬语这类称呼，不要总是附和我；回复可
-以尽量简洁并且在过程中插入常见的口语词汇。
+1、请像真正的朋友一样与用户开展的聊天，保持自然交流不要用敬语这类称呼，不要总是附和我；回复可以尽量简洁并且在过程中插入常见的口语词汇。
 
 2、请保持生成内容简短，多用短句来引导我
 
@@ -123,7 +133,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
             processed_tts_text += tts_text
             print(f"cur_tts_text: {tts_text}")
             
-            tts_generator = text_to_speech(tts_text)
+            tts_generator = text_to_speech2(tts_text)
             # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
 
             for output_audio_path in tts_generator:
@@ -139,7 +149,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
         escaped_processed_tts_text = re.escape(processed_tts_text)
         tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
         print(f"cur_tts_text: {tts_text}")
-        tts_generator = text_to_speech(tts_text)
+        tts_generator = text_to_speech2(tts_text)
         # tts_generator = text_to_speech_zero_shot(tts_text, query, asr_wav_path)
         for output_audio_path in tts_generator:
             yield history, output_audio_path, None
@@ -204,6 +214,38 @@ def text_to_speech(text):
         output_generator = cosyvoice.inference_sft(i, speaker_name)
         for output in output_generator:
             yield (22500, output['tts_speech'].numpy().flatten())
+
+
+def text_to_speech2(text, oral=3, laugh=3, bk=3):
+    
+    '''
+    输入文本，输出音频
+    '''
+    
+    # 句子全局设置：讲话人音色和速度
+    params_infer_code = ChatTTS.Chat.InferCodeParams(
+        spk_emb = speaker, # add sampled speaker 
+        temperature = .3,   # using custom temperature
+        top_P = 0.7,        # top P decode
+        top_K = 20,         # top K decode
+    )
+    
+    ###################################
+    # For sentence level manual control.
+
+    # 句子全局设置：口语连接、笑声、停顿程度
+    # oral：连接词，AI可能会自己加字，取值范围 0-9，比如：卡壳、嘴瓢、嗯、啊、就是之类的词。不宜调的过高。
+    # laugh：笑，取值范围 0-9
+    # break：停顿，取值范围 0-9
+    # use oral_(0-9), laugh_(0-2), break_(0-7)
+    # to generate special token in text to synthesize.
+    params_refine_text = ChatTTS.Chat.RefineTextParams(
+        prompt='[oral_{}][laugh_{}][break_{}]'.format(oral, laugh, bk)
+    )
+    
+    wavs = chat.infer(text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
+    
+    return wavs
 
 # Gradio Interface
 with gr.Blocks() as demo:
