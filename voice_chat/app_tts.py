@@ -167,7 +167,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
         audio_file_path = tmpfile.name
 
     # 返回拼接后的音频文件路径
-    return (history, audio_file_path, target_sr)
+    return (history, audio_file_path, None)
 
 def transcribe(audio):
     samplerate, data = audio
