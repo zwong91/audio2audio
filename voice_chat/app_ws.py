@@ -74,10 +74,6 @@ target_sr = 22500
 History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
 def clear_session() -> History:
     return '', None, None
 
@@ -265,6 +261,10 @@ from flask_sockets import Sockets
 # 初始化 Flask 和 WebSocket
 app = Flask(__name__)
 sockets = Sockets(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 # WebSocket 处理函数
 @sockets.route('/transcribe')
