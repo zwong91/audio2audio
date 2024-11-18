@@ -8,6 +8,27 @@
         body {
             background-color: black;
             color: green;
+            font-family: Arial, sans-serif;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #responseContainer {
+            margin-top: 20px;
+            color: #fff;
         }
     </style>
 </head>
@@ -16,35 +37,38 @@
     <button id="startButton">Start Streaming</button>
     <button id="stopButton">Stop Streaming</button>
     <div id="responseContainer"></div>
+
     <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
     <script>
         let ws = new WebSocket('wss://audio.xyz666.org:8443/transcribe');
-	console.log("ws is ----- ", ws);
+        console.log("ws is ----- ", ws);
         let mediaRecorder;
 
-	ws.onerror = event => {
-	        console.log("error event ....");
-                console.log(event);
+        ws.onerror = event => {
+            console.error("WebSocket error occurred:", event);
         };
 
-
-	ws.onclose = event => {
-		console.log("closing event ....");
-		console.log(event);
-	};
+        ws.onopen = () => {
+            console.log('WebSocket connection opened');
+        };
 
         ws.onmessage = event => {
+            console.log('Message received from server:', event.data);
             let responseContainer = document.getElementById('responseContainer');
-            responseContainer.innerHTML += `<p>${event}</p>`;
+            responseContainer.innerHTML += `<p>${event.data}</p>`;
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
         };
 
         let handleDataAvailable = (event) => {
-	    console.log("data is available");
+            console.log("Data is available");
             if (event.size > 0) {
-                console.log('blob', event)
+                console.log('blob', event);
                 blobToBase64(event).then(b64 => {
-                    ws.send(b64)
-                })
+                    ws.send(b64);
+                });
             }
         };
 
@@ -79,15 +103,11 @@
                 document.getElementById('stopButton').addEventListener('click', () => {
                     recorder.stopRecording();
                 });
+            })
+            .catch(error => {
+                console.error('Error accessing microphone:', error);
+                alert('Please allow microphone access.');
             });
-
-        ws.onopen = () => {
-            console.log('WebSocket connection opened');
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket connection closed');
-        };
     </script>
 </body>
 </html>
