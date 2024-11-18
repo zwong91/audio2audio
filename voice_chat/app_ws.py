@@ -239,8 +239,6 @@ def text_to_speech(text, oral=3, laugh=3, bk=3):
     return wavs
 
 
-# model = whisper.load_model('base.en')
-
 def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     print("function called process_wav_bytes")
     model_chat((sample_rate, webm_bytes))
@@ -254,10 +252,12 @@ from flask import Flask, render_template
 from flask_sockets import Sockets
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
+import base64
+import traceback
+import os
 
 app = Flask(__name__)
 sockets = Sockets(app)
-
 
 @app.route('/')
 def index():
