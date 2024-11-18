@@ -18,11 +18,6 @@ from utils.rich_format_small import format_str_v2
 
 from funasr import AutoModel
 
-from flask import Flask, render_template
-from flask_sockets import Sockets
-
-app = Flask(__name__)
-
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
@@ -259,55 +254,54 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     #     waveform = whisper.load_audio(temp_file.name, sr=sample_rate)
     #     return waveform
 
-def transcribe_socket(ws):
-    print("in trasrcibe... ")
-    while not ws.closed:
-        message = ws.receive()
-        if message:
-            print('message received', len(message), type(message))
-            try:
-                if isinstance(message, str):
-                    message = base64.b64decode(message)
-                audio = process_wav_bytes(bytes(message)).reshape(1, -1)
-                # audio = whisper.pad_or_trim(audio)
-                # transcription = whisper.transcribe(
-                #     model,
-                #     audio
-                # )
-            except Exception as e:
-                traceback.print_exc()
+import ssl
+import traceback
+import base64
+from gevent import pywsgi, monkey
+from geventwebsocket.handler import WebSocketHandler
+from flask import Flask, render_template
+from flask_sockets import Sockets
 
-
+# 初始化 Flask 和 WebSocket
+app = Flask(__name__)
 sockets = Sockets(app)
 
-if __name__ == "__main__":
-    import ssl
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-    from gevent import monkey
-    monkey.patch_ssl()
+# WebSocket 处理函数
+@sockets.route('/transcribe')
+def transcribe_socket(ws):
+    print("WebSocket connection established...")
+    while not ws.closed:
+        try:
+            message = ws.receive()  # 接收客户端消息
+            if message:
+                print(f"Received message of length {len(message)} bytes")
+                
+                # 如果是 base64 编码的音频，进行解码
+                if isinstance(message, str):
+                    message = base64.b64decode(message)
+                # 这里可以插入音频处理逻辑
+                audio = process_wav_bytes(message)  # 假设 process_wav_bytes 是你处理音频的函数
+                print("Audio data processed.")
+                
+                # 进行音频转录等操作（例如：使用 Whisper）
+                # transcription = whisper.transcribe(model, audio)
+                
+        except Exception as e:
+            print(f"Error in processing audio: {e}")
+            traceback.print_exc()
 
-    # 创建一个 SSL 上下文
+# 设置 SSL 证书
+def run_server():
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-
-    # 设置使用 TLS 1.2 和 TLS 1.3 的加密套件
-    context.set_ciphers('ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384')
-
-    # 禁用 SSLv3
-    context.options |= ssl.OP_NO_SSLv3
-
-    # 强制使用 TLS 1.2 或 TLS 1.3
-    context.set_alpn_protocols(['http/1.1', 'h2'])  # 支持 HTTP/1.1 和 HTTP/2 协议
-
-    # 加载证书和密钥
     context.load_cert_chain(certfile="cf.pem", keyfile="cf.key")
-    # Disable client certificate validation
-    context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
-    context.check_hostname = False  # Disable hostname checking
-    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler)
-    print("Server running with wss://audio.xyz666.org:8443")
+    context.verify_mode = ssl.CERT_NONE  # 禁用证书验证
+    context.check_hostname = False  # 禁用主机名检查
+
+    # 启动服务器
+    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler, ssl_context=context)
+    print("Server running at wss://audio.xyz666.org:8443")
     server.serve_forever()
 
-sockets.url_map.add(Rule('/transcribe', endpoint=transcribe_socket, websocket=True))
-
-app.run()
+if __name__ == '__main__':
+    monkey.patch_ssl()  # 修补 SSL 支持
+    run_server()  # 启动带 SSL 的 WebSocket 服务器
