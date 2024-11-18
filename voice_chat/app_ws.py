@@ -250,53 +250,45 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     #     waveform = whisper.load_audio(temp_file.name, sr=sample_rate)
     #     return waveform
 
-import ssl
-import traceback
-import base64
-from gevent import pywsgi, monkey
-from geventwebsocket.handler import WebSocketHandler
 from flask import Flask, render_template
 from flask_sockets import Sockets
 
-# 初始化 Flask 和 WebSocket
-app = Flask(__name__)
-sockets = Sockets(app)
 
-# 首页路由
+app = Flask(__name__)
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# WebSocket 处理函数
-@sockets.route('/transcribe')
-def transcribe_socket(ws):
-    print("WebSocket connection established...")
-    while not ws.closed:
-        try:
-            message = ws.receive()  # 接收客户端消息
-            if message:
-                print(f"Received message of length {len(message)} bytes")
-                
-                # 如果是 base64 编码的音频，进行解码
-                if isinstance(message, str):
-                    message = base64.b64decode(message)
-                # 这里可以插入音频处理逻辑
-                audio = process_wav_bytes(message)  # 假设 process_wav_bytes 是你处理音频的函数
-                print("Audio data processed.")
-                
-                # 进行音频转录等操作（例如：使用 Whisper）
-                # transcription = whisper.transcribe(model, audio)
-                
-        except Exception as e:
-            print(f"Error in processing audio: {e}")
-            traceback.print_exc()
 
-# 启动服务器
-def run_server():
-    # 启动服务器，使用 WebSocketHandler 不加 SSL
-    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler)
+sockets = Sockets(app)
+
+
+if __name__ == "__main__":
+    from gevent import pywsgi
+    from geventwebsocket.handler import WebSocketHandler
+
+    server = pywsgi.WSGIServer(('', 8888), app, handler_class=WebSocketHandler)
     server.serve_forever()
 
-# 启动服务器
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8443)
+def transcribe_socket(ws):
+    print("in trasrcibe... ")
+    while not ws.closed:
+        message = ws.receive()
+        if message:
+            print('message received', len(message), type(message))
+            try:
+                if isinstance(message, str):
+                    message = base64.b64decode(message)
+                audio = process_wav_bytes(bytes(message)).reshape(1, -1)
+                audio = whisper.pad_or_trim(audio)
+                transcription = whisper.transcribe(
+                    model,
+                    audio
+                )
+            except Exception as e:
+                traceback.print_exc()
+
+sockets.url_map.add(Rule('/transcribe', endpoint=transcribe_socket, websocket=True))
+
+app.run()
