@@ -252,7 +252,8 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
 
 from flask import Flask, render_template
 from flask_sockets import Sockets
-
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 
 app = Flask(__name__)
 
