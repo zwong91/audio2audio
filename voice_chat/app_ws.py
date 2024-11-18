@@ -20,8 +20,12 @@ from funasr import AutoModel
 
 from flask import Flask, render_template
 from flask_sockets import Sockets
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 
 app = Flask(__name__)
+sockets = Sockets(app)
+
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
@@ -259,6 +263,7 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     #     waveform = whisper.load_audio(temp_file.name, sr=sample_rate)
     #     return waveform
 
+@sockets.route('/transcribe')
 def transcribe_socket(ws):
     print("in trasrcibe... ")
     while not ws.closed:
@@ -278,15 +283,13 @@ def transcribe_socket(ws):
                 traceback.print_exc()
 
 
-sockets = Sockets(app)
-
 if __name__ == "__main__":
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-
-    server = pywsgi.WSGIServer(('', 60002), app, handler_class=WebSocketHandler)
+    # 启动带有 SSL 证书的服务器
+    server = pywsgi.WSGIServer(
+        ('', 60002),  # 监听所有 IP 地址的 60002 端口
+        app,
+        handler_class=WebSocketHandler,
+        keyfile='server.key',  # 私钥文件路径
+        certfile='server.crt'  # 证书文件路径
+    )
     server.serve_forever()
-
-sockets.url_map.add(Rule('/transcribe', endpoint=transcribe_socket, websocket=True))
-
-app.run()
