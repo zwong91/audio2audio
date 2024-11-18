@@ -264,31 +264,28 @@ def index():
 sockets = Sockets(app)
 
 
-if __name__ == "__main__":
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-
-    server = pywsgi.WSGIServer(('', 8888), app, handler_class=WebSocketHandler)
-    server.serve_forever()
-
+# WebSocket route
+@sockets.route('/transcribe')
 def transcribe_socket(ws):
-    print("in trasrcibe... ")
+    print("In transcribe...")
     while not ws.closed:
         message = ws.receive()
         if message:
-            print('message received', len(message), type(message))
+            print('Message received', len(message), type(message))
             try:
-                if isinstance(message, str):
+                if isinstance(message, str):  # If it's a base64 encoded string
                     message = base64.b64decode(message)
                 audio = process_wav_bytes(bytes(message)).reshape(1, -1)
-                # audio = whisper.pad_or_trim(audio)
-                # transcription = whisper.transcribe(
-                #     model,
-                #     audio
-                # )
+                # Here you would normally call a transcription function (e.g., Whisper)
+                # transcription = whisper.transcribe(model, audio)
+                # For now, just print or send a response
+                ws.send("Audio received and processed.")  # Example response
             except Exception as e:
+                print(f"Error processing audio: {e}")
                 traceback.print_exc()
+                ws.send("Error processing audio.")
 
-sockets.url_map.add(Rule('/transcribe', endpoint=transcribe_socket, websocket=True))
-
-app.run()
+# Start Gevent server with WebSocketHandler
+if __name__ == "__main__":
+    server = pywsgi.WSGIServer(('', 8888), app, handler_class=WebSocketHandler)
+    server.serve_forever()
