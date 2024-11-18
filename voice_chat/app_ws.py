@@ -281,10 +281,14 @@ def transcribe_socket(ws):
 sockets = Sockets(app)
 
 if __name__ == "__main__":
+    import ssl
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
-
-    server = pywsgi.WSGIServer(('', 60002), app, handler_class=WebSocketHandler)
+    # SSL configuration for `wss`
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(certfile='server.crt', keyfile='server.key')
+    server = pywsgi.WSGIServer(('', 60002), app, handler_class=WebSocketHandler, ssl_context=context)
+    print("Server running with wss://localhost:60002")
     server.serve_forever()
 
 sockets.url_map.add(Rule('/transcribe', endpoint=transcribe_socket, websocket=True))
