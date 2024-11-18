@@ -304,7 +304,7 @@ if __name__ == "__main__":
     # Disable client certificate validation
     context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
     context.check_hostname = False  # Disable hostname checking
-    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler, ssl_context=context)
+    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler)
     print("Server running with wss://audio.xyz666.org:8443")
     server.serve_forever()
 
