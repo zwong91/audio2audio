@@ -298,7 +298,7 @@ def run_server():
     context.check_hostname = False  # 禁用主机名检查
 
     # 启动服务器
-    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler, ssl_context=context)
+    server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler)
     print("Server running at wss://audio.xyz666.org:8443")
     server.serve_forever()
 
