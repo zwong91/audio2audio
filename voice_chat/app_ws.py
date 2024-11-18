@@ -299,4 +299,4 @@ def run_server():
 
 # 启动服务器
 if __name__ == '__main__':
-    run_server()  # 启动 WebSocket 服务器（不使用 SSL
+    app.run(host='0.0.0.0', port=8443)
