@@ -19,9 +19,7 @@
     <div id="responseContainer"></div>
     <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
     <script>
-        let ws = new WebSocket('wss://localhost:60002/transcribe', {
-            rejectUnauthorized: false  // 禁用证书验证
-          });
+        let ws = new WebSocket('ws://localhost:60002/transcribe');
 	console.log("wss is ----- ", ws);
         let mediaRecorder;
 
