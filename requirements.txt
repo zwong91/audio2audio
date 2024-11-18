@@ -3,3 +3,6 @@ whisper
 gradio
 onnxruntime
 hyperpyyaml
+Flask
+gevent-websocket
+flask_sockets
