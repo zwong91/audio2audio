@@ -284,16 +284,24 @@ if __name__ == "__main__":
     import ssl
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
-    # SSL configuration for `wss`
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.options |= ssl.OP_NO_SSLv3
-    # 强制使用 TLS 1.2 或更高版本
-    ssl_context.set_ciphers('TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384')
-    ssl_context.load_cert_chain(certfile="server.crt", keyfile="private.key")
+    # 创建一个 SSL 上下文
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+
+    # 设置使用 TLS 1.2 和 TLS 1.3 的加密套件
+    context.set_ciphers('ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384')
+
+    # 禁用 SSLv3
+    context.options |= ssl.OP_NO_SSLv3
+
+    # 强制使用 TLS 1.2 或 TLS 1.3
+    context.set_alpn_protocols(['http/1.1', 'h2'])  # 支持 HTTP/1.1 和 HTTP/2 协议
+
+    # 加载证书和密钥
+    context.load_cert_chain(certfile="server.crt", keyfile="private.key")
     # Disable client certificate validation
-    ssl_context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
-    ssl_context.check_hostname = False  # Disable hostname checking
-    server = pywsgi.WSGIServer(('0.0.0.0', 60002), app, handler_class=WebSocketHandler, ssl_context=ssl_context)
+    context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
+    context.check_hostname = False  # Disable hostname checking
+    server = pywsgi.WSGIServer(('0.0.0.0', 60002), app, handler_class=WebSocketHandler, ssl_context=context)
     print("Server running with wss://localhost:60002")
     server.serve_forever()
 
