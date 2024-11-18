@@ -286,11 +286,11 @@ if __name__ == "__main__":
     from geventwebsocket.handler import WebSocketHandler
     # SSL configuration for `wss`
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(certfile='server.pem', keyfile='serve.key')
+    ssl_context.load_cert_chain(certfile="server.crt", keyfile="private.key")
     # Disable client certificate validation
     context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
     context.check_hostname = False  # Disable hostname checking
-    server = pywsgi.WSGIServer(('', 60002), app, handler_class=WebSocketHandler, ssl_context=context)
+    server = pywsgi.WSGIServer(('0.0.0.0', 60002), app, handler_class=WebSocketHandler, ssl_context=context)
     print("Server running with wss://localhost:60002")
     server.serve_forever()
 
