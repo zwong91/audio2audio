@@ -67,8 +67,9 @@
             if (event.size > 0) {
                 console.log('blob', event);
                 blobToBase64(event).then(b64 => {
+                    console.log("Sending data to WebSocket:", b64);
                     ws.send(b64);
-                });
+                }).catch(err => console.error("Error converting blob to base64:", err));
             }
         };
 
@@ -97,10 +98,12 @@
                 });
 
                 document.getElementById('startButton').addEventListener('click', () => {
+                    console.log('Start Streaming clicked');
                     recorder.startRecording();
                 });
 
                 document.getElementById('stopButton').addEventListener('click', () => {
+                    console.log('Stop Streaming clicked');
                     recorder.stopRecording();
                 });
             })
