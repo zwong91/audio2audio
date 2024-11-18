@@ -303,5 +303,5 @@ def run_server():
     server.serve_forever()
 
 if __name__ == '__main__':
-    monkey.patch_ssl()  # 修补 SSL 支持
+    #monkey.patch_ssl()  # 修补 SSL 支持
     run_server()  # 启动带 SSL 的 WebSocket 服务器
