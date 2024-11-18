@@ -284,6 +284,9 @@ if __name__ == "__main__":
     import ssl
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
+    from gevent import monkey
+    monkey.patch_ssl()
+
     # 创建一个 SSL 上下文
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
