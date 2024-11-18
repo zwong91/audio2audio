@@ -256,14 +256,12 @@ from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 
 app = Flask(__name__)
+sockets = Sockets(app)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
-
-sockets = Sockets(app)
-
 
 # WebSocket route
 @sockets.route('/transcribe')
@@ -288,5 +286,5 @@ def transcribe_socket(ws):
 
 # Start Gevent server with WebSocketHandler
 if __name__ == "__main__":
-    server = pywsgi.WSGIServer(('', 8888), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(('0.0.0.0', 8888), app, handler_class=WebSocketHandler)
     server.serve_forever()
