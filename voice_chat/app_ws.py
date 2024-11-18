@@ -292,8 +292,7 @@ if __name__ == "__main__":
     context.load_cert_chain(certfile='server.crt', keyfile='server.key')
 
     # 配置宽松的验证规则，允许自签名证书
-    context.verify_mode = ssl.CERT_OPTIONAL  # 允许自签名证书
-    context.check_hostname = False  # 不检查主机名
+    context.verify_mode = ssl.CERT_NONE
     # 启动带有 SSL 证书的服务器
     server = pywsgi.WSGIServer(
         ('', 60002),  # 监听所有 IP 地址的 60002 端口
