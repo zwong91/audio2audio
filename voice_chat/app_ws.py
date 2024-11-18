@@ -300,7 +300,7 @@ if __name__ == "__main__":
     context.set_alpn_protocols(['http/1.1', 'h2'])  # 支持 HTTP/1.1 和 HTTP/2 协议
 
     # 加载证书和密钥
-    context.load_cert_chain(certfile="server.crt", keyfile="private.key")
+    context.load_cert_chain(certfile="cf.pem", keyfile="cf.key")
     # Disable client certificate validation
     context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
     context.check_hostname = False  # Disable hostname checking
