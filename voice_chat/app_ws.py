@@ -288,8 +288,8 @@ if __name__ == "__main__":
     # 创建 SSL 上下文
     context = ssl.SSLContext(ssl.PROTOCOL_TLS)
 
-    # 加载证书和私钥
-    context.load_cert_chain(certfile='server.crt', keyfile='server.key')
+    # 加载证书和私钥（PEM 格式）
+    context.load_cert_chain(certfile='server.pem', keyfile='server.key')
 
     # 配置宽松的验证规则，允许自签名证书
     context.verify_mode = ssl.CERT_NONE
