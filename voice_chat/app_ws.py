@@ -262,6 +262,7 @@ from flask_sockets import Sockets
 app = Flask(__name__)
 sockets = Sockets(app)
 
+# 首页路由
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -290,18 +291,12 @@ def transcribe_socket(ws):
             print(f"Error in processing audio: {e}")
             traceback.print_exc()
 
-# 设置 SSL 证书
+# 启动服务器
 def run_server():
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(certfile="cf.pem", keyfile="cf.key")
-    context.verify_mode = ssl.CERT_NONE  # 禁用证书验证
-    context.check_hostname = False  # 禁用主机名检查
-
-    # 启动服务器
+    # 启动服务器，使用 WebSocketHandler 不加 SSL
     server = pywsgi.WSGIServer(('0.0.0.0', 8443), app, handler_class=WebSocketHandler)
-    print("Server running at wss://audio.xyz666.org:8443")
     server.serve_forever()
 
+# 启动服务器
 if __name__ == '__main__':
-    #monkey.patch_ssl()  # 修补 SSL 支持
-    run_server()  # 启动带 SSL 的 WebSocket 服务器
+    run_server()  # 启动 WebSocket 服务器（不使用 SSL
