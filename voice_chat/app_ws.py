@@ -284,7 +284,7 @@ if __name__ == "__main__":
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
 
-    server = pywsgi.WSGIServer(('', 60001), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(('', 60002), app, handler_class=WebSocketHandler)
     server.serve_forever()
 
 sockets.url_map.add(Rule('/transcribe', endpoint=transcribe_socket, websocket=True))
