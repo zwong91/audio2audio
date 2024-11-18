@@ -281,11 +281,11 @@ def transcribe_socket(ws):
                 if isinstance(message, str):
                     message = base64.b64decode(message)
                 audio = process_wav_bytes(bytes(message)).reshape(1, -1)
-                audio = whisper.pad_or_trim(audio)
-                transcription = whisper.transcribe(
-                    model,
-                    audio
-                )
+                # audio = whisper.pad_or_trim(audio)
+                # transcription = whisper.transcribe(
+                #     model,
+                #     audio
+                # )
             except Exception as e:
                 traceback.print_exc()
 
