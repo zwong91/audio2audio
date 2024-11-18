@@ -286,6 +286,7 @@ if __name__ == "__main__":
     from geventwebsocket.handler import WebSocketHandler
     # SSL configuration for `wss`
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ssl_context.options |= ssl.OP_NO_SSLv3
     ssl_context.load_cert_chain(certfile="server.crt", keyfile="private.key")
     # Disable client certificate validation
     ssl_context.verify_mode = ssl.CERT_NONE  # Disable certificate verification (ignores client cert validation)
