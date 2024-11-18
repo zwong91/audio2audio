@@ -3,127 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realtime Audio Bot</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <title>Realtime WebSocket Audio Streaming</title>
+    <style>
+        body {
+            background-color: black;
+            color: green;
+        }
+    </style>
 </head>
-<body class="bg-gray-800 text-white">
-    <div class="items-center justify-center p-2 mx-auto mt-2 max-w-7xl">
-        <h1 class="text-2xl text-center">Audio Bot</h1>
-        <ol id="chats" class="relative p-2 mt-4 border-gray-200 border-s dark:border-gray-700">
-        </ol>
+<body>
+    <h1>Realtime WebSocket Audio Streaming</h1>
+    <button id="startButton">Start Streaming</button>
+    <button id="stopButton">Stop Streaming</button>
+    <div id="responseContainer"></div>
+    <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
+    <script>
+        let ws = new WebSocket('ws://localhost:8888/transcribe');
+	console.log("ws is ----- ", ws);
+        let mediaRecorder;
 
-        <div class="flex items-center justify-center px-2 mt-4" x-data="recordingState()">
-            <button class="w-16 h-16 text-white rounded-full" id="recordButton" @click="toggleRecording()"
-              :class="{'bg-red-800 animate-pulse': isRecording, 'bg-red-500': !isRecording}">
-                <i class="fa-solid fa-microphone fa-xl"></i>
-            </button>
-        </div>
-        <div id="signals" class="flex items-center justify-center p-2 text-center">
-        </div>
-    </div>
+	ws.onerror = event => {
+	        console.log("error event ....");
+                console.log(event);
+        };
 
-    <script lang="javascript">
-        function recordingState() {
-            return {
-                isRecording: false,
-                toggleRecording: function () {
-                    if (this.isRecording) {
-                        recorder.stop();
-                    } else {
-                        let signals = document.getElementById("signals");
-                        if (signals) {
-                            signals.innerHTML = "Recording...";
-                        }
-                        recorder.start();
-                    }
-                    this.isRecording = !this.isRecording;
-                }
-            }
-        }
 
-        // WebSocket connection to send audio data
-        let ws;
-        function initializeWebSocket() {
-            ws = new WebSocket("wss://audio.xyz666.org:8443/transcribe");
-            
-            ws.onopen = () => {
-                console.log('WebSocket connection opened');
-            };
+	ws.onclose = event => {
+		console.log("closing event ....");
+		console.log(event);
+	};
 
-            ws.onmessage = (event) => {
-                let data = JSON.parse(event.data);
-                console.log('Message received from server:', data);
+        ws.onmessage = event => {
+            let responseContainer = document.getElementById('responseContainer');
+            responseContainer.innerHTML += `<p>${event}</p>`;
+        };
 
-                let chats = document.getElementById("chats");
-                let signals = document.getElementById("signals");
-
-                if (data.type === "input_skeleton" || data.type === "reply_skeleton") {
-                    chats.insertAdjacentHTML("beforeend", data.content);
-                }
-
-                if (data.type === "signal") {
-                    signals.innerHTML = data.content;
-                }
-
-                signals.scrollIntoView();
-            };
-
-            ws.onerror = (error) => {
-                console.log('WebSocket error:', error);
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket connection closed');
-            };
-        }
-
-        // Initialize recorder and WebSocket connection
-        let recorder = {
-            mediaRecorder: null,
-            recordedChunks: [],
-            init: function () {
-                if (!navigator.mediaDevices.getUserMedia) {
-                    alert("This browser does not support audio recording.");
-                    return;
-                }
-
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(stream => {
-                        this.mediaRecorder = new MediaRecorder(stream);
-                        console.log(this.mediaRecorder);
-
-                        this.mediaRecorder.ondataavailable = (e) => {
-                            this.recordedChunks.push(e.data);
-                        };
-
-                        this.mediaRecorder.onstop = () => {
-                            console.log('Stopped recording');
-                            const blob = new Blob(this.recordedChunks, { type: 'audio/wav' });
-
-                            // Convert blob to Base64 and send it via WebSocket
-                            blobToBase64(blob).then(base64Audio => {
-                                if (ws && ws.readyState === WebSocket.OPEN) {
-                                    ws.send(base64Audio);
-                                }
-                            });
-
-                            // Clear recorded chunks
-                            this.recordedChunks = [];
-                        };
-                    })
-                    .catch(err => {
-                        alert("Error accessing microphone: " + err.message);
-                    });
-            },
-
-            start: function () {
-                this.recordedChunks = [];
-                this.mediaRecorder.start();
-            },
-
-            stop: function () {
-                this.mediaRecorder.stop();
+        let handleDataAvailable = (event) => {
+	    console.log("data is available");
+            if (event.size > 0) {
+                console.log('blob', event)
+                blobToBase64(event).then(b64 => {
+                    ws.send(b64)
+                })
             }
         };
 
@@ -139,12 +60,34 @@
             });
         }
 
-        // Initialize on page load
-        document.addEventListener("DOMContentLoaded", function () {
-            recorder.init();
-            initializeWebSocket();
-        });
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                let recorder = RecordRTC(stream, {
+                    type: 'audio',
+                    recorderType: StereoAudioRecorder,
+                    mimeType: 'audio/wav',
+                    timeSlice: 500,
+                    desiredSampRate: 16000,
+                    numberOfAudioChannels: 1,
+                    ondataavailable: handleDataAvailable
+                });
 
+                document.getElementById('startButton').addEventListener('click', () => {
+                    recorder.startRecording();
+                });
+
+                document.getElementById('stopButton').addEventListener('click', () => {
+                    recorder.stopRecording();
+                });
+            });
+
+        ws.onopen = () => {
+            console.log('WebSocket connection opened');
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
     </script>
 </body>
 </html>
