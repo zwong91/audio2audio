@@ -243,14 +243,15 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     print("function called process_wav_bytes")
     # 将 bytes 转换为 np.ndarray
     audio_np = np.frombuffer(webm_bytes, dtype=np.int16)
-    model_chat((sample_rate, audio_np), None)
+
+    return model_chat((sample_rate, audio_np), None)
     # with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as temp_file:
     #     temp_file.write(webm_bytes)
     #     temp_file.flush()
     #     waveform = whisper.load_audio(temp_file.name, sr=sample_rate)
     #     return waveform
 
-from flask import Flask, render_template
+from flask import Flask, render_template, send_file
 from flask_sockets import Sockets
 import asyncio
 from aiohttp import web
@@ -258,12 +259,23 @@ from aiohttp_wsgi import WSGIHandler
 import base64
 import traceback
 import os
+import json
 
 app = Flask('aioflask')
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/asset/<filename>')
+def download_asset(filename):
+    # 构建文件路径
+    file_path = os.path.join('./tmp', filename)
+    try:
+        #return send_file(file_path, as_attachment=True)
+        return send_file(os.path.join(directory, filename))
+    except Exception as e:
+        return str(e)
 
 async def socket_handler(request):
     ws = web.WebSocketResponse()
@@ -275,15 +287,18 @@ async def socket_handler(request):
         msg = await ws.receive()
 
         if msg.type == web.WSMsgType.TEXT:
-            print(f"Message received: {msg.data}")
+            #print(f"Message received: {msg.data}")
             try:
                 if isinstance(msg.data, str):  # If it's a base64 encoded string
                     message = base64.b64decode(msg.data)
-                audio = process_wav_bytes(bytes(message))
+                res = process_wav_bytes(bytes(message))
                 # Here you would normally call a transcription function (e.g., Whisper)
                 # transcription = whisper.transcribe(model, audio)
                 # For now, just print or send a response
-                await ws.send_str("Audio received and processed.")  # Example response
+                # 将返回的结果转换为 JSON 字符串
+                res_json = json.dumps(res)
+                # 发送 JSON 编码格式的响应
+                await ws.send_str(res_json)
             except Exception as e:
                 print(f"Error processing audio: {e}")
                 traceback.print_exc()
