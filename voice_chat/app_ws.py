@@ -109,7 +109,7 @@ async def model_chat(audio, history: Optional[History]) -> Tuple[str, str, Histo
 
     # Update OpenAI API call to use the new interface
     response = openai.chat.completions.create(
-        model="gpt-4o",  # Use the latest model for completion
+        model="gpt-4o-mini",  # Use the latest model for completion
         messages=messages,  # 传递整个消息历史
         max_tokens=64,  # 可选，根据需要调整
     )
