@@ -289,7 +289,7 @@ async def process_audio(message):
         return json.dumps({"status": "error", "message": "Error processing audio"})
 
 async def socket_handler(request):
-    ws = web.WebSocketResponse(heartbeat=30)  # 增加心跳间隔时间
+    ws = web.WebSocketResponse(heartbeat=60)
     await ws.prepare(request)
 
     print("WebSocket connection established")
