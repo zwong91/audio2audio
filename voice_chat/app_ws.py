@@ -207,8 +207,7 @@ def preprocess(text):
     texts_merge.append(this_text)
     return texts
 
-def text_to_speech(text, oral=3, laugh=3, bk=3):
-    
+async def text_to_speech(text, oral=3, laugh=3, bk=3):
     '''
     输入文本，输出音频
     '''
@@ -234,7 +233,7 @@ def text_to_speech(text, oral=3, laugh=3, bk=3):
         prompt='[oral_{}][laugh_{}][break_{}]'.format(oral, laugh, bk)
     )
     
-    wavs = chat.infer(text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
+    wavs = await asyncio.to_thread(chat.infer, text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
     
     return wavs
 
@@ -285,7 +284,7 @@ async def process_audio(message):
     try:
         if isinstance(message, str):  # If it's a base64 encoded string
             message = base64.b64decode(message)
-        res = process_wav_bytes(message)
+        res = await asyncio.to_thread(process_wav_bytes, message)
         # 将返回的结果转换为 JSON 字符串
         res_json = json.dumps(res)
         return res_json
