@@ -280,6 +280,19 @@ def download_asset(filename):
     except Exception as e:
         return str(e)
 
+async def process_audio(message):
+    try:
+        if isinstance(message, str):  # If it's a base64 encoded string
+            message = base64.b64decode(message)
+        res = process_wav_bytes(message)
+        # 将返回的结果转换为 JSON 字符串
+        res_json = json.dumps(res)
+        return res_json
+    except Exception as e:
+        print(f"Error processing audio: {e}")
+        traceback.print_exc()
+        return json.dumps({"status": "error", "message": "Error processing audio"})
+
 async def socket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
@@ -289,19 +302,9 @@ async def socket_handler(request):
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
-                #print(f"Message received: {msg.data}")
-                try:
-                    if isinstance(msg.data, str):  # If it's a base64 encoded string
-                        message = base64.b64decode(msg.data)
-                    res = process_wav_bytes(message)
-                    # 将返回的结果转换为 JSON 字符串
-                    res_json = json.dumps(res)
-                    # 发送 JSON 编码格式的响应
-                    await ws.send_str(res_json)
-                except Exception as e:
-                    print(f"Error processing audio: {e}")
-                    traceback.print_exc()
-                    await ws.send_str(json.dumps({"status": "error", "message": "Error processing audio"}))
+                print(f"Message received: {msg.data}")
+                res_json = await process_audio(msg.data)
+                await ws.send_str(res_json)
             elif msg.type == web.WSMsgType.ERROR:
                 print(f"WebSocket connection closed with exception {ws.exception()}")
 
