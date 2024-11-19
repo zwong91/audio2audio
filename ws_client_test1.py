@@ -18,30 +18,46 @@ async def test_websocket():
 
         # 创建 SSL 上下文，忽略证书验证
         ssl_context = ssl._create_unverified_context()
-        
+
         # 连接到WebSocket服务器
         async with websockets.connect(uri, ssl=ssl_context) as websocket:
             print("WebSocket connected")
 
-            # 持续发送和接收消息
-            while True:
-                # 发送Base64编码的音频数据
-                await websocket.send(encoded_audio)  # 发送消息
-                print("Message sent")
+            async def send_ping():
+                while True:
+                    await asyncio.sleep(10)  # 每10秒发送一次ping
+                    try:
+                        await websocket.ping()
+                    except Exception as e:
+                        print(f"Error sending ping: {e}")
+                        break
 
-                try:
-                    response = await websocket.recv()  # 接收消息
-                    print(f"Received message: {response}")
+            ping_task = asyncio.create_task(send_ping())
 
-                    # 添加延迟
-                    await asyncio.sleep(5)  # 延迟2秒
+            try:
+                # 持续发送和接收消息
+                while True:
+                    # 发送Base64编码的音频数据
+                    await websocket.send(encoded_audio)  # 发送消息
+                    print("Message sent")
 
-                except websockets.exceptions.ConnectionClosedOK as e:
-                    print(f"Connection closed normally: {e}")
-                    break
-                except websockets.exceptions.ConnectionClosedError as e:
-                    print(f"Connection closed with error: {e}")
-                    break
+                    try:
+                        response = await websocket.recv()  # 接收消息
+                        print(f"Received message: {response}")
+
+                        # 添加延迟
+                        await asyncio.sleep(2)  # 延迟2秒
+
+                    except websockets.exceptions.ConnectionClosedOK as e:
+                        print(f"Connection closed normally: {e}")
+                        break
+                    except websockets.exceptions.ConnectionClosedError as e:
+                        print(f"Connection closed with error: {e}")
+                        break
+
+            finally:
+                ping_task.cancel()
+                await ping_task
 
     except Exception as e:
         print(f"Error connecting to WebSocket or reading audio file: {e}")
