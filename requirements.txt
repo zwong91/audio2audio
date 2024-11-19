@@ -6,3 +6,4 @@ hyperpyyaml
 Flask
 gevent-websocket
 flask_sockets
+aiohttp-wsgi

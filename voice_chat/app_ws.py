@@ -250,41 +250,53 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
 
 from flask import Flask, render_template
 from flask_sockets import Sockets
-from gevent import pywsgi
-from geventwebsocket.handler import WebSocketHandler
+import asyncio
+from aiohttp import web
+from aiohttp_wsgi import WSGIHandler
 import base64
 import traceback
 import os
 
-app = Flask(__name__)
-sockets = Sockets(app)
+app = Flask('aioflask')
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# WebSocket route
-@sockets.route('/transcribe')
-def transcribe_socket(ws):
-    print("In transcribe...")
-    while not ws.closed:
-        message = ws.receive()
-        if message:
-            print('Message received', len(message), type(message))
+async def socket_handler(request):
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
+    print("WebSocket connection established")
+
+    while True:
+        msg = await ws.receive()
+
+        if msg.type == web.WSMsgType.TEXT:
+            print(f"Message received: {msg.data}")
             try:
-                if isinstance(message, str):  # If it's a base64 encoded string
-                    message = base64.b64decode(message)
+                if isinstance(msg.data, str):  # If it's a base64 encoded string
+                    message = base64.b64decode(msg.data)
                 audio = process_wav_bytes(bytes(message)).reshape(1, -1)
                 # Here you would normally call a transcription function (e.g., Whisper)
                 # transcription = whisper.transcribe(model, audio)
                 # For now, just print or send a response
-                ws.send("Audio received and processed.")  # Example response
+                await ws.send_str("Audio received and processed.")  # Example response
             except Exception as e:
                 print(f"Error processing audio: {e}")
                 traceback.print_exc()
-                ws.send("Error processing audio.")
+                await ws.send_str("Error processing audio.")
+        elif msg.type == web.WSMsgType.ERROR:
+            print(f"WebSocket connection closed with exception {ws.exception()}")
 
-# Start Gevent server with WebSocketHandler
+    print("WebSocket connection closed")
+    return ws
+
+
 if __name__ == "__main__":
-    server = pywsgi.WSGIServer(('0.0.0.0', 8888), app, handler_class=WebSocketHandler)
-    server.serve_forever()
+    loop = asyncio.get_event_loop()
+    aio_app = web.Application()
+    wsgi = WSGIHandler(app)
+    aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
+    aio_app.router.add_route('GET', '/transcribe', socket_handler)
+    web.run_app(aio_app, port=5555)
