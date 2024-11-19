@@ -9,41 +9,57 @@
         <p id="transcript"></p>
 
         <script>
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-            if (!MediaRecorder.isTypeSupported('audio/webm'))
-                return alert('Browser not supported')
-
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm',
-            })
-
-            const socket = new WebSocket('ws://108.136.246.72:5555/transcribe')
-
-            socket.onopen = () => {
-                document.querySelector('#status').textContent = 'Connected'
-                mediaRecorder.addEventListener('dataavailable', async (event) => {
-                    if (event.data.size > 0 && socket.readyState == 1) {
-                        socket.send(event.data)
+            async function startTranscription() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                        return alert('Browser not supported');
                     }
-            })
-            mediaRecorder.start(250)
+
+                    const mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm',
+                    });
+
+                    const socket = new WebSocket('wss://108.136.246.72:5555/transcribe');
+
+                    socket.onopen = () => {
+                        document.querySelector('#status').textContent = 'Connected';
+                        mediaRecorder.addEventListener('dataavailable', async (event) => {
+                            if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                    const base64data = reader.result.split(',')[1];
+                                    socket.send(base64data);
+                                };
+                                reader.readAsDataURL(event.data);
+                            }
+                        });
+                        mediaRecorder.start(250);
+                    };
+
+                    socket.onmessage = (message) => {
+                        const received = message.data;
+                        if (received) {
+                            document.querySelector('#transcript').textContent += ' ' + received;
+                        }
+                    };
+
+                    socket.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        document.querySelector('#status').textContent = 'WebSocket error';
+                    };
+
+                    socket.onclose = () => {
+                        document.querySelector('#status').textContent = 'WebSocket connection closed';
+                    };
+
+                } catch (error) {
+                    console.error('Error accessing media devices.', error);
+                    alert('Error accessing media devices: ' + error.message);
+                }
             }
 
-            socket.onmessage = (message) => {
-                const received = message.data
-                if (received) {
-                    document.querySelector('#transcript').textContent +=  ' ' + message.data
-                  
-                }
-
-           }
-
-           })
-          
-
-
-        
+            document.addEventListener('DOMContentLoaded', startTranscription);
         </script>
-   
    </body>
 </html>

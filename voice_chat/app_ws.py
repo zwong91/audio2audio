@@ -260,6 +260,7 @@ import base64
 import traceback
 import os
 import json
+import ssl
 
 app = Flask('aioflask')
 
@@ -267,6 +268,7 @@ app = Flask('aioflask')
 def index():
     return render_template('index.html')
 
+#http://108.136.246.72:5555/asset/tmpn0_i3lq6.wav
 @app.route('/asset/<filename>')
 def download_asset(filename):
     try:
@@ -313,4 +315,8 @@ if __name__ == "__main__":
     wsgi = WSGIHandler(app)
     aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
     aio_app.router.add_route('GET', '/transcribe', socket_handler)
-    web.run_app(aio_app, port=5555)
+    # 配置 SSL 证书和密钥文件路径
+    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
+
+    web.run_app(aio_app, port=5555, ssl_context=ssl_context)
