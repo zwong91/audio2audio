@@ -294,6 +294,17 @@ async def socket_handler(request):
 
     print("WebSocket connection established")
 
+    async def send_ping():
+        while not ws.closed:
+            await asyncio.sleep(10)  # 每10秒发送一次ping
+            try:
+                await ws.ping()
+            except Exception as e:
+                print(f"Error sending ping: {e}")
+                break
+
+    ping_task = asyncio.create_task(send_ping())
+
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
@@ -305,6 +316,10 @@ async def socket_handler(request):
 
     except Exception as e:
         print(f"WebSocket connection closed with exception {e}")
+
+    finally:
+        ping_task.cancel()
+        await ping_task
 
     print("WebSocket connection closed")
     return ws
