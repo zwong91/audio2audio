@@ -270,7 +270,7 @@ def index():
 @app.route('/asset/<filename>')
 def download_asset(filename):
     # 构建文件路径
-    file_path = os.path.join('./tmp', filename)
+    file_path = os.path.join('/tmp', filename)
     try:
         #return send_file(file_path, as_attachment=True)
         return send_file(os.path.join(directory, filename))
