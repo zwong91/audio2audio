@@ -269,11 +269,9 @@ def index():
 
 @app.route('/asset/<filename>')
 def download_asset(filename):
-    # 构建文件路径
-    file_path = os.path.join('/tmp', filename)
     try:
-        #return send_file(file_path, as_attachment=True)
-        return send_file(file_path)
+        #return send_file(filename, as_attachment=True)
+        return send_file(filename)
     except Exception as e:
         return str(e)
 
@@ -286,7 +284,7 @@ async def socket_handler(request):
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
-                print(f"Message received: {msg.data}")
+                #print(f"Message received: {msg.data}")
                 try:
                     if isinstance(msg.data, str):  # If it's a base64 encoded string
                         message = base64.b64decode(msg.data)
