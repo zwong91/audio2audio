@@ -273,7 +273,7 @@ def download_asset(filename):
     file_path = os.path.join('/tmp', filename)
     try:
         #return send_file(file_path, as_attachment=True)
-        return send_file(os.path.join(directory, filename))
+        return send_file(file_path)
     except Exception as e:
         return str(e)
 
