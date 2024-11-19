@@ -271,7 +271,7 @@ def index():
 def download_asset(filename):
     try:
         #return send_file(filename, as_attachment=True)
-        return send_file(filename)
+        return send_file(os.path.join('/tmp', filename))
     except Exception as e:
         return str(e)
 
