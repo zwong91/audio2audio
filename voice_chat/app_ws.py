@@ -283,28 +283,27 @@ async def socket_handler(request):
 
     print("WebSocket connection established")
 
-    while True:
-        msg = await ws.receive()
+    try:
+        async for msg in ws:
+            if msg.type == web.WSMsgType.TEXT:
+                print(f"Message received: {msg.data}")
+                try:
+                    if isinstance(msg.data, str):  # If it's a base64 encoded string
+                        message = base64.b64decode(msg.data)
+                    res = process_wav_bytes(message)
+                    # 将返回的结果转换为 JSON 字符串
+                    res_json = json.dumps(res)
+                    # 发送 JSON 编码格式的响应
+                    await ws.send_str(res_json)
+                except Exception as e:
+                    print(f"Error processing audio: {e}")
+                    traceback.print_exc()
+                    await ws.send_str(json.dumps({"status": "error", "message": "Error processing audio"}))
+            elif msg.type == web.WSMsgType.ERROR:
+                print(f"WebSocket connection closed with exception {ws.exception()}")
 
-        if msg.type == web.WSMsgType.TEXT:
-            #print(f"Message received: {msg.data}")
-            try:
-                if isinstance(msg.data, str):  # If it's a base64 encoded string
-                    message = base64.b64decode(msg.data)
-                res = process_wav_bytes(bytes(message))
-                # Here you would normally call a transcription function (e.g., Whisper)
-                # transcription = whisper.transcribe(model, audio)
-                # For now, just print or send a response
-                # 将返回的结果转换为 JSON 字符串
-                res_json = json.dumps(res)
-                # 发送 JSON 编码格式的响应
-                await ws.send_str(res_json)
-            except Exception as e:
-                print(f"Error processing audio: {e}")
-                traceback.print_exc()
-                await ws.send_str("Error processing audio.")
-        elif msg.type == web.WSMsgType.ERROR:
-            print(f"WebSocket connection closed with exception {ws.exception()}")
+    except Exception as e:
+        print(f"WebSocket connection closed with exception {e}")
 
     print("WebSocket connection closed")
     return ws
