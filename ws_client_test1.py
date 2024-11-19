@@ -7,7 +7,7 @@ async def test_websocket():
     uri = "wss://108.136.246.72:5555/transcribe"  # WebSocket 服务器的地址
     
     # 读取音频文件并进行Base64编码
-    audio_file_path = "tmp5tpgkw2o.wav"  # 替换成你自己的音频文件路径
+    audio_file_path = "tmpxrmu35fu.wav"  # 替换成你自己的音频文件路径
     
     try:
         with open(audio_file_path, "rb") as audio_file:

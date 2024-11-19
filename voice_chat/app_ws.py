@@ -241,6 +241,9 @@ def text_to_speech(text, oral=3, laugh=3, bk=3):
 
 def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     print("function called process_wav_bytes")
+    # 确保缓冲区大小是元素大小的倍数
+    if len(webm_bytes) % 2 != 0:
+        webm_bytes = webm_bytes[:-1]
     # 将 bytes 转换为 np.ndarray
     audio_np = np.frombuffer(webm_bytes, dtype=np.int16)
 
