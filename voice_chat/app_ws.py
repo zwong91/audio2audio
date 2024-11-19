@@ -241,7 +241,7 @@ def text_to_speech(text, oral=3, laugh=3, bk=3):
 
 def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     print("function called process_wav_bytes")
-    model_chat((sample_rate, webm_bytes))
+    model_chat((sample_rate, webm_bytes), None)
     # with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as temp_file:
     #     temp_file.write(webm_bytes)
     #     temp_file.flush()
