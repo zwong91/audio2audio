@@ -279,7 +279,7 @@ async def socket_handler(request):
             try:
                 if isinstance(msg.data, str):  # If it's a base64 encoded string
                     message = base64.b64decode(msg.data)
-                audio = process_wav_bytes(bytes(message)).reshape(1, -1)
+                audio = process_wav_bytes(bytes(message))
                 # Here you would normally call a transcription function (e.g., Whisper)
                 # transcription = whisper.transcribe(model, audio)
                 # For now, just print or send a response
