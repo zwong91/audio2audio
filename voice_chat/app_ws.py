@@ -272,6 +272,7 @@ def index():
     return render_template('index.html')
 
 #http://108.136.246.72:5555/asset/tmpn0_i3lq6.wav
+#https://audio.xyz666.org:5555/asset/tmpn0_i3lq6.wav
 @app.route('/asset/<filename>')
 def download_asset(filename):
     try:
@@ -302,7 +303,7 @@ async def socket_handler(request):
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
-                print(f"Message received: {msg.data}")
+                #print(f"Message received: {msg.data}")
                 res_json = await process_audio(msg.data)
                 await ws.send_str(res_json)
             elif msg.type == web.WSMsgType.ERROR:
