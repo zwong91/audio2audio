@@ -92,7 +92,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
+async def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
     if audio is None:
         query = ''
         asr_wav_path = None
@@ -133,7 +133,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
             processed_tts_text += tts_text
             print(f"cur_tts_text: {tts_text}")
             
-            tts_generator = text_to_speech(tts_text)
+            tts_generator = await text_to_speech(tts_text)
 
             for audio_data in tts_generator:
                 audio_data_list.append(audio_data)
@@ -149,7 +149,7 @@ def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
         escaped_processed_tts_text = re.escape(processed_tts_text)
         tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
         print(f"cur_tts_text: {tts_text}")
-        tts_generator = text_to_speech(tts_text)
+        tts_generator = await text_to_speech(tts_text)
         for output_audio_path in tts_generator:
             audio_data_list.append(audio_data)
             #yield history, audio_data, None
@@ -238,7 +238,7 @@ async def text_to_speech(text, oral=3, laugh=3, bk=3):
     return wavs
 
 
-def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
+async def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     print("function called process_wav_bytes")
     # 确保缓冲区大小是元素大小的倍数
     if len(webm_bytes) % 2 != 0:
@@ -246,12 +246,7 @@ def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     # 将 bytes 转换为 np.ndarray
     audio_np = np.frombuffer(webm_bytes, dtype=np.int16)
 
-    return model_chat((sample_rate, audio_np), None)
-    # with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as temp_file:
-    #     temp_file.write(webm_bytes)
-    #     temp_file.flush()
-    #     waveform = whisper.load_audio(temp_file.name, sr=sample_rate)
-    #     return waveform
+    return await model_chat((sample_rate, audio_np), None)
 
 from flask import Flask, render_template, send_file
 from flask_sockets import Sockets
@@ -284,7 +279,7 @@ async def process_audio(message):
     try:
         if isinstance(message, str):  # If it's a base64 encoded string
             message = base64.b64decode(message)
-        res = await asyncio.to_thread(process_wav_bytes, message)
+        res = await process_wav_bytes(message)
         # 将返回的结果转换为 JSON 字符串
         res_json = json.dumps(res)
         return res_json
