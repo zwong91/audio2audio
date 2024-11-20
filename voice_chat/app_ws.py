@@ -272,7 +272,8 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
             audio_file_path = tmpfile.name
             soundfile.write(audio_file_path, audio_data, sample_rate)
 
-    return [audio_file_path, text_data]
+    file_name = os.path.basename(audio_file_path)
+    return [file_name, text_data]
 
 
 async def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
