@@ -28,7 +28,10 @@ async def test_websocket():
         # 连接到WebSocket服务器
         async with websockets.connect(uri, ssl=ssl_context) as websocket:
             print("WebSocket connected")
-
+            # 记录结束时间
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print(f"connected elapsed time: {elapsed_time:.2f} seconds")
             try:
                 # 持续发送和接收消息
                 while True:
