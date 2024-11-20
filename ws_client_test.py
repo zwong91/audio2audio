@@ -16,7 +16,7 @@ async def test_websocket():
 
         print(f"Encoded audio data: {encoded_audio[:50]}...")  # 只打印前50个字符，避免输出过长
         # 创建要发送的 JSON 数据
-        data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "speaker_id", encoded_audio]
+        data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
         json_data = json.dumps(data_to_send)
 
         # 创建 SSL 上下文，忽略证书验证
