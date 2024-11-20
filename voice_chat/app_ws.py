@@ -35,12 +35,24 @@ import soundfile
 chat = ChatTTS.Chat()
 
 # 加载默认下载的模型
+print("loading ChatTTS model...")
 chat.load(compile=False) # 设置为Flase获得更快速度，设置为True获得更佳效果
 # 使用随机音色
 # speaker = chat.sample_random_speaker()
 # 载入保存好的音色
 #speaker = torch.load('../speaker/speaker_5_girl.pth')
 speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
+
+
+from OpenVoice import se_extractor
+from OpenVoice.api import ToneColorConverter
+
+# OpenVoice Clone
+ckpt_converter = '../OpenVoice/checkpoints/converter'
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
+
 
 # Define default system message for the assistant
 default_system = """
@@ -134,10 +146,7 @@ async def model_chat(audio, history: Optional[History]) -> Tuple[str, str, Histo
             print(f"cur_tts_text: {tts_text}")
             
             tts_generator = await text_to_speech(tts_text)
-
-            for audio_data in tts_generator:
-                audio_data_list.append(audio_data)
-                #yield history, audio_data, None
+            audio_file_path, text_data = tts_generator
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -150,23 +159,13 @@ async def model_chat(audio, history: Optional[History]) -> Tuple[str, str, Histo
         tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
         print(f"cur_tts_text: {tts_text}")
         tts_generator = await text_to_speech(tts_text)
-        for output_audio_path in tts_generator:
-            audio_data_list.append(audio_data)
-            #yield history, audio_data, None
+        audio_file_path, text_data = tts_generator
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
         print("turn end")
-        
-    # 将所有的音频数据拼接起来
-    concatenated_audio_data = np.concatenate(audio_data_list)
-
-    # 将拼接后的音频数据保存为临时文件
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-        sf.write(tmpfile.name, concatenated_audio_data, target_sr)
-        audio_file_path = tmpfile.name
 
     # 返回拼接后的音频文件路径
-    return (history, audio_file_path, None)
+    return (history, audio_file_path, text_data)
 
 def transcribe(audio):
     samplerate, data = audio
@@ -207,7 +206,18 @@ def preprocess(text):
     texts_merge.append(this_text)
     return texts
 
-async def text_to_speech(text, oral=3, laugh=3, bk=3):
+async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3): 
+    pattern = r"生成风格:\s*([^;]+);\s*播报内容:\s*(.+)"
+    match = re.search(pattern, text)
+    if match:
+        style = match.group(1).strip()
+        content = match.group(2).strip()
+        text = f"{style}<endofprompt>{content}"
+        print(f"生成风格: {style}")
+        print(f"播报内容: {content}")
+    else:
+        print("没有匹配到")
+    
     '''
     输入文本，输出音频
     '''
@@ -234,8 +244,37 @@ async def text_to_speech(text, oral=3, laugh=3, bk=3):
     )
     
     wavs = await asyncio.to_thread(chat.infer, text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
-    
-    return wavs
+
+    # Run the base speaker tts
+    src_path = f"./tmp/speaker_{uuid4()}.wav"
+    audio_data = np.array(wavs[0]).flatten()
+    sample_rate = 24000
+    text_data = text[0] if isinstance(text, list) else text
+
+    # audio_ref = '../speaker/speaker.mp3'
+    if audio_ref != "" :
+      print("Ready for voice cloning!")
+      source_se, audio_name = se_extractor.get_se(src_path, tone_color_converter, target_dir='processed', vad=True)
+      reference_speaker = audio_ref
+      target_se, audio_name = se_extractor.get_se(reference_speaker, tone_color_converter, target_dir='processed', vad=True)
+
+      print("Get voices segment!")
+
+      # Run the tone color converter
+      # convert from file
+      with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+          audio_file_path = tmpfile.name
+          tone_color_converter.convert(
+              audio_src_path=src_path,
+              src_se=source_se,
+              tgt_se=target_se,
+              output_path=audio_file_path)
+    else:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+            audio_file_path = tmpfile.name
+            soundfile.write(audio_file_path, audio_data, sample_rate)
+
+    return [audio_file_path, text_data]
 
 
 async def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
@@ -294,17 +333,6 @@ async def socket_handler(request):
 
     print("WebSocket connection established")
 
-    async def send_ping():
-        while not ws.closed:
-            await asyncio.sleep(10)  # 每10秒发送一次ping
-            try:
-                await ws.ping()
-            except Exception as e:
-                print(f"Error sending ping: {e}")
-                break
-
-    ping_task = asyncio.create_task(send_ping())
-
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
@@ -316,10 +344,6 @@ async def socket_handler(request):
 
     except Exception as e:
         print(f"WebSocket connection closed with exception {e}")
-
-    finally:
-        ping_task.cancel()
-        await ping_task
 
     print("WebSocket connection closed")
     return ws
