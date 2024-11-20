@@ -21,16 +21,51 @@ For `SenseVoice`, visit [SenseVoice repo](https://github.com/FunAudioLLM/SenseVo
 ``` sh
 git clone --recursive URL
 # If you failed to clone submodule due to network failures, please run following command until success
-cd funaudiollm-app
+cd rt-audio
 git submodule update --init --recursive
 ```
 
-- prepare environments in the submodules according to [cosyvoice](https://github.com/FunAudioLLM/CosyVoice) & [sensevoice](https://github.com/FunAudioLLM/SenseVoice) repo. If you have already prepared the aforementioned resources elsewhere, you can also try modifying the code related to resource path configuration in the app.py file (line 15-18).
+#1 pre_install.sh
+# 安装 miniconda, PyTorch/CUDA 的 conda 环境
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm -rf ~/miniconda3/miniconda.sh
+~/miniconda3/bin/conda init bash && source ~/miniconda3/bin/activate
+conda config --set auto_activate_base false
 
-- execute the code below.
 
-``` sh
+# Chatts 
+cd /workspace/rt-audio/ChatTTS
+conda create -n chatts python=3.10  -y
+conda activate chatts
+pip install -r requirements.txt 
+
+
+#2 CosyVoice (Optional)
+cd /workspace/rt-audio/cosyvoice
+conda create -n cosyvoice python=3.8  -y
+conda activate cosyvoice
+# pynini is required by WeTextProcessing, use conda to install it as it can be executed on all platform.
+conda install -y -c conda-forge pynini==2.1.5
+#pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
 pip install -r requirements.txt
+
+apt update
+# If you encounter sox compatibility issues
+# ubuntu
+apt-get install sox libsox-dev  ffmpeg  -y
+
+
+#3 SenseVoice
+cd /workspace/rt-audio/sensevoice
+pip install -r requirements.txt
+
+
+#4  rt-audio
+cd /workspace/rt-audio
+pip install -r requirements.txt
+
 ```
 
 ## Basic Usage
@@ -45,7 +80,7 @@ pip install -r requirements.txt
 
 ``` sh
 cd voice_chat
-sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
+OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 ```
 
 <https://YOUR-IP-ADDRESS:60001/>
