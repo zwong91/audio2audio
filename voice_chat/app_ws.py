@@ -324,7 +324,7 @@ async def socket_handler(request):
                 history = data[0]
                 speaker_id = data[1]
                 audio_data = data[2]
-                #print(f"Message received: {msg.data}")
+                print(f"Message received: {history}, {speaker_id}, {audio_data[:50]}...")
                 res_json = await process_audio(audio_data, history, speaker_id)
                 await ws.send_str(res_json)
             elif msg.type == web.WSMsgType.ERROR:
