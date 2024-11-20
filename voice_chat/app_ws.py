@@ -111,6 +111,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
     if history is None:
         history = []
     
+    print(f"history: {history}")
     system = default_system
     messages = history_to_messages(history, system)
     messages.append({'role': 'user', 'content': query})
