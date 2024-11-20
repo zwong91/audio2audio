@@ -206,7 +206,10 @@ def preprocess(text):
     texts_merge.append(this_text)
     return texts
 
-async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3): 
+async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):     
+    '''
+    输入文本，输出音频
+    '''
     pattern = r"生成风格:\s*([^;]+);\s*播报内容:\s*(.+)"
     match = re.search(pattern, text)
     if match:
@@ -217,11 +220,6 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
         print(f"播报内容: {content}")
     else:
         print("没有匹配到")
-    
-    '''
-    输入文本，输出音频
-    '''
-    
     # 句子全局设置：讲话人音色和速度
     params_infer_code = ChatTTS.Chat.InferCodeParams(
         spk_emb = speaker, # add sampled speaker 
