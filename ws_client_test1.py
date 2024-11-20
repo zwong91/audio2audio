@@ -33,7 +33,10 @@ async def test_websocket():
 
                     try:
                         response = await websocket.recv()  # 接收消息
-                        print(f"Received message: {response}")
+                        #print(f"Received message: {response}")
+                        # 解码接收到的消息
+                        decoded_response = json.loads(response)
+                        print(f"Decoded message: {decoded_response}")
 
                         # 添加延迟
                         await asyncio.sleep(2)  # 延迟2秒
