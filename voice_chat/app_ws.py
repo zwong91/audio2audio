@@ -215,7 +215,7 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
     if match:
         style = match.group(1).strip()
         content = match.group(2).strip()
-        text = f"{style}<endofprompt>{content}"
+        text = f"{content}"
         print(f"生成风格: {style}")
         print(f"播报内容: {content}")
     else:
@@ -249,7 +249,7 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
     sample_rate = 24000
     text_data = text[0] if isinstance(text, list) else text
 
-    # audio_ref = '../speaker/speaker.mp3'
+    audio_ref = '../speaker/speaker.mp3'
     if audio_ref != "" :
       print("Ready for voice cloning!")
       source_se, audio_name = se_extractor.get_se(src_path, tone_color_converter, target_dir='processed', vad=True)
