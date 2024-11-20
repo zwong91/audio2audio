@@ -335,8 +335,13 @@ async def socket_handler(request):
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
+                # 解析接收到的 JSON 数据结构为 [[], "speaker_id", "base64_audio"]
+                data = json.loads(msg.data)
+                history = data[0]
+                speaker_id = data[1]
+                audio_data = data[2]
                 #print(f"Message received: {msg.data}")
-                res_json = await process_audio(msg.data)
+                res_json = await process_audio(audio_data)
                 await ws.send_str(res_json)
             elif msg.type == web.WSMsgType.ERROR:
                 print(f"WebSocket connection closed with exception {ws.exception()}")
