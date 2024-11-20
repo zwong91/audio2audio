@@ -30,7 +30,7 @@ sense_voice_model = AutoModel(
 )
 
 from ChatTTS import ChatTTS
-from tools.audio import pcm_arr_to_mp3_view
+from pydub import AudioSegment
 import soundfile
 
 chat = ChatTTS.Chat()
