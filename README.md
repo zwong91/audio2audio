@@ -71,7 +71,7 @@ pip install -r requirements.txt
 
 **prepare**
 
-[dashscope](https://platform.openai.com/) api token.
+[openai](https://platform.openai.com/) api token.
 
 [pem file](https://blog.csdn.net/liuchenbaidu/article/details/136722001)
 
@@ -88,7 +88,7 @@ OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 
 ``` sh
 cd voice_translation
-sudo CUDA_VISIBLE_DEVICES="0" OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
+OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 ```
 
 <https://YOUR-IP-ADDRESS:60002/>
