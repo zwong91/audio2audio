@@ -244,10 +244,9 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
     wavs = await asyncio.to_thread(chat.infer, text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
 
     # Run the base speaker tts
-    src_path = f"./tmp/speaker_{uuid4()}.wav"
+    src_path = "tmp.wav"
     audio_data = np.array(wavs[0]).flatten()
     sample_rate = 24000
-    soundfile.write(src_path, audio_data, sample_rate)
     text_data = text[0] if isinstance(text, list) else text
 
     audio_ref = '../speaker/speaker.mp3'
