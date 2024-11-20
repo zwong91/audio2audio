@@ -29,7 +29,7 @@
                                 const reader = new FileReader();
                                 reader.onload = () => {
                                     const base64data = reader.result.split(',')[1];
-                                    const data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '生成风格: Sad.;播报内容: 哎，雨滴真烦；希望快点好起来。']], "speaker_id", base64data];
+                                    const data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "speaker_id", base64data];
                                     const json_data = JSON.stringify(data_to_send);
                                     socket.send(json_data);
 
