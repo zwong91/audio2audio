@@ -235,7 +235,7 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
         src_path = tmpfile.name
         soundfile.write(src_path, audio_data, sample_rate)
 
-    audio_ref = '../speaker/yunxi.wav'
+    audio_ref = '../speaker/liuyifei.wav'
     if audio_ref != "" :
       print("Ready for voice cloning!")
       source_se, audio_name = se_extractor.get_se(src_path, tone_color_converter, target_dir='processed', vad=True)
