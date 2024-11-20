@@ -1,4 +1,4 @@
-# funaudiollm-app repo
+# rt-audio repo
 
 Welcome to the funaudiollm-app repository! This project hosts two exciting applications leveraging advanced audio understand and speech generation models to bring your audio experiences to life:
 
