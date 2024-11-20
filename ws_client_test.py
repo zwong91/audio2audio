@@ -3,6 +3,7 @@ import websockets
 import base64
 import ssl
 import json
+import time
 
 async def test_websocket():
     uri = "wss://108.136.246.72:6666/transcribe"  # WebSocket 服务器的地址
@@ -22,7 +23,8 @@ async def test_websocket():
 
         # 创建 SSL 上下文，忽略证书验证
         ssl_context = ssl._create_unverified_context()
-
+        # 记录开始时间
+        start_time = time.time()
         # 连接到WebSocket服务器
         async with websockets.connect(uri, ssl=ssl_context) as websocket:
             print("WebSocket connected")
@@ -40,6 +42,10 @@ async def test_websocket():
                         # 解码接收到的消息
                         decoded_response = json.loads(response)
                         print(f"Decoded message: {decoded_response}")
+                        # 记录结束时间
+                        end_time = time.time()
+                        elapsed_time = end_time - start_time
+                        print(f"Total elapsed time: {elapsed_time:.2f} seconds")
 
                         # 添加延迟
                         await asyncio.sleep(2)  # 延迟2秒
