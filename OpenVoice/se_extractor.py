@@ -69,7 +69,7 @@ def split_audio_whisper(audio_path, target_dir='processed'):
     return wavs_folder
 
 
-def split_audio_vad(audio_path, target_dir, split_seconds=10.0):
+def split_audio_vad(audio_path, target_dir, split_seconds=3.0):
     SAMPLE_RATE = 16000
     audio_vad = get_audio_tensor(audio_path)
     segments = get_vad_segments(
