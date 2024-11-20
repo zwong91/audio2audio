@@ -82,7 +82,7 @@ cd voice_chat
 OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 ```
 
-<https://YOUR-IP-ADDRESS:60001/>
+<https://YOUR-IP-ADDRESS:5555/>
 
 **voice translation**
 
