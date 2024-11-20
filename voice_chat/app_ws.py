@@ -30,7 +30,6 @@ sense_voice_model = AutoModel(
 )
 
 from ChatTTS import ChatTTS
-from pydub import AudioSegment
 import soundfile
 
 chat = ChatTTS.Chat()
@@ -233,13 +232,6 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
     sample_rate = 24000
     text_data = text[0] if isinstance(text, list) else text
 
-    audio_segment = AudioSegment(
-        data=audio_data.tobytes(),
-        sample_width=audio_data.dtype.itemsize,
-        frame_rate=sample_rate,
-        channels=1  # 假设是单声道音频
-    )
-
     #audio_ref = '../speaker/speaker.mp3'
     if audio_ref != "" :
       print("Ready for voice cloning!")
@@ -251,18 +243,17 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
 
       # Run the tone color converter
       # convert from file
-      with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
+      with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
           audio_file_path = tmpfile.name
           tone_color_converter.convert(
               audio_src_path=src_path,
               src_se=source_se,
               tgt_se=target_se,
               output_path=audio_file_path)
-          audio_segment.export(audio_file_path, format="mp3")
     else:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
             audio_file_path = tmpfile.name
-            audio_segment.export(audio_file_path, format="mp3")
+            soundfile.write(audio_file_path, audio_data, sample_rate)
 
     file_name = os.path.basename(audio_file_path)
     return [file_name, text_data]
