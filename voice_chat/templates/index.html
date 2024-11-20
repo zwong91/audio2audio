@@ -42,8 +42,13 @@
 
                     socket.onmessage = (message) => {
                         const received = message.data;
+                        // 解析接收到的 JSON 数据
+                        const jsonData = JSON.parse(received);
+                        const history = jsonData[0];
+                        const audio = jsonData[1];
+                        const text = jsonData[2];
                         if (received) {
-                            document.querySelector('#transcript').textContent += ' ' + received;
+                            document.querySelector('#transcript').textContent += ' ' + jsonData;
                         }
                     };
 
