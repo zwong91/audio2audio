@@ -47,10 +47,16 @@
                         const history = jsonData[0];
                         const audio = jsonData[1];
                         const text = jsonData[2];
-                        if (received) {
-                            document.querySelector('#transcript').textContent += ' ' + jsonData;
-                        }
-                    };
+                        // 格式化输出
+                        const formattedOutput = `
+                            <p><strong>History:</strong> ${JSON.stringify(history)}</p>
+                            <p><strong>Audio:</strong> ${audio}</p>
+                            <p><strong>Payload:</strong> ${text}</p>
+                        `;
+                        
+                        // 将格式化后的数据添加到页面上
+                        document.querySelector('#transcript').innerHTML += formattedOutput;
+                        };
 
                     socket.onerror = (error) => {
                         console.error('WebSocket error:', error);
