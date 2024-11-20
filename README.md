@@ -23,7 +23,6 @@ git clone --recursive URL
 # If you failed to clone submodule due to network failures, please run following command until success
 cd rt-audio
 git submodule update --init --recursive
-```
 
 #1 pre_install.sh
 # 安装 miniconda, PyTorch/CUDA 的 conda 环境
