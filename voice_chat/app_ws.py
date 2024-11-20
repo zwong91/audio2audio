@@ -100,7 +100,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-async def model_chat(audio, history: Optional[History]) -> Tuple[str, str, History]:
+async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str, str, History]:
     if audio is None:
         query = ''
         asr_wav_path = None
@@ -259,7 +259,7 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
     return [file_name, text_data]
 
 
-async def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
+async def process_wav_bytes(webm_bytes: bytes, history: History, speaker_id: str) -> Tuple[History, str, str]:
     print("function called process_wav_bytes")
     # 确保缓冲区大小是元素大小的倍数
     if len(webm_bytes) % 2 != 0:
@@ -267,7 +267,7 @@ async def process_wav_bytes(webm_bytes: bytes, sample_rate: int = 16000):
     # 将 bytes 转换为 np.ndarray
     audio_np = np.frombuffer(webm_bytes, dtype=np.int16)
 
-    return await model_chat((sample_rate, audio_np), None)
+    return await model_chat((16000, audio_np), history, speaker_id)
 
 from flask import Flask, render_template, send_file
 from flask_sockets import Sockets
@@ -296,11 +296,11 @@ def download_asset(filename):
     except Exception as e:
         return str(e)
 
-async def process_audio(message):
+async def process_audio(audio_data, history, speaker_id):
     try:
-        if isinstance(message, str):  # If it's a base64 encoded string
-            message = base64.b64decode(message)
-        res = await process_wav_bytes(message)
+        if isinstance(audio_data, str):  # If it's a base64 encoded string
+            message = base64.b64decode(audio_data)
+        res = await process_wav_bytes(message, history, speaker_id)
         # 将返回的结果转换为 JSON 字符串
         res_json = json.dumps(res)
         return res_json
@@ -324,7 +324,7 @@ async def socket_handler(request):
                 speaker_id = data[1]
                 audio_data = data[2]
                 #print(f"Message received: {msg.data}")
-                res_json = await process_audio(audio_data)
+                res_json = await process_audio(audio_data, history, speaker_id)
                 await ws.send_str(res_json)
             elif msg.type == web.WSMsgType.ERROR:
                 print(f"WebSocket connection closed with exception {ws.exception()}")
