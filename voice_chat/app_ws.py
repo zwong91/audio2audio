@@ -235,7 +235,7 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
         src_path = tmpfile.name
         soundfile.write(src_path, audio_data, sample_rate)
 
-    audio_ref = '../speaker/liuyifei.wav'
+    #audio_ref = '../speaker/liuyifei.wav'
     if audio_ref != "" :
       print("Ready for voice cloning!")
       source_se, audio_name = se_extractor.get_se(src_path, tone_color_converter, target_dir='processed', vad=True)
@@ -349,4 +349,4 @@ if __name__ == "__main__":
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
 
-    web.run_app(aio_app, port=5555, ssl_context=ssl_context)
+    web.run_app(aio_app, port=6666, ssl_context=ssl_context)
