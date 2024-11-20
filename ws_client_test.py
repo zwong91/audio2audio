@@ -32,6 +32,7 @@ async def test_websocket():
             try:
                 # 持续发送和接收消息
                 while True:
+                    start_time = time.time()
                     # 发送Base64编码的音频数据
                     await websocket.send(json_data)  # 发送消息
                     print("JSON data sent")
@@ -56,11 +57,9 @@ async def test_websocket():
                     except websockets.exceptions.ConnectionClosedError as e:
                         print(f"Connection closed with error: {e}")
                         break
-
-            finally:
-                ping_task.cancel()
-                await ping_task
-
+            except Exception as e:
+                print(f"Error during WebSocket communication: {e}")
+    
     except Exception as e:
         print(f"Error connecting to WebSocket or reading audio file: {e}")
 
