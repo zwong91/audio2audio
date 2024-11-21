@@ -29,28 +29,23 @@
 
                     // WebSocket 连接成功时
                     socket.onopen = () => {
-                        document.querySelector('#status').textContent = 'Connected';
-
-                        // 监听录音数据的事件
+                        document.querySelector('#status').textContent = '已连接';
                         mediaRecorder.addEventListener('dataavailable', async (event) => {
                             if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-                                // 将 Blob 音频数据转化为 ArrayBuffer
-                                const arrayBuffer = await event.data.arrayBuffer(); 
-                                // 转换为 base64 字符串
-                                const base64data = arrayBufferToBase64(arrayBuffer);
-
-                                // 准备要发送的数据
-                                const data_to_send = [[
-                                    ['只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']
-                                ], "Azure-xiaoxiao", base64data];
-
-                                // 发送数据
-                                const json_data = JSON.stringify(data_to_send);
-                                socket.send(json_data);
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64data = reader.result.split(',')[1];
+                                    const data_to_send = [
+                                        [['这是一个测试语音', '测试回应']],
+                                        "Azure-xiaoxiao",
+                                        base64data
+                                    ];
+                                    const json_data = JSON.stringify(data_to_send);
+                                    socket.send(json_data);
+                                };
+                                reader.readAsDataURL(event.data);
                             }
                         });
-
-                        // 开始录音，每 500 毫秒发送一次数据
                         mediaRecorder.start(500);
                     };
 
