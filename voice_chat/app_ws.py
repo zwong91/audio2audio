@@ -103,7 +103,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
         query = ''
         asr_wav_path = None
     else:
-        asr_res = transcribe(audio)
+        asr_res = transcribe_v2(audio)
         query, asr_wav_path = asr_res['text'], asr_res['file_path']
 
     if history is None:
@@ -176,6 +176,23 @@ def transcribe(audio):
         batch_size=1
     )
     text = res[0]['text']
+    res_dict = {"file_path": file_path, "text": text}
+    print(res_dict)
+    return res_dict
+
+def transcribe_v2(audio):
+    samplerate, data = audio
+    file_path = f"./tmp/asr_{uuid4()}.webm"
+    torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
+
+    # Open the audio file in binary mode
+    with open(file_path, "rb") as audio_file:
+        # Call OpenAI's Whisper model to transcribe the audio
+        res = openai.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file
+        )
+    text = res['text']
     res_dict = {"file_path": file_path, "text": text}
     print(res_dict)
     return res_dict
