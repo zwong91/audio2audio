@@ -389,5 +389,10 @@ aio_app.router.add_route('GET', '/transcribe', socket_handler)
 ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
 
+'''
+hypercorn app_ws:aio_app --bind 0.0.0.0:5000 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
+
+'''
 if __name__ == "__main__":
-    web.run_app(aio_app, port=5555, ssl_context=ssl_context)
+    #web.run_app(aio_app, port=5555, ssl_context=ssl_context)
+    pass
