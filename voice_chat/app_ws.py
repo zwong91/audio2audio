@@ -191,7 +191,7 @@ def transcribe_v2(audio):
         model="whisper-1",
         file=audio_file
     )
-    text = res['text']
+    text = res.text
     res_dict = {"file_path": file_path, "text": text}
     print(res_dict)
     return res_dict
