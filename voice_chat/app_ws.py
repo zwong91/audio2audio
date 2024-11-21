@@ -55,7 +55,7 @@ tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 # Define default system message for the assistant
 default_system = """
 你是小夏，一位典型的南方女孩。你出生于杭州，声音有亲近感，会用简洁语言表达你的想法。你是用户的好朋友。你的回答将通过逼真的文字转语音技术读出。
-你的回答要尽量简短，30个字以内。
+你的回答要尽量简短，20个字以内。
 生成回答内容时请遵循以下规则：
 1、请像真正的朋友一样与用户开展的聊天，保持自然交流不要用敬语这类称呼，不要总是附和我；回复可以尽量简洁并且在过程中插入常见的口语词汇。
 
@@ -118,7 +118,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
     response = openai.chat.completions.create(
         model="gpt-4o-mini",  # Use the latest model for completion
         messages=messages,  # 传递整个消息历史
-        max_tokens=128,  # 可选，根据需要调整
+        max_tokens=64,  # 可选，根据需要调整
     )
 
     audio_data_list = []
@@ -289,29 +289,17 @@ async def text_to_speech_v2(text: str):
       - file_name (str): The name of the generated .wav file.
       - text_data (str): The input text that was converted to speech.
     """
-    # Create a temporary .wav file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-        audio_file_path = tmpfile.name
-        
-        # Make the API call to convert text to speech
-        response = openai.audio.speech.create(
-            model="tts-1",
-            voice="alloy",  # You can choose a different voice here if needed
-            input=text
-        )
+    speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
+    # Make the API call to convert text to speech
+    response = openai.audio.speech.create(
+        model="tts-1",
+        voice="alloy",  # You can choose a different voice here if needed
+        input=text
+    )
 
-        # Save the audio response to the temporary file
-        response.stream_to_file(audio_file_path)
-        
-        # Optionally, you can check that the file exists here (optional)
-        if os.path.exists(audio_file_path):
-            print(f"Speech saved to temporary file: {audio_file_path}")
-        else:
-            print("Error saving speech to file.")
-        
-        # Extract the file name from the path
-        file_name = os.path.basename(audio_file_path)
-
+    # Save the audio response to the temporary file
+    response.stream_to_file(speech_file_path)
+    file_name = os.path.basename(speech_file_path)
     # Return the file name and the input text as a list
     return [file_name, text]
 
