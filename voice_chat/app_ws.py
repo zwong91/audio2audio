@@ -103,7 +103,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
         query = ''
         asr_wav_path = None
     else:
-        asr_res = transcribe_v2(audio)
+        asr_res = transcribe(audio)
         query, asr_wav_path = asr_res['text'], asr_res['file_path']
 
     if history is None:
