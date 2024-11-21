@@ -30,8 +30,6 @@ sense_voice_model = AutoModel(
 )
 
 from ChatTTS import ChatTTS
-import soundfile
-
 chat = ChatTTS.Chat()
 
 # 加载默认下载的模型
@@ -142,7 +140,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
             processed_tts_text += tts_text
             print(f"cur_tts_text: {tts_text}")
             
-            tts_generator = await text_to_speech(tts_text)
+            tts_generator = await text_to_speech_v2(tts_text)
             audio_file_path, text_data = tts_generator
         else:
             raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
@@ -155,7 +153,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
         escaped_processed_tts_text = re.escape(processed_tts_text)
         tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
         print(f"cur_tts_text: {tts_text}")
-        tts_generator = await text_to_speech(tts_text)
+        tts_generator = await text_to_speech_v2(tts_text)
         audio_file_path, text_data = tts_generator
         processed_tts_text += tts_text
         print(f"processed_tts_text: {processed_tts_text}")
@@ -260,6 +258,46 @@ async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):
 
     file_name = os.path.basename(audio_file_path)
     return [file_name, text_data]
+
+
+async def text_to_speech_v2(text: str):
+    """
+    Convert text to speech using OpenAI's TTS API, save it to a temporary .wav file,
+    and return the filename along with the associated text data.
+
+    Args:
+    - text (str): The text to convert to speech.
+
+    Returns:
+    - list: [file_name, text_data]
+      - file_name (str): The name of the generated .wav file.
+      - text_data (str): The input text that was converted to speech.
+    """
+    # Create a temporary .wav file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+        audio_file_path = tmpfile.name
+        
+        # Make the API call to convert text to speech
+        response = openai.audio.speech.create(
+            model="tts-1",
+            voice="alloy",  # You can choose a different voice here if needed
+            input=text
+        )
+
+        # Save the audio response to the temporary file
+        response.stream_to_file(audio_file_path)
+        
+        # Optionally, you can check that the file exists here (optional)
+        if os.path.exists(audio_file_path):
+            print(f"Speech saved to temporary file: {audio_file_path}")
+        else:
+            print("Error saving speech to file.")
+        
+        # Extract the file name from the path
+        file_name = os.path.basename(audio_file_path)
+
+    # Return the file name and the input text as a list
+    return [file_name, text]
 
 
 async def process_wav_bytes(webm_bytes: bytes, history: History, speaker_id: str) -> Tuple[History, str, str]:
