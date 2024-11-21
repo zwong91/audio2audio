@@ -35,8 +35,7 @@
                         mediaRecorder.addEventListener('dataavailable', async (event) => {
                             if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
                                 // 将 Blob 音频数据转化为 ArrayBuffer
-                                const arrayBuffer = await event.data.arrayBuffer();
-                                
+                                const arrayBuffer = await event.data.arrayBuffer(); 
                                 // 转换为 base64 字符串
                                 const base64data = arrayBufferToBase64(arrayBuffer);
 

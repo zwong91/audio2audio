@@ -6,7 +6,7 @@ import json
 import time
 
 async def test_websocket():
-    uri = "wss://108.136.246.72:6666/transcribe"  # WebSocket 服务器的地址
+    uri = "wss://108.136.246.72:5555/transcribe"  # WebSocket 服务器的地址
     
     # 读取音频文件并进行Base64编码
     audio_file_path = "jp_zh.wav"  # 替换成你自己的音频文件路径
