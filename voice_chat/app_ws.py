@@ -166,13 +166,13 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
 
 def transcribe(audio):
     samplerate, data = audio
-    file_path = f"./tmp/asr_{uuid4()}.wav"
+    file_path = f"./tmp/asr_{uuid4()}.webm"
     torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
 
     res = sense_voice_model.generate(
         input=file_path,
         cache={},
-        language="zh",
+        language="auto",
         text_norm="woitn",
         batch_size_s=0,
         batch_size=1
@@ -349,4 +349,4 @@ if __name__ == "__main__":
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
 
-    web.run_app(aio_app, port=6666, ssl_context=ssl_context)
+    web.run_app(aio_app, port=5555, ssl_context=ssl_context)
