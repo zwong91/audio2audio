@@ -381,14 +381,13 @@ async def socket_handler(request):
     return ws
 
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    aio_app = web.Application()
-    wsgi = WSGIHandler(app)
-    aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
-    aio_app.router.add_route('GET', '/transcribe', socket_handler)
-    # 配置 SSL 证书和密钥文件路径
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
+aio_app = web.Application()
+wsgi = WSGIHandler(app)
+aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
+aio_app.router.add_route('GET', '/transcribe', socket_handler)
+# 配置 SSL 证书和密钥文件路径
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
 
+if __name__ == "__main__":
     web.run_app(aio_app, port=5555, ssl_context=ssl_context)
