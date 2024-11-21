@@ -10,7 +10,7 @@ from uuid import uuid4
 import numpy as np
 import tempfile
 import soundfile as sf
-
+import io
 import sys
 sys.path.insert(1, "../sensevoice")
 sys.path.insert(1, "../")
@@ -185,13 +185,12 @@ def transcribe_v2(audio):
     file_path = f"./tmp/asr_{uuid4()}.webm"
     torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
 
-    # Open the audio file in binary mode
-    with open(file_path, "rb") as audio_file:
-        # Call OpenAI's Whisper model to transcribe the audio
-        res = openai.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file
-        )
+    audio_file = open(file_path, "rb")
+    # 使用 Whisper 模型进行音频转录
+    res = openai.audio.transcriptions.create(
+        model="whisper-1",
+        file=audio_file
+    )
     text = res['text']
     res_dict = {"file_path": file_path, "text": text}
     print(res_dict)
