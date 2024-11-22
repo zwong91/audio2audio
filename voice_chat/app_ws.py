@@ -313,9 +313,10 @@ async def process_wav_bytes(webm_bytes: bytes, history: History, speaker_id: str
 
     return await model_chat((16000, audio_np), history, speaker_id)
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import base64
 import traceback
 import os
@@ -323,10 +324,11 @@ import json
 import ssl
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
-async def read_index():
-    return HTMLResponse(content=open('index.html').read(), status_code=200)
+async def read_index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/asset/{filename}")
 async def download_asset(filename: str):
