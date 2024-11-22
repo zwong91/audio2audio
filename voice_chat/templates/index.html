@@ -55,9 +55,9 @@
 
                         // 解析接收到的 JSON 数据
                         const jsonData = JSON.parse(received);
-                        const history = jsonData[0];
-                        const audio = jsonData[1];
-                        const text = jsonData[2];
+                        const history = jsonData["history"];
+                        const audio = jsonData["audio"];
+                        const text = jsonData["text"];
 
                         // 格式化输出
                         const formattedOutput = `

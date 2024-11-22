@@ -98,69 +98,6 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str, str, History]:
-    if audio is None:
-        query = ''
-        asr_wav_path = None
-    else:
-        asr_res = await transcribe(audio)
-        query, asr_wav_path = asr_res['text'], asr_res['file_path']
-
-    if history is None:
-        history = []
-    
-    print(f"history: {history}")
-    system = default_system
-    messages = history_to_messages(history, system)
-    messages.append({'role': 'user', 'content': query})
-
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",  # Use the latest model for completion
-        messages=messages,  # 传递整个消息历史
-        max_tokens=64,  # 可选，根据需要调整
-    )
-
-    audio_data_list = []
-
-    processed_tts_text = ""
-    punctuation_pattern = r'([!?;。！？])'
-    if response.choices:
-        role = response.choices[0].message.role
-        response_content = response.choices[0].message.content
-        print(f"response: {response_content}")
-        system, history = messages_to_history(messages + [{'role': role, 'content': response_content}])
-        escaped_processed_tts_text = re.escape(processed_tts_text)
-        tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
-        
-        if re.search(punctuation_pattern, tts_text):
-            parts = re.split(punctuation_pattern, tts_text)
-            if len(parts) > 2 and parts[-1]:
-                tts_text = "".join(parts[:-1])
-            processed_tts_text += tts_text
-            print(f"cur_tts_text: {tts_text}")
-            
-            tts_generator = await text_to_speech_v2(tts_text)
-            audio_file_path, text_data = tts_generator
-        else:
-            raise ValueError('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
-                response.request_id, response.status_code,
-                response.code, response.message
-            ))
-
-    # Handle non-punctuation case
-    if processed_tts_text != response_content:
-        escaped_processed_tts_text = re.escape(processed_tts_text)
-        tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
-        print(f"cur_tts_text: {tts_text}")
-        tts_generator = await text_to_speech_v2(tts_text)
-        audio_file_path, text_data = tts_generator
-        processed_tts_text += tts_text
-        print(f"processed_tts_text: {processed_tts_text}")
-        print("turn end")
-
-    # 返回拼接后的音频文件路径
-    return (history, audio_file_path, text_data)
-
 async def transcribe(audio):
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.webm"
@@ -458,37 +395,106 @@ async def cleanup_all_temp_files(directory: str = "./tmp") -> None:
     except Exception as e:
         logging.error(f"批量清理临时文件失败: {str(e)}")
 
-# 优化的音频处理函数
 async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
-        # 使用线程池处理CPU密集型任务
+        # 1. 音频数据预处理
         audio_np = await asyncio.get_event_loop().run_in_executor(
             None, 
             lambda: np.frombuffer(audio_data, dtype=np.int16)
         )
         
-        # 并行处理音频转换和模型推理
-        transcription_task = asyncio.create_task(transcribe((16000, audio_np)))
+        # 2. 音频转写
+        if audio_np is not None:
+            transcription_task = asyncio.create_task(transcribe((16000, audio_np)))
+            asr_res = await transcription_task
+            query = asr_res['text']
+            asr_wav_path = asr_res['file_path']
+        else:
+            query = ''
+            asr_wav_path = None
+
+        # 3. 准备对话历史
+        if history is None:
+            history = []
         
-        # 等待所有任务完成
-        transcription_result = await transcription_task
+        print(f"history: {history}")
+        system = default_system
+        messages = history_to_messages(history, system)
+        messages.append({'role': 'user', 'content': query})
+
+        # 4. GPT对话处理
+        response = await asyncio.to_thread(
+            openai.chat.completions.create,
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=64
+        )
+
+        # 5. 处理GPT响应
+        processed_tts_text = ""
+        punctuation_pattern = r'([!?;。！？])'
         
-        # 使用缓存的TTS
-        tts_result = await cached_text_to_speech(transcription_result['text'])
-        
-        # 清理临时文件
-        background_tasks.add_task(cleanup_temp_files, transcription_result['file_path'])
-        
-        return {
-            'history': history,
-            'audio_path': tts_result[0],
-            'text': tts_result[1]
-        }
-        
+        if response.choices:
+            role = response.choices[0].message.role
+            response_content = response.choices[0].message.content
+            print(f"response: {response_content}")
+            
+            system, updated_history = messages_to_history(
+                messages + [{'role': role, 'content': response_content}]
+            )
+            
+            # 6. 文本处理和TTS
+            escaped_processed_tts_text = re.escape(processed_tts_text)
+            tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
+            
+            if re.search(punctuation_pattern, tts_text):
+                parts = re.split(punctuation_pattern, tts_text)
+                if len(parts) > 2 and parts[-1]:
+                    tts_text = "".join(parts[:-1])
+                processed_tts_text += tts_text
+                print(f"cur_tts_text: {tts_text}")
+                
+                tts_result = await text_to_speech_v2(tts_text)
+                audio_file_path, text_data = tts_result
+            else:
+                # 处理没有标点的情况
+                tts_result = await text_to_speech_v2(response_content)
+                audio_file_path, text_data = tts_result
+                processed_tts_text = response_content
+
+            # 7. 处理剩余文本
+            if processed_tts_text != response_content:
+                remaining_text = re.sub(f"^{re.escape(processed_tts_text)}", "", response_content)
+                print(f"处理剩余文本: {remaining_text}")
+                tts_result = await text_to_speech_v2(remaining_text)
+                audio_file_path, text_data = tts_result
+                processed_tts_text += remaining_text
+                print(f"processed_tts_text: {processed_tts_text}")
+
+            # 8. 清理临时文件
+            if asr_wav_path:
+                background_tasks.add_task(cleanup_temp_files, asr_wav_path)
+            
+            # 9. 返回结果
+            return {
+                'history': updated_history,
+                'audio': audio_file_path,
+                'text': text_data,
+                'transcription': query
+            }
+        else:
+            raise ValueError("No response from GPT model")
+            
     except Exception as e:
-        print(f"Error in audio processing: {e}")
-        return {'error': str(e)}
+        logging.error(f"Error in audio processing: {e}")
+        traceback.print_exc()
+        if 'asr_wav_path' in locals():
+            background_tasks.add_task(cleanup_temp_files, asr_wav_path)
+        return {
+            'error': str(e),
+            'history': history
+        }
 
 # 优化的WebSocket端点
 @app.websocket("/transcribe")
