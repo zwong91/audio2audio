@@ -381,18 +381,16 @@ async def socket_handler(request):
     return ws
 
 
-aio_app = web.Application()
-wsgi = WSGIHandler(app)
-aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
-aio_app.router.add_route('GET', '/transcribe', socket_handler)
-# 配置 SSL 证书和密钥文件路径
-ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
-
 '''
-hypercorn app_ws:aio_app --bind 0.0.0.0:5000 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
+hypercorn app_ws:aio_app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
 
 '''
 if __name__ == "__main__":
-    #web.run_app(aio_app, port=5555, ssl_context=ssl_context)
-    pass
+    aio_app = web.Application()
+    wsgi = WSGIHandler(app)
+    aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
+    aio_app.router.add_route('GET', '/transcribe', socket_handler)
+    # 配置 SSL 证书和密钥文件路径
+    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
+    web.run_app(aio_app, port=5555, ssl_context=ssl_context)
