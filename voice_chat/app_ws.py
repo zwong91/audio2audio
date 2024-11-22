@@ -103,7 +103,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
         query = ''
         asr_wav_path = None
     else:
-        asr_res = transcribe(audio)
+        asr_res = await transcribe(audio)
         query, asr_wav_path = asr_res['text'], asr_res['file_path']
 
     if history is None:
@@ -114,8 +114,8 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
     messages = history_to_messages(history, system)
     messages.append({'role': 'user', 'content': query})
 
-    # Update OpenAI API call to use the new interface
-    response = openai.chat.completions.create(
+    # Asynchronous OpenAI API request
+    response = await openai.chat.completions.create(
         model="gpt-4o-mini",  # Use the latest model for completion
         messages=messages,  # 传递整个消息历史
         max_tokens=64,  # 可选，根据需要调整
@@ -162,12 +162,12 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
     # 返回拼接后的音频文件路径
     return (history, audio_file_path, text_data)
 
-def transcribe(audio):
+async def transcribe(audio):
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.webm"
     torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
 
-    res = sense_voice_model.generate(
+    res = await sense_voice_model.generate(
         input=file_path,
         cache={},
         language="auto",
@@ -180,14 +180,14 @@ def transcribe(audio):
     print(res_dict)
     return res_dict
 
-def transcribe_v2(audio):
+async def transcribe_v2(audio):
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.webm"
     torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
 
     audio_file = open(file_path, "rb")
     # 使用 Whisper 模型进行音频转录
-    res = openai.audio.transcriptions.create(
+    res = await openai.audio.transcriptions.create(
         model="whisper-1",
         file=audio_file
     )
@@ -196,7 +196,7 @@ def transcribe_v2(audio):
     print(res_dict)
     return res_dict
 
-def preprocess(text):
+async def preprocess(text):
     seperators = ['.', '。', '?', '!']
     min_sentence_len = 10
     seperator_index = [i for i, j in enumerate(text) if j in seperators]
@@ -291,7 +291,7 @@ async def text_to_speech_v2(text: str):
     """
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
     # Make the API call to convert text to speech
-    response = openai.audio.speech.create(
+    response = await openai.audio.speech.create(
         model="tts-1",
         voice="alloy",  # You can choose a different voice here if needed
         input=text
