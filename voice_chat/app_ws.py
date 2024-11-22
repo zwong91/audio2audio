@@ -281,12 +281,29 @@ async def read_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/asset/{filename}")
-async def download_asset(filename: str):
+async def stream_audio(filename: str):
     file_path = os.path.join('/tmp', filename)
-    if os.path.exists(file_path):
-        return FileResponse(file_path, filename=filename)
-    else:
+    if not os.path.exists(file_path):
         return {"error": "File not found"}
+    
+    # 根据文件扩展名设置正确的 MIME 类型
+    mime_types = {
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        '.webm': 'audio/webm'
+    }
+    ext = os.path.splitext(filename)[1].lower()
+    media_type = mime_types.get(ext, 'application/octet-stream')
+    
+    # 返回音频文件，设置正确的 content_type
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        headers={
+            'Accept-Ranges': 'bytes',
+            'Content-Disposition': 'inline'  # 在线播放而不是下载
+        }
+    )
 
 async def process_audio(audio_data, history, speaker_id):
     try:
