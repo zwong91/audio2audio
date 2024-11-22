@@ -313,32 +313,28 @@ async def process_wav_bytes(webm_bytes: bytes, history: History, speaker_id: str
 
     return await model_chat((16000, audio_np), history, speaker_id)
 
-from flask import Flask, render_template, send_file
-from flask_sockets import Sockets
-import asyncio
-from aiohttp import web
-from aiohttp_wsgi import WSGIHandler
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 import base64
 import traceback
 import os
 import json
 import ssl
 
-app = Flask('aioflask')
+app = FastAPI()
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.get("/")
+async def read_index():
+    return HTMLResponse(content=open('index.html').read(), status_code=200)
 
-#http://108.136.246.72:5555/asset/tmpn0_i3lq6.wav
-#https://audio.xyz666.org:5555/asset/tmpn0_i3lq6.wav
-@app.route('/asset/<filename>')
-def download_asset(filename):
-    try:
-        #return send_file(filename, as_attachment=True)
-        return send_file(os.path.join('/tmp', filename))
-    except Exception as e:
-        return str(e)
+@app.get("/asset/{filename}")
+async def download_asset(filename: str):
+    file_path = os.path.join('/tmp', filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path, filename=filename)
+    else:
+        return {"error": "File not found"}
 
 async def process_audio(audio_data, history, speaker_id):
     try:
@@ -353,31 +349,33 @@ async def process_audio(audio_data, history, speaker_id):
         traceback.print_exc()
         return json.dumps({"status": "error", "message": "Error processing audio"})
 
-async def socket_handler(request):
-    ws = web.WebSocketResponse(heartbeat=60)
-    await ws.prepare(request)
-
+@app.websocket("/transcribe")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
     print("WebSocket connection established")
 
     try:
-        async for msg in ws:
-            if msg.type == web.WSMsgType.TEXT:
-                # 解析接收到的 JSON 数据结构为 [[], "speaker_id", "base64_audio"]
-                data = json.loads(msg.data)
-                history = data[0]
-                speaker_id = data[1]
-                audio_data = data[2]
-                print(f"Message received: {history}, {speaker_id}, {audio_data[:50]}...")
-                res_json = await process_audio(audio_data, history, speaker_id)
-                await ws.send_str(res_json)
-            elif msg.type == web.WSMsgType.ERROR:
-                print(f"WebSocket connection closed with exception {ws.exception()}")
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            history = message[0]
+            speaker_id = message[1]
+            audio_data = message[2]
 
+            if isinstance(audio_data, str):
+                audio_bytes = base64.b64decode(audio_data)
+            else:
+                audio_bytes = audio_data
+
+            history, audio_file_path, text_data = await process_wav_bytes(audio_bytes, history, speaker_id)
+            response = json.dumps([history, audio_file_path, text_data])
+            await websocket.send_text(response)
+    except WebSocketDisconnect:
+        print("WebSocket connection closed")
     except Exception as e:
-        print(f"WebSocket connection closed with exception {e}")
-
-    print("WebSocket connection closed")
-    return ws
+        print(f"Error: {e}")
+        traceback.print_exc()
+        await websocket.close()
 
 
 '''
@@ -385,11 +383,5 @@ hypercorn app_ws:aio_app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop -
 
 '''
 if __name__ == "__main__":
-    aio_app = web.Application()
-    wsgi = WSGIHandler(app)
-    aio_app.router.add_route('*', '/{path_info:.*}', wsgi.handle_request)
-    aio_app.router.add_route('GET', '/transcribe', socket_handler)
-    # 配置 SSL 证书和密钥文件路径
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain(certfile='cf.pem', keyfile='cf.key')
-    web.run_app(aio_app, port=5555, ssl_context=ssl_context)
+  import uvicorn
+  uvicorn.run("app_ws:app", host="0.0.0.0", port=5555, ssl_keyfile="cf.key", ssl_certfile="cf.pem")
