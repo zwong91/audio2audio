@@ -80,7 +80,7 @@ History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
 # 创建全局的进程池
-process_pool = ProcessPoolExecutor(max_workers=os.cpu_count())
+process_pool = ProcessPoolExecutor(max_workers=os.cpu_count() * 2)
 
 def create_app():
     app = FastAPI()
@@ -115,7 +115,9 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     async with aiofiles.open(file_path, 'wb') as f:
         await f.write(data.tobytes())
 
-    res = await asyncio.to_thread(
+    loop = asyncio.get_running_loop()
+    res = await loop.run_in_executor(
+        process_pool,
         sense_voice_model.generate,
         input=file_path,
         cache={},
@@ -130,7 +132,9 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
-    response = await asyncio.to_thread(
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(
+        process_pool,
         openai.audio.speech.create,
         input=text,
         voice="alloy",
@@ -179,17 +183,17 @@ async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: 
 
         # 4. 并行处理音频转写和GPT对话处理
         transcribe_task = asyncio.create_task(transcribe_audio())
+        query, asr_wav_path = await transcribe_task
+        messages.append({'role': 'user', 'content': query})
         gpt_task = asyncio.create_task(
-            asyncio.to_thread(
+            loop.run_in_executor(
+                process_pool,
                 openai.chat.completions.create,
                 model="gpt-4o-mini",
                 messages=messages,
                 max_tokens=64
             )
         )
-
-        query, asr_wav_path = await transcribe_task
-        messages.append({'role': 'user', 'content': query})
         response = await gpt_task
 
         # 5. 处理GPT响应
