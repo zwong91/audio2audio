@@ -82,8 +82,17 @@ Messages = List[Dict[str, str]]
 # 创建全局的进程池
 process_pool = ProcessPoolExecutor(max_workers=os.cpu_count())
 
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+def create_app():
+    app = FastAPI()
+    templates = Jinja2Templates(directory="templates")
+
+    @app.get("/")
+    async def read_index(request: Request):
+        return templates.TemplateResponse("index.html", {"request": request})
+
+    return app
+
+app = create_app()
 
 def history_to_messages(history: History, system: str) -> Messages:
     messages = [{'role': 'system', 'content': system}]
@@ -155,13 +164,11 @@ async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: 
         )
 
         # 2. 音频转写
-        if audio_np is not None:
-            asr_res = await transcribe((16000, audio_np))
-            query = asr_res['text']
-            asr_wav_path = asr_res['file_path']
-        else:
-            query = ''
-            asr_wav_path = None
+        async def transcribe_audio():
+            if audio_np is not None:
+                asr_res = await transcribe((16000, audio_np))
+                return asr_res['text'], asr_res['file_path']
+            return '', None
 
         # 3. 准备对话历史
         if history is None:
@@ -169,15 +176,21 @@ async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: 
 
         system = default_system
         messages = history_to_messages(history, system)
-        messages.append({'role': 'user', 'content': query})
 
-        # 4. GPT对话处理
-        response = await asyncio.to_thread(
-            openai.chat.completions.create,
+        # 4. 并行处理音频转写和GPT对话处理
+        transcribe_task = asyncio.create_task(transcribe_audio())
+        gpt_task = asyncio.create_task(
+            asyncio.to_thread(
+                openai.chat.completions.create,
                 model="gpt-4o-mini",
                 messages=messages,
                 max_tokens=64
+            )
         )
+
+        query, asr_wav_path = await transcribe_task
+        messages.append({'role': 'user', 'content': query})
+        response = await gpt_task
 
         # 5. 处理GPT响应
         processed_tts_text = ""
@@ -258,10 +271,6 @@ async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundT
     except Exception as e:
         print(f"WebSocket error: {e}")
         await websocket.close()
-
-@app.get("/")
-async def read_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/asset/{filename}")
 async def stream_audio(filename: str):
