@@ -347,7 +347,7 @@ async def cached_text_to_speech(text: str) -> Tuple[str, str]:
 
 # 限流器
 class RateLimiter:
-    def __init__(self, rate_limit=100):
+    def __init__(self, rate_limit=200):
         self.rate_limit = rate_limit
         self.tokens = deque(maxlen=rate_limit)
         
@@ -369,7 +369,7 @@ class WebSocketManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
         self.rate_limiter = RateLimiter()
-        self.thread_pool = ThreadPoolExecutor(max_workers=4)
+        self.thread_pool = ThreadPoolExecutor(max_workers=16)
         
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -557,13 +557,16 @@ if __name__ == "__main__":
         port=5555,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
-        workers=8,  # 根据CPU核心数调整
+        workers=min(16, os.cpu_count() + 1),  # 根据CPU核心优化
         loop="uvloop",
         http="httptools",
         ws="websockets",
         log_level="info",
         limit_concurrency=1000,
         limit_max_requests=10000,
+        timeout_keep_alive=30,
+        ws_ping_interval=20,
+        ws_ping_timeout=30,
     )
     
     server = uvicorn.Server(uvicorn_config)
