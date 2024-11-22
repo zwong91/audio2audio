@@ -103,7 +103,8 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
-    await asyncio.to_thread(torchaudio.save, file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(data.tobytes())
 
     res = await asyncio.to_thread(
         sense_voice_model.generate,
@@ -126,7 +127,8 @@ async def text_to_speech_v2(text: str) -> Tuple[str, str]:
         voice="alloy",
         model="tts-1"
     )
-    await asyncio.to_thread(response.stream_to_file, speech_file_path)
+    async with aiofiles.open(speech_file_path, 'wb') as f:
+        await f.write(response.content)
     file_name = os.path.basename(speech_file_path)
     return file_name, text
 
