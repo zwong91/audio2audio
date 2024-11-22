@@ -30,6 +30,9 @@ sys.path.insert(1, "../sensevoice")
 sys.path.insert(1, "../")
 from utils.rich_format_small import format_str_v2
 from funasr import AutoModel
+
+import functools
+
 from ChatTTS import ChatTTS
 from OpenVoice import se_extractor
 from OpenVoice.api import ToneColorConverter
@@ -116,8 +119,7 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
         await f.write(data.tobytes())
 
     loop = asyncio.get_running_loop()
-    res = await loop.run_in_executor(
-        process_pool,
+    func = functools.partial(
         sense_voice_model.generate,
         input=file_path,
         cache={},
@@ -126,6 +128,7 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
         batch_size_s=0,
         batch_size=1
     )
+    res = await loop.run_in_executor(process_pool, func)
     text = res[0]['text']
     res_dict = {"file_path": file_path, "text": text}
     return res_dict
@@ -133,15 +136,15 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
     loop = asyncio.get_running_loop()
-    response = await loop.run_in_executor(
-        process_pool,
+    func = functools.partial(
         openai.audio.speech.create,
         input=text,
         voice="alloy",
         model="tts-1"
     )
+    res = await loop.run_in_executor(process_pool, func)
     async with aiofiles.open(speech_file_path, 'wb') as f:
-        await f.write(response.content)
+        await f.write(res.content)
     file_name = os.path.basename(speech_file_path)
     return file_name, text
 
