@@ -326,6 +326,10 @@ from fastapi.templating import Jinja2Templates
 from collections import deque
 import time
 
+import aiofiles.os
+import logging
+from pathlib import Path
+
 import base64
 import traceback
 import os
@@ -424,6 +428,36 @@ class WebSocketManager:
         for connection in self.active_connections:
             await connection.send_text(message)
 
+async def cleanup_temp_files(file_path: str) -> None:
+    """
+    异步清理临时文件
+    
+    Args:
+        file_path: 需要删除的文件路径
+    """
+    try:
+        path = Path(file_path)
+        if await aiofiles.os.path.exists(path):
+            await aiofiles.os.remove(path)
+            logging.info(f"已清理临时文件: {file_path}")
+    except Exception as e:
+        logging.error(f"清理临时文件失败 {file_path}: {str(e)}")
+
+# 批量清理函数 (可选)
+async def cleanup_all_temp_files(directory: str = "./tmp") -> None:
+    """
+    清理指定目录下的所有临时文件
+    
+    Args:
+        directory: 临时文件目录
+    """
+    try:
+        async for file_path in aiofiles.os.scandir(directory):
+            if file_path.is_file() and any(ext in file_path.name for ext in ['.wav', '.mp3', '.webm']):
+                await cleanup_temp_files(file_path.path)
+    except Exception as e:
+        logging.error(f"批量清理临时文件失败: {str(e)}")
+
 # 优化的音频处理函数
 async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
@@ -487,7 +521,7 @@ async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundT
         await websocket.close()
 
 '''
-uvicorn app_ws:app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
+hypercorn app_ws:app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
 
 '''
 # 启动服务器时的优化配置

@@ -8,4 +8,6 @@ gevent-websocket
 flask_sockets
 aiohttp-wsgi
 uvicorn[standard]
+aiodns
 uvloop
+aiofiles
