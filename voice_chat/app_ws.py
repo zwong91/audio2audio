@@ -80,7 +80,7 @@ History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
 # 创建全局的进程池
-process_pool = ProcessPoolExecutor(max_workers=os.cpu_count() * 2)
+process_pool = ProcessPoolExecutor(max_workers=os.cpu_count())
 
 def create_app():
     app = FastAPI()
