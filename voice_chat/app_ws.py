@@ -167,7 +167,7 @@ async def transcribe(audio):
     file_path = f"./tmp/asr_{uuid4()}.webm"
     torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
 
-    res = await sense_voice_model.generate(
+    res = sense_voice_model.generate(
         input=file_path,
         cache={},
         language="auto",
