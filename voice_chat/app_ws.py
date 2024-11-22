@@ -103,9 +103,10 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
-    torchaudio.save(file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
+    await asyncio.to_thread(torchaudio.save, file_path, torch.from_numpy(data).unsqueeze(0), samplerate)
 
-    res = sense_voice_model.generate(
+    res = await asyncio.to_thread(
+        sense_voice_model.generate,
         input=file_path,
         cache={},
         language="auto",
