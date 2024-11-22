@@ -49,7 +49,8 @@ sense_voice_model = AutoModel(
 chat = ChatTTS.Chat()
 print("loading ChatTTS model...")
 chat.load(compile=False)
-speaker = torch.load('../speaker/speaker_5_girl.pth')
+speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
+
 
 ckpt_converter = '../OpenVoice/checkpoints/converter'
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
