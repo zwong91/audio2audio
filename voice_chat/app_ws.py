@@ -313,10 +313,19 @@ async def process_wav_bytes(webm_bytes: bytes, history: History, speaker_id: str
 
     return await model_chat((16000, audio_np), history, speaker_id)
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
+
+import asyncio
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional, Tuple, Dict
+import aiohttp
+import aiodns
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
+from collections import deque
+import time
+
 import base64
 import traceback
 import os
@@ -351,39 +360,154 @@ async def process_audio(audio_data, history, speaker_id):
         traceback.print_exc()
         return json.dumps({"status": "error", "message": "Error processing audio"})
 
-@app.websocket("/transcribe")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    print("WebSocket connection established")
+# 常量定义
+MAX_CONCURRENT_REQUESTS = 100
+CACHE_SIZE = 1000
+REQUEST_TIMEOUT = 30
+MAX_RETRIES = 3
 
+# 创建连接池
+class ConnectionPool:
+    def __init__(self, max_size=100):
+        self.pool = asyncio.Queue(maxsize=max_size)
+        self.size = max_size
+        self._closed = False
+        
+    async def acquire(self):
+        if self._closed:
+            raise RuntimeError("Connection pool is closed")
+        return await self.pool.get()
+        
+    async def release(self, conn):
+        if not self._closed:
+            await self.pool.put(conn)
+
+# 缓存装饰器
+@lru_cache(maxsize=CACHE_SIZE)
+async def cached_text_to_speech(text: str) -> Tuple[str, str]:
+    return await text_to_speech_v2(text)
+
+# 限流器
+class RateLimiter:
+    def __init__(self, rate_limit=100):
+        self.rate_limit = rate_limit
+        self.tokens = deque(maxlen=rate_limit)
+        
+    async def acquire(self):
+        now = time.time()
+        # 清理过期令牌
+        while self.tokens and now - self.tokens[0] > 1.0:
+            self.tokens.popleft()
+        
+        if len(self.tokens) >= self.rate_limit:
+            wait_time = 1.0 - (now - self.tokens[0])
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+                
+        self.tokens.append(now)
+
+# 优化后的WebSocket处理
+class WebSocketManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.rate_limiter = RateLimiter()
+        self.thread_pool = ThreadPoolExecutor(max_workers=4)
+        
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+# 优化的音频处理函数
+async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: str, 
+                                background_tasks: BackgroundTasks) -> dict:
+    try:
+        # 使用线程池处理CPU密集型任务
+        audio_np = await asyncio.get_event_loop().run_in_executor(
+            None, 
+            lambda: np.frombuffer(audio_data, dtype=np.int16)
+        )
+        
+        # 并行处理音频转换和模型推理
+        transcription_task = asyncio.create_task(transcribe((16000, audio_np)))
+        
+        # 等待所有任务完成
+        transcription_result = await transcription_task
+        
+        # 使用缓存的TTS
+        tts_result = await cached_text_to_speech(transcription_result['text'])
+        
+        # 清理临时文件
+        background_tasks.add_task(cleanup_temp_files, transcription_result['file_path'])
+        
+        return {
+            'history': history,
+            'audio_path': tts_result[0],
+            'text': tts_result[1]
+        }
+        
+    except Exception as e:
+        print(f"Error in audio processing: {e}")
+        return {'error': str(e)}
+
+# 优化的WebSocket端点
+@app.websocket("/transcribe")
+async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundTasks):
+    manager = WebSocketManager()
+    await manager.connect(websocket)
+    
     try:
         while True:
+            # 限流控制
+            await manager.rate_limiter.acquire()
+            
             data = await websocket.receive_text()
             message = json.loads(data)
-            history = message[0]
-            speaker_id = message[1]
-            audio_data = message[2]
-
-            if isinstance(audio_data, str):
-                audio_bytes = base64.b64decode(audio_data)
-            else:
-                audio_bytes = audio_data
-
-            history, audio_file_path, text_data = await process_wav_bytes(audio_bytes, history, speaker_id)
-            response = json.dumps([history, audio_file_path, text_data])
-            await websocket.send_text(response)
+            
+            # 并行处理请求
+            result = await process_audio_optimized(
+                base64.b64decode(message[2]),
+                message[0],
+                message[1],
+                background_tasks
+            )
+            
+            await websocket.send_json(result)
+            
     except WebSocketDisconnect:
-        print("WebSocket connection closed")
+        manager.disconnect(websocket)
     except Exception as e:
-        print(f"Error: {e}")
-        traceback.print_exc()
+        print(f"WebSocket error: {e}")
         await websocket.close()
-
 
 '''
 uvicorn app_ws:app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
 
 '''
+# 启动服务器时的优化配置
 if __name__ == "__main__":
-  import uvicorn
-  uvicorn.run("app_ws:app", host="0.0.0.0", port=5555, ssl_keyfile="cf.key", ssl_certfile="cf.pem")
+    import uvicorn
+    
+    uvicorn_config = uvicorn.Config(
+        "app_ws:app",
+        host="0.0.0.0",
+        port=5555,
+        ssl_keyfile="cf.key",
+        ssl_certfile="cf.pem",
+        workers=8,  # 根据CPU核心数调整
+        loop="uvloop",
+        http="httptools",
+        ws="websockets",
+        log_level="info",
+        limit_concurrency=1000,
+        limit_max_requests=10000,
+    )
+    
+    server = uvicorn.Server(uvicorn_config)
+    server.run()
