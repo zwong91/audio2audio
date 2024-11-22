@@ -114,8 +114,7 @@ async def model_chat(audio, history: Optional[History], speaker_id) -> Tuple[str
     messages = history_to_messages(history, system)
     messages.append({'role': 'user', 'content': query})
 
-    # Asynchronous OpenAI API request
-    response = await openai.chat.completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4o-mini",  # Use the latest model for completion
         messages=messages,  # 传递整个消息历史
         max_tokens=64,  # 可选，根据需要调整
@@ -187,7 +186,7 @@ async def transcribe_v2(audio):
 
     audio_file = open(file_path, "rb")
     # 使用 Whisper 模型进行音频转录
-    res = await openai.audio.transcriptions.create(
+    res = openai.audio.transcriptions.create(
         model="whisper-1",
         file=audio_file
     )
@@ -291,7 +290,7 @@ async def text_to_speech_v2(text: str):
     """
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
     # Make the API call to convert text to speech
-    response = await openai.audio.speech.create(
+    response = openai.audio.speech.create(
         model="tts-1",
         voice="alloy",  # You can choose a different voice here if needed
         input=text
