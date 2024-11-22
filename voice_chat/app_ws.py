@@ -30,9 +30,6 @@ sys.path.insert(1, "../sensevoice")
 sys.path.insert(1, "../")
 from utils.rich_format_small import format_str_v2
 from funasr import AutoModel
-
-import functools
-
 from ChatTTS import ChatTTS
 from OpenVoice import se_extractor
 from OpenVoice.api import ToneColorConverter
@@ -83,7 +80,7 @@ History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
 # 创建全局的进程池
-process_pool = ProcessPoolExecutor(max_workers=os.cpu_count() * 2)
+process_pool = ProcessPoolExecutor(max_workers=os.cpu_count())
 
 def create_app():
     app = FastAPI()
@@ -118,8 +115,7 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     async with aiofiles.open(file_path, 'wb') as f:
         await f.write(data.tobytes())
 
-    loop = asyncio.get_running_loop()
-    func = functools.partial(
+    res = await asyncio.to_thread(
         sense_voice_model.generate,
         input=file_path,
         cache={},
@@ -128,23 +124,20 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
         batch_size_s=0,
         batch_size=1
     )
-    res = await loop.run_in_executor(process_pool, func)
     text = res[0]['text']
     res_dict = {"file_path": file_path, "text": text}
     return res_dict
 
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
-    loop = asyncio.get_running_loop()
-    func = functools.partial(
+    response = await asyncio.to_thread(
         openai.audio.speech.create,
         input=text,
         voice="alloy",
         model="tts-1"
     )
-    res = await loop.run_in_executor(process_pool, func)
     async with aiofiles.open(speech_file_path, 'wb') as f:
-        await f.write(res.content)
+        await f.write(response.content)
     file_name = os.path.basename(speech_file_path)
     return file_name, text
 
@@ -188,9 +181,9 @@ async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: 
         transcribe_task = asyncio.create_task(transcribe_audio())
         query, asr_wav_path = await transcribe_task
         messages.append({'role': 'user', 'content': query})
+        
         gpt_task = asyncio.create_task(
-            loop.run_in_executor(
-                process_pool,
+            asyncio.to_thread(
                 openai.chat.completions.create,
                 model="gpt-4o-mini",
                 messages=messages,
