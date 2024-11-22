@@ -7,5 +7,5 @@ Flask
 gevent-websocket
 flask_sockets
 aiohttp-wsgi
-hypercorn
+uvicorn[standard]
 uvloop

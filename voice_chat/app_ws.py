@@ -379,7 +379,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 '''
-hypercorn app_ws:aio_app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
+uvicorn app_ws:app --bind 0.0.0.0:5555 --workers 1 --worker-class uvloop --keyfile cf.key --certfile cf.pem
 
 '''
 if __name__ == "__main__":
