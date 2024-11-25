@@ -211,8 +211,8 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
             speech_bytes += b'\x00' * padding_length
         
         # 将缓冲区中的音频数据异步写入文件
-        file_path = f"./audio_{session_id}.wav"
-        async with aiofiles.open(file_path, 'wb') as f:
+        asr_wav_path = f"./audio_{session_id}.wav"
+        async with aiofiles.open(asr_wav_path, 'wb') as f:
             wf = wave.open(f, 'wb')
             wf.setnchannels(1)  # 单声道
             wf.setsampwidth(2)  # 16位PCM
@@ -235,10 +235,10 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
             # 语音尚未结束，继续等待
             return {'status': 'listening'}        
 
+        asr_wav_path = speech_res["audio"]
         # 2. 音频转写ASR
         asr_res = await transcribe(speech_res["audio"])
         query = asr_res['text']
-        asr_wav_path = asr_res['file_path']
 
         # 3. 准备对话历史
         if history is None:
