@@ -1,6 +1,5 @@
 import torchaudio
 from VAD.vad_iterator import VADIterator
-from VAD.baseHandler import BaseHandler
 import numpy as np
 import torch
 
