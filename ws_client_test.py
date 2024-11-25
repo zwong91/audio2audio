@@ -8,18 +8,12 @@ import time
 async def test_websocket():
     uri = "wss://108.136.246.72:6666/transcribe"  # WebSocket 服务器的地址
     
-    # 读取音频文件并进行Base64编码
+    # 读取音频文件
     audio_file_path = "jp_zh.wav"  # 替换成你自己的音频文件路径
     
     try:
         with open(audio_file_path, "rb") as audio_file:
             audio_data = audio_file.read()  # 读取音频文件内容
-            encoded_audio = base64.b64encode(audio_data).decode('utf-8')  # 转换为Base64编码并解码为字符串
-
-        print(f"Encoded audio data: {encoded_audio[:50]}...")  # 只打印前50个字符，避免输出过长
-        # 创建要发送的 JSON 数据
-        data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
-        json_data = json.dumps(data_to_send)
 
         # 创建 SSL 上下文，忽略证书验证
         ssl_context = ssl._create_unverified_context()
@@ -34,7 +28,15 @@ async def test_websocket():
             print(f"connected elapsed time: {elapsed_time:.2f} seconds")
             try:
                 # 持续发送和接收消息
-                while True:
+                frame_size = 320 * 2  # 320 个采样点，每个采样点 2 个字节
+                for i in range(0, len(audio_data), frame_size):
+                    audio_chunk = audio_data[i:i + frame_size]
+                    encoded_audio = base64.b64encode(audio_chunk).decode('utf-8')  # 转换为Base64编码并解码为字符串
+
+                    # 创建要发送的 JSON 数据
+                    data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
+                    json_data = json.dumps(data_to_send)
+
                     start_time = time.time()
                     # 发送Base64编码的音频数据
                     await websocket.send(json_data)  # 发送消息
@@ -52,7 +54,7 @@ async def test_websocket():
                         print(f"Total elapsed time: {elapsed_time:.2f} seconds")
 
                         # 添加延迟
-                        await asyncio.sleep(2)  # 延迟2秒
+                        await asyncio.sleep(0.1)  # 延迟0.1秒
 
                     except websockets.exceptions.ConnectionClosedOK as e:
                         print(f"Connection closed normally: {e}")

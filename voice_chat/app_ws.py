@@ -190,30 +190,60 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.
 
     audio_buffer = session_buffers[session_id]
 
-    # 将音频数据添加到缓冲区
-    audio_buffer.append(audio_data)
+    # 将音频数据转换为 numpy 数组并添加到缓冲区
+    audio_int16 = np.frombuffer(audio_data, dtype=np.int16)
+    audio_float32 = audio_int16.astype(np.float32) / 32768.0  # 转换为 float32
+    audio_buffer.append(audio_float32)
 
     # 将缓冲区中的音频数据连接起来
-    audio_array = b''.join(audio_buffer)
+    audio_array = np.concatenate(audio_buffer)
 
-    # 确保音频帧长度为 320 个采样点
-    frame_size = 320 * 2  # 320 个采样点，每个采样点 2 个字节
-    if len(audio_array) < frame_size:
-        return None
+    # 定义 VAD 模型期望的输入长度
+    frame_size = 320  # 320 个采样点
 
-    # 使用 WebRTC VAD 进行语音活动检测
-    vad_result = webrtc_vad.voice_activity_detection(audio_array[:frame_size])
+    # 初始化变量
+    idx = 0
+    speech_segments = []
+    is_speech = False
+    silence_counter = 0
+    max_silence_chunks = int(vad_handler.min_silence_ms / (frame_size / vad_handler.sample_rate * 1000))
 
-    if vad_result == "1":
-        # 语音活动检测到，继续累积数据
-        return None
-    elif vad_result == "X":
-        # 语音活动结束，清空缓冲区并返回完整的语音数据
-        session_buffers[session_id] = []
-        return np.frombuffer(audio_array, dtype=np.int16).astype(np.float32) / 32768.0
-    else:
-        # 语音尚未结束，继续等待
-        return None
+    while idx + frame_size <= len(audio_array):
+        chunk = audio_array[idx: idx + frame_size]
+        idx += frame_size
+
+        # 转换为字节数据
+        chunk_bytes = (chunk * 32768.0).astype(np.int16).tobytes()
+
+        # 使用 WebRTC VAD 进行语音活动检测
+        vad_result = webrtc_vad.voice_activity_detection(chunk_bytes)
+
+        if vad_result == "1":
+            # 语音活动检测到，继续累积数据
+            speech_segments.append(chunk)
+            is_speech = True
+            silence_counter = 0
+        elif vad_result == "X":
+            # 语音活动结束，清空缓冲区并返回完整的语音数据
+            session_buffers[session_id] = []
+            if speech_segments:
+                speech_array = np.concatenate(speech_segments)
+                return speech_array
+        else:
+            if is_speech:
+                silence_counter += 1
+                if silence_counter >= max_silence_chunks:
+                    # 语音结束，返回已检测的语音片段
+                    session_buffers[session_id] = []
+                    if speech_segments:
+                        speech_array = np.concatenate(speech_segments)
+                        return speech_array
+
+    # 更新缓冲区，保留未处理的数据
+    session_buffers[session_id] = [audio_array[idx:]]
+
+    # 语音尚未结束，继续等待
+    return None
 
 async def process_audio_optimized(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
