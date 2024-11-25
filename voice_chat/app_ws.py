@@ -172,7 +172,7 @@ async def cleanup_temp_files(file_path: str) -> None:
         logging.error(f"清理临时文件失败 {file_path}: {str(e)}")
 
 
-def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.ndarray]:
+def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[bytes]:
     """
     缓冲音频数据并使用 VAD 检测语音结束。
 
@@ -182,35 +182,33 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.
 
     返回值：
     - 如果尚未检测到语音结束，返回 None。
-    - 如果检测到语音结束，返回完整的语音数据（numpy.ndarray）。
+    - 如果检测到语音结束，返回完整的音频数据（bytes）。
     """
     # 获取对应会话的缓冲区，没有则创建
     if session_id not in session_buffers:
-        session_buffers[session_id] = []
+        session_buffers[session_id] = bytearray()
 
     audio_buffer = session_buffers[session_id]
 
     # 将音频数据添加到缓冲区
-    audio_buffer.append(audio_data)
-
-    # 将缓冲区中的音频数据连接起来
-    audio_array = b''.join(audio_buffer)
+    audio_buffer.extend(audio_data)
 
     # 确保音频帧长度为 480 个采样点
     frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
-    if len(audio_data) < frame_size:
+    if len(audio_buffer) < frame_size:
         return None
 
     # 使用 WebRTCVAD 进行语音活动检测
-    vad_result = webrtc_vad.voice_activity_detection(audio_data[:frame_size])
+    vad_result = webrtc_vad.voice_activity_detection(audio_buffer[:frame_size])
 
     if vad_result == "1":
         # 语音活动检测到，继续累积数据
         return None
     elif vad_result == "X":
-        # 语音活动结束，清空缓冲区并返回完整的语音数据
-        session_buffers[session_id] = []
-        return np.frombuffer(audio_array, dtype=np.int16).astype(np.float32) / 32768.0
+        # 语音活动结束，清空缓冲区并返回完整的音频数据
+        speech_bytes = bytes(audio_buffer)
+        session_buffers[session_id] = bytearray()
+        return speech_bytes
     else:
         # 语音尚未结束，继续等待
         return None
@@ -219,20 +217,13 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
                                 background_tasks: BackgroundTasks) -> dict:
     try:
         # 1. 音频数据预处理: 缓冲音频并检测语音结束
-        vad_result = buffer_and_detect_speech(session_id, audio_data)
-        if vad_result is None:
+        speech_bytes = buffer_and_detect_speech(session_id, audio_data)
+        if speech_bytes is None:
             # 语音尚未结束，继续等待
             return {'status': 'listening'}        
 
-        # 语音已结束，开始处理
-        speech_array = vad_result  # 获取完整的语音数据
-
-        # 2. 音频转写
-        speech_int16 = (speech_array * 32768.0).astype(np.int16)
-        speech_bytes = speech_int16.tobytes()
-
-        # 调用 ASR 转写函数
-        asr_res = await transcribe((16000, speech_int16))
+        # 2. 音频转写ASR
+        asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
         query = asr_res['text']
         asr_wav_path = asr_res['file_path']
 
