@@ -79,7 +79,7 @@ async def test_websocket():
                         break
 
                 # 发送静音数据来通知 VAD 检测到语音活动结束
-                silence_duration = 10  # 发送静音数据的持续时间（秒）
+                silence_duration = 1  # 发送静音数据的持续时间（秒）
                 silence_chunk = b'\x00' * frame_size  # 每一帧的静音数据
                 for _ in range(int(silence_duration / 0.03)):  # 发送静音数据，通常每帧间隔 30 毫秒
                     encoded_audio = base64.b64encode(silence_chunk).decode('utf-8')

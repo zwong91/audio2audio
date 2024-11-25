@@ -5,6 +5,7 @@ import os
 import openai
 from typing import List, Optional, Tuple, Dict
 from uuid import uuid4
+import wave
 import numpy as np
 import tempfile
 import soundfile as sf
@@ -130,15 +131,10 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
-    samplerate, data = audio
-    file_path = f"./tmp/asr_{uuid4()}.wav"
-    async with aiofiles.open(file_path, 'wb') as f:
-        await f.write(data.tobytes())
-
+async def transcribe(asr_wav_path: str) -> Dict[str, str]:
     res = await asyncio.to_thread(
         sense_voice_model.generate,
-        input=file_path,
+        input=asr_wav_path,
         cache={},
         language="auto",
         text_norm="woitn",
@@ -146,7 +142,7 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
         batch_size=1
     )
     text = res[0]['text']
-    res_dict = {"file_path": file_path, "text": text}
+    res_dict = {"file_path": asr_wav_path, "text": text}
     return res_dict
 
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
@@ -213,8 +209,19 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[byt
         if len(speech_bytes) % 16000 != 0:
             padding_length = 16000 - (len(speech_bytes) % 16000)
             speech_bytes += b'\x00' * padding_length
-            
-        return speech_bytes
+        
+        # 将缓冲区中的音频数据异步写入文件
+        file_path = f"./audio_{session_id}.wav"
+        async with aiofiles.open(file_path, 'wb') as f:
+            wf = wave.open(f, 'wb')
+            wf.setnchannels(1)  # 单声道
+            wf.setsampwidth(2)  # 16位PCM
+            wf.setframerate(16000)  # 采样率
+            wf.writeframes(speech_bytes)
+            wf.close()
+
+        res = {"speech_bytes": speech_bytes, "audio": asr_wav_path}
+        return res
     else:
         # 语音尚未结束，继续等待
         return None
@@ -223,19 +230,13 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
                                 background_tasks: BackgroundTasks) -> dict:
     try:
         # 1. 音频数据预处理: 缓冲音频并检测语音结束
-        speech_bytes = buffer_and_detect_speech(session_id, audio_data)
-        if speech_bytes is None:
+        speech_res = buffer_and_detect_speech(session_id, audio_data)
+        if speech_res is None:
             # 语音尚未结束，继续等待
             return {'status': 'listening'}        
 
-        # 确保音频数据格式和采样率正确
-        speech_int16 = np.frombuffer(speech_bytes, dtype=np.int16)
-        if speech_int16.dtype != np.int16:
-            raise ValueError("Invalid audio format: expected 16-bit PCM")
-        if len(speech_int16) % 16000 != 0:
-            raise ValueError("Invalid audio length: expected multiple of 16000 samples")
         # 2. 音频转写ASR
-        asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
+        asr_res = await transcribe(speech_res["audio"])
         query = asr_res['text']
         asr_wav_path = asr_res['file_path']
 
