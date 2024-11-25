@@ -223,6 +223,12 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
             # 语音尚未结束，继续等待
             return {'status': 'listening'}        
 
+        # 确保音频数据格式和采样率正确
+        speech_int16 = np.frombuffer(speech_bytes, dtype=np.int16)
+        if speech_int16.dtype != np.int16:
+            raise ValueError("Invalid audio format: expected 16-bit PCM")
+        if len(speech_int16) % 16000 != 0:
+            raise ValueError("Invalid audio length: expected multiple of 16000 samples")
         # 2. 音频转写ASR
         asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
         query = asr_res['text']

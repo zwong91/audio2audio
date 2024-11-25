@@ -70,7 +70,6 @@ async def test_websocket():
                         end_time = time.time()
                         elapsed_time = end_time - start_time
                         print(f"Total elapsed time: {elapsed_time:.2f} seconds")
-                        await asyncio.sleep(0.03)  # 延迟30ms
 
                     except websockets.exceptions.ConnectionClosedOK as e:
                         print(f"Connection closed normally: {e}")
@@ -88,7 +87,6 @@ async def test_websocket():
                     json_data = json.dumps(data_to_send)
                     await websocket.send(json_data)
                     print("Silence data sent")
-                    await asyncio.sleep(0.03)  # 延迟30ms
                 
                 # 保持连接一段时间，以便服务器处理静音数据
                 await asyncio.sleep(60)
