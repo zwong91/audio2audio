@@ -210,14 +210,13 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
             padding_length = 16000 - (len(speech_bytes) % 16000)
             speech_bytes += b'\x00' * padding_length
         
-        # 将缓冲区中的音频数据异步写入文件
+        # 将缓冲区中的音频数据写入文件（同步写入）
         asr_wav_path = f"./audio_{session_id}.wav"
-        async with aiofiles.open(asr_wav_path, 'wb') as f:
-            with wave.open(f, 'wb') as wf:
-                wf.setnchannels(1)  # 单声道
-                wf.setsampwidth(2)  # 16位PCM
-                wf.setframerate(16000)  # 采样率
-                wf.writeframes(speech_bytes)
+        with wave.open(asr_wav_path, 'wb') as wf:
+            wf.setnchannels(1)  # 单声道
+            wf.setsampwidth(2)  # 16位PCM
+            wf.setframerate(16000)  # 采样率
+            wf.writeframes(speech_bytes)
 
         res = {"speech_bytes": speech_bytes, "audio": asr_wav_path}
         return res
