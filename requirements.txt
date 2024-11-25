@@ -11,4 +11,4 @@ uvicorn[standard]
 aiodns
 uvloop
 aiofiles
-deepfilternet>=0.5.6
+webrtcvad

@@ -47,6 +47,11 @@ vad_handler.setup(
     speech_pad_ms=30,
     audio_enhancement=False,  # 根据需要开启音频增强
 )
+
+from VAD.vad_webrtc import WebRTCVAD
+# 创建WebRTCVAD 实例
+webrtc_vad = WebRTCVAD()
+
 # 初始化缓冲区
 session_buffers = {}  # 用于存储每个会话的音频缓冲区
 
@@ -185,33 +190,25 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.
 
     audio_buffer = session_buffers[session_id]
 
-    # 将音频数据转换为 numpy 数组
-    audio_int16 = np.frombuffer(audio_data, dtype=np.int16)
-    audio_float32 = audio_int16.astype(np.float32) / 32768.0  # 转换为 float32
-
-    # 将新的音频数据添加到缓冲区
-    audio_buffer.append(audio_float32)
+    # 将音频数据添加到缓冲区
+    audio_buffer.append(audio_data)
 
     # 将缓冲区中的音频数据连接起来
-    audio_array = np.concatenate(audio_buffer)
+    audio_array = b''.join(audio_buffer)
 
-    # 使用 VAD 处理音频数据
-    vad_output = vad_handler.process(audio_array)
+    # 使用 AudioStream 进行语音活动检测
+    vad_result = webrtc_vad.voice_activity_detection(audio_array)
 
-    if vad_output is None:
-        # 语音尚未结束，继续累积数据
+    if vad_result == "1":
+        # 语音活动检测到，继续累积数据
         return None
-    else:
-        # 语音已结束，清空缓冲区并返回完整的语音数据
+    elif vad_result == "X":
+        # 语音活动结束，清空缓冲区并返回完整的语音数据
         session_buffers[session_id] = []
-        # 获取语音片段
-        speech_segments = list(vad_output)
-        if speech_segments:
-            # 合并所有语音片段
-            speech_array = np.concatenate(speech_segments)
-            return speech_array
-        else:
-            return None
+        return np.frombuffer(audio_array, dtype=np.int16).astype(np.float32) / 32768.0
+    else:
+        # 语音尚未结束，继续等待
+        return None
 
 async def process_audio_optimized(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
