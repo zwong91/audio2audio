@@ -201,6 +201,7 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[byt
     # 使用 WebRTCVAD 进行语音活动检测
     vad_result = webrtc_vad.voice_activity_detection(audio_buffer[:frame_size])
 
+    print("vad result: {}", vad_result)
     if vad_result == "1":
         # 语音活动检测到，继续累积数据
         return None
