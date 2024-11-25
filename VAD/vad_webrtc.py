@@ -6,7 +6,7 @@ WebRTC VAD 期望输入的音频帧长度为 10ms、20ms 或 30ms 的音频数�
 对于 16kHz 采样率，这对应于 160、320 或 480 个采样点。
 '''
 class WebRTCVAD:
-    def __init__(self, sample_rate=16000, frame_size=320, bytes_per_sample=2, idle_time=0.5) -> None:
+    def __init__(self, sample_rate=16000, frame_size=480, bytes_per_sample=2, idle_time=0.5) -> None:
         self.sample_rate = sample_rate
         self.frame_size = frame_size
         self.bytes_per_sample = bytes_per_sample
