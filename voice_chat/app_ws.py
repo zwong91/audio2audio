@@ -196,8 +196,13 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.
     # 将缓冲区中的音频数据连接起来
     audio_array = b''.join(audio_buffer)
 
-    # 使用 AudioStream 进行语音活动检测
-    vad_result = webrtc_vad.voice_activity_detection(audio_array)
+    # 确保音频帧长度为 320 个采样点
+    frame_size = 320 * 2  # 320 个采样点，每个采样点 2 个字节
+    if len(audio_array) < frame_size:
+        return None
+
+    # 使用 WebRTC VAD 进行语音活动检测
+    vad_result = webrtc_vad.voice_activity_detection(audio_array[:frame_size])
 
     if vad_result == "1":
         # 语音活动检测到，继续累积数据
