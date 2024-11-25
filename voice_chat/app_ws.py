@@ -204,7 +204,14 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.
     else:
         # 语音已结束，清空缓冲区并返回完整的语音数据
         session_buffers[session_id] = []
-        return vad_output  # vad_output 为语音片段的 numpy 数组
+        # 获取语音片段
+        speech_segments = list(vad_output)
+        if speech_segments:
+            # 合并所有语音片段
+            speech_array = np.concatenate(speech_segments)
+            return speech_array
+        else:
+            return None
 
 async def process_audio_optimized(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
