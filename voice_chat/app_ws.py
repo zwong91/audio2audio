@@ -209,6 +209,11 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[byt
         # 语音活动结束，清空缓冲区并返回完整的音频数据
         speech_bytes = bytes(audio_buffer)
         session_buffers[session_id] = bytearray()
+        # 确保音频数据长度为 16000 的倍数
+        if len(speech_bytes) % 16000 != 0:
+            padding_length = 16000 - (len(speech_bytes) % 16000)
+            speech_bytes += b'\x00' * padding_length
+            
         return speech_bytes
     else:
         # 语音尚未结束，继续等待
