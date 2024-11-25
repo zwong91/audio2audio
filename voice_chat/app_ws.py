@@ -34,6 +34,22 @@ from ChatTTS import ChatTTS
 from OpenVoice import se_extractor
 from OpenVoice.api import ToneColorConverter
 
+from VAD.vad_handler import VADHandler
+# 创建全局的 VADHandler 实例
+vad_handler = VADHandler()
+vad_handler.setup(
+    should_listen=asyncio.Event(),  # 用于控制监听状态
+    thresh=0.5,  # 自行调整阈值
+    sample_rate=16000,
+    min_silence_ms=1000,
+    min_speech_ms=500,
+    max_speech_ms=float("inf"),
+    speech_pad_ms=30,
+    audio_enhancement=False,  # 根据需要开启音频增强
+)
+# 初始化缓冲区
+session_buffers = {}  # 用于存储每个会话的音频缓冲区
+
 # 初始化模型
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
@@ -150,25 +166,66 @@ async def cleanup_temp_files(file_path: str) -> None:
     except Exception as e:
         logging.error(f"清理临时文件失败 {file_path}: {str(e)}")
 
-async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: str, 
+
+def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[np.ndarray]:
+    """
+    缓冲音频数据并使用 VAD 检测语音结束。
+
+    参数：
+    - session_id: 会话 ID，用于区分不同的会话。
+    - audio_data: 接收到的音频数据，字节格式。
+
+    返回值：
+    - 如果尚未检测到语音结束，返回 None。
+    - 如果检测到语音结束，返回完整的语音数据（numpy.ndarray）。
+    """
+    # 获取对应会话的缓冲区，没有则创建
+    if session_id not in session_buffers:
+        session_buffers[session_id] = []
+
+    audio_buffer = session_buffers[session_id]
+
+    # 将音频数据转换为 numpy 数组
+    audio_int16 = np.frombuffer(audio_data, dtype=np.int16)
+    audio_float32 = audio_int16.astype(np.float32) / 32768.0  # 转换为 float32
+
+    # 将新的音频数据添加到缓冲区
+    audio_buffer.append(audio_float32)
+
+    # 将缓冲区中的音频数据连接起来
+    audio_array = np.concatenate(audio_buffer)
+
+    # 使用 VAD 处理音频数据
+    vad_output = vad_handler.process(audio_array)
+
+    if vad_output is None:
+        # 语音尚未结束，继续累积数据
+        return None
+    else:
+        # 语音已结束，清空缓冲区并返回完整的语音数据
+        session_buffers[session_id] = []
+        return vad_output  # vad_output 为语音片段的 numpy 数组
+
+async def process_audio_optimized(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
-        loop = asyncio.get_running_loop()
+        # 1. 音频数据预处理: 缓冲音频并检测语音结束
+        vad_result = buffer_and_detect_speech(session_id, audio_data)
+        if vad_result is None:
+            # 语音尚未结束，继续等待
+            return {'status': 'listening'}        
 
-        # 1. 音频数据预处理
-        audio_np = await loop.run_in_executor(
-            process_pool, 
-            np.frombuffer, 
-            audio_data, 
-            np.int16
-        )
+        # 语音已结束，开始处理
+        speech_array = vad_result  # 获取完整的语音数据
 
         # 2. 音频转写
-        async def transcribe_audio():
-            if audio_np is not None:
-                asr_res = await transcribe((16000, audio_np))
-                return asr_res['text'], asr_res['file_path']
-            return '', None
+        speech_int16 = (speech_array * 32768.0).astype(np.int16)
+        speech_bytes = speech_int16.tobytes()
+
+        # 调用 ASR 转写函数
+        asr_res = await transcribe((16000, speech_int16))
+        query = asr_res['text']
+        asr_wav_path = asr_res['file_path']
 
         # 3. 准备对话历史
         if history is None:
@@ -255,11 +312,13 @@ async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: 
 @app.websocket("/transcribe")
 async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundTasks):
     await websocket.accept()
+    session_id = str(uuid4())  # 为每个连接生成一个唯一的会话 ID
     try:
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
             result = await process_audio_optimized(
+                session_id,
                 base64.b64decode(message[2]),
                 message[0],
                 message[1],
@@ -267,7 +326,9 @@ async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundT
             )
             await websocket.send_json(result)
     except WebSocketDisconnect:
-        pass
+        # 移除会话的缓冲区
+        if session_id in session_buffers:
+            del session_buffers[session_id]
     except Exception as e:
         print(f"WebSocket error: {e}")
         await websocket.close()
@@ -306,7 +367,7 @@ if __name__ == "__main__":
     uvicorn_config = uvicorn.Config(
         "app_ws:app",
         host="0.0.0.0",
-        port=5555,
+        port=6666,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
         workers=os.cpu_count(),  # 根据CPU核心数设置workers
