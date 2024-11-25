@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class VADHandler(BaseHandler):
+class VADHandler():
     """
     Handles voice activity detection. When voice activity is detected, audio will be accumulated until the end of speech is detected and then passed
     to the following part.
