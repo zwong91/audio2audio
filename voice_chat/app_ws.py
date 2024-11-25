@@ -168,7 +168,7 @@ async def cleanup_temp_files(file_path: str) -> None:
         logging.error(f"清理临时文件失败 {file_path}: {str(e)}")
 
 
-def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[bytes]:
+async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[bytes]:
     """
     缓冲音频数据并使用 VAD 检测语音结束。
 
@@ -230,7 +230,7 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
                                 background_tasks: BackgroundTasks) -> dict:
     try:
         # 1. 音频数据预处理: 缓冲音频并检测语音结束
-        speech_res = buffer_and_detect_speech(session_id, audio_data)
+        speech_res = await buffer_and_detect_speech(session_id, audio_data)
         if speech_res is None:
             # 语音尚未结束，继续等待
             return {'status': 'listening'}        
