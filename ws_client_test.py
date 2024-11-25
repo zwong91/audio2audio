@@ -11,14 +11,6 @@ from scipy.signal import resample
 def resample_audio(audio_data: np.ndarray, original_rate: int, target_rate: int) -> np.ndarray:
     """
     将音频数据从原始采样率转换为目标采样率。
-
-    参数：
-    - audio_data: 原始音频数据，numpy 数组格式。
-    - original_rate: 原始采样率。
-    - target_rate: 目标采样率。
-
-    返回值：
-    - 转换后的音频数据，numpy 数组格式。
     """
     duration = len(audio_data) / original_rate
     target_length = int(duration * target_rate)
@@ -54,7 +46,7 @@ async def test_websocket():
             print(f"connected elapsed time: {elapsed_time:.2f} seconds")
             try:
                 # 持续发送和接收消息
-                frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
+                frame_size = 480 * 2  # 每帧 480 个采样点，每个采样点 2 个字节
                 for i in range(0, len(resampled_audio), frame_size):
                     audio_chunk = resampled_audio[i:i + frame_size]
                     encoded_audio = base64.b64encode(audio_chunk).decode('utf-8')  # 转换为Base64编码并解码为字符串
@@ -78,6 +70,7 @@ async def test_websocket():
                         end_time = time.time()
                         elapsed_time = end_time - start_time
                         print(f"Total elapsed time: {elapsed_time:.2f} seconds")
+                        await asyncio.sleep(0.03)  # 延迟30ms
 
                     except websockets.exceptions.ConnectionClosedOK as e:
                         print(f"Connection closed normally: {e}")
@@ -86,16 +79,18 @@ async def test_websocket():
                         print(f"Connection closed with error: {e}")
                         break
 
-                # 发送静音数据
-                silence_duration = 2  # 发送静音数据的持续时间（秒）
-                silence_chunk = b'\x00' * frame_size
-                for _ in range(int(silence_duration / 0.03)):  # 发送静音数据
+                # 发送静音数据来通知 VAD 检测到语音活动结束
+                silence_duration = 10  # 发送静音数据的持续时间（秒）
+                silence_chunk = b'\x00' * frame_size  # 每一帧的静音数据
+                for _ in range(int(silence_duration / 0.03)):  # 发送静音数据，通常每帧间隔 30 毫秒
                     encoded_audio = base64.b64encode(silence_chunk).decode('utf-8')
                     data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
                     json_data = json.dumps(data_to_send)
                     await websocket.send(json_data)
                     print("Silence data sent")
+                    await asyncio.sleep(0.03)  # 延迟30ms
                 
+                # 保持连接一段时间，以便服务器处理静音数据
                 await asyncio.sleep(60)
 
             except Exception as e:

@@ -195,11 +195,11 @@ def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[byt
 
     # 确保音频帧长度为 480 个采样点
     frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
-    if len(audio_buffer) < frame_size:
+    if len(audio_data) < frame_size:
         return None
 
     # 使用 WebRTCVAD 进行语音活动检测
-    vad_result = webrtc_vad.voice_activity_detection(audio_buffer[:frame_size])
+    vad_result = webrtc_vad.voice_activity_detection(audio_data[:frame_size])
 
     print("vad result: {}", vad_result)
     if vad_result == "1":
