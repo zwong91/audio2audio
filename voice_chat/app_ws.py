@@ -233,10 +233,7 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
 
         system = default_system
         messages = history_to_messages(history, system)
-
-        # 4. 并行处理音频转写和GPT对话处理
-        transcribe_task = asyncio.create_task(transcribe_audio())
-        query, asr_wav_path = await transcribe_task
+        # 4. 并行处理GPT对话处理
         messages.append({'role': 'user', 'content': query})
         
         gpt_task = asyncio.create_task(
