@@ -227,7 +227,7 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
 async def process_audio(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
-        # 0. 音频数据预处理: 缓冲音频并检测语音结束
+        # 1. 音频数据预处理: 缓冲音频并检测语音结束
         speech_res = await buffer_and_detect_speech(session_id, audio_data)
         if speech_res is None:
             # 语音尚未结束，继续等待
@@ -236,7 +236,7 @@ async def process_audio(session_id: str, audio_data: bytes, history: List, speak
         speech_bytes = speech_res
         loop = asyncio.get_running_loop()
 
-        # 1. 音频转写
+        # 2. 音频转写
         async def transcribe_audio():
             if speech_bytes is not None:
                 asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
@@ -381,7 +381,7 @@ if __name__ == "__main__":
     uvicorn_config = uvicorn.Config(
         "app_ws:app",
         host="0.0.0.0",
-        port=6666,
+        port=7777,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
         workers=os.cpu_count(),  # 根据CPU核心数设置workers
