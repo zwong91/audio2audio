@@ -68,7 +68,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
 
-import torch
+sys.path.insert(1, "../XTTS_v2")
 from XTTS_v2.api import TTS
 
 # Get device
