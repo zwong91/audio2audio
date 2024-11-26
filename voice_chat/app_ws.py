@@ -216,9 +216,6 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
 
             return speech_bytes
 
-    # 更新缓冲区，保留未处理的数据
-    #session_buffers[session_id] = audio_buffer[idx:]
-
     # 语音尚未结束，继续等待
     return None
 
@@ -226,6 +223,7 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
 async def process_audio(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
+        return {'status': 'listening'} 
         # 0. 音频数据预处理: 缓冲音频并检测语音结束
         speech_res = await buffer_and_detect_speech(session_id, audio_data)
         if speech_res is None:
