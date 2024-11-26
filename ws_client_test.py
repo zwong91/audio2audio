@@ -21,17 +21,23 @@ def resample_audio(audio_data: np.ndarray, original_rate: int, target_rate: int)
 async def test_websocket():
     uri = "wss://108.136.246.72:6666/transcribe"  # WebSocket 服务器的地址
     
-    # 读取音频文件
+    # 读取音频文件并进行Base64编码
     audio_file_path = "jp_zh.wav"  # 替换成你自己的音频文件路径
     
     try:
         with open(audio_file_path, "rb") as audio_file:
             audio_data = audio_file.read()  # 读取音频文件内容
+            original_rate = 22050
+            target_rate = 16000
+            audio_data = np.random.randn(22050)  # 示例音频数据
+            resampled_audio = resample_audio(audio_data, original_rate, target_rate)    
+            encoded_audio = base64.b64encode(resampled_audio).decode('utf-8')  # 转换为Base64编码并解码为字符串
 
-        original_rate = 22050
-        target_rate = 16000
-        audio_data = np.random.randn(22050)  # 示例音频数据
-        resampled_audio = resample_audio(audio_data, original_rate, target_rate)
+
+        print(f"Encoded audio data: {encoded_audio[:50]}...")  # 只打印前50个字符，避免输出过长
+        # 创建要发送的 JSON 数据
+        data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
+        json_data = json.dumps(data_to_send)
 
         # 创建 SSL 上下文，忽略证书验证
         ssl_context = ssl._create_unverified_context()
@@ -46,15 +52,7 @@ async def test_websocket():
             print(f"connected elapsed time: {elapsed_time:.2f} seconds")
             try:
                 # 持续发送和接收消息
-                frame_size = 480 * 2  # 每帧 480 个采样点，每个采样点 2 个字节
-                for i in range(0, len(resampled_audio), frame_size):
-                    audio_chunk = resampled_audio[i:i + frame_size]
-                    encoded_audio = base64.b64encode(audio_chunk).decode('utf-8')  # 转换为Base64编码并解码为字符串
-
-                    # 创建要发送的 JSON 数据
-                    data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
-                    json_data = json.dumps(data_to_send)
-
+                while True:
                     start_time = time.time()
                     # 发送Base64编码的音频数据
                     await websocket.send(json_data)  # 发送消息
@@ -71,26 +69,25 @@ async def test_websocket():
                         elapsed_time = end_time - start_time
                         print(f"Total elapsed time: {elapsed_time:.2f} seconds")
 
+                        # 发送静音数据来通知 VAD 检测到语音活动结束
+                        silence_duration = 1  # 发送静音数据的持续时间（秒）
+                        silence_chunk = b'\x00' * frame_size  # 每一帧的静音数据
+                        for _ in range(int(silence_duration / 0.03)):  # 发送静音数据，通常每帧间隔 30 毫秒
+                            encoded_audio = base64.b64encode(silence_chunk).decode('utf-8')
+                            data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
+                            json_data = json.dumps(data_to_send)
+                            await websocket.send(json_data)
+                            print("Silence data sent")
+
+                        # 保持连接一段时间，以便服务器处理静音数据
+                        await asyncio.sleep(60)
+
                     except websockets.exceptions.ConnectionClosedOK as e:
                         print(f"Connection closed normally: {e}")
                         break
                     except websockets.exceptions.ConnectionClosedError as e:
                         print(f"Connection closed with error: {e}")
                         break
-
-                # 发送静音数据来通知 VAD 检测到语音活动结束
-                silence_duration = 1  # 发送静音数据的持续时间（秒）
-                silence_chunk = b'\x00' * frame_size  # 每一帧的静音数据
-                for _ in range(int(silence_duration / 0.03)):  # 发送静音数据，通常每帧间隔 30 毫秒
-                    encoded_audio = base64.b64encode(silence_chunk).decode('utf-8')
-                    data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
-                    json_data = json.dumps(data_to_send)
-                    await websocket.send(json_data)
-                    print("Silence data sent")
-                
-                # 保持连接一段时间，以便服务器处理静音数据
-                await asyncio.sleep(60)
-
             except Exception as e:
                 print(f"Error during WebSocket communication: {e}")
     

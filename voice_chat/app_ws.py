@@ -5,7 +5,6 @@ import os
 import openai
 from typing import List, Optional, Tuple, Dict
 from uuid import uuid4
-import wave
 import numpy as np
 import tempfile
 import soundfile as sf
@@ -131,10 +130,15 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
-async def transcribe(asr_wav_path: str) -> Dict[str, str]:
+async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
+    samplerate, data = audio
+    file_path = f"./tmp/asr_{uuid4()}.wav"
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(data.tobytes())
+
     res = await asyncio.to_thread(
         sense_voice_model.generate,
-        input=asr_wav_path,
+        input=file_path,
         cache={},
         language="auto",
         text_norm="woitn",
@@ -142,7 +146,7 @@ async def transcribe(asr_wav_path: str) -> Dict[str, str]:
         batch_size=1
     )
     text = res[0]['text']
-    res_dict = {"file_path": asr_wav_path, "text": text}
+    res_dict = {"file_path": file_path, "text": text}
     return res_dict
 
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
@@ -191,52 +195,57 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
 
     # 确保音频帧长度为 480 个采样点
     frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
-    if len(audio_data) < frame_size:
-        return None
 
-    # 使用 WebRTCVAD 进行语音活动检测
-    vad_result = webrtc_vad.voice_activity_detection(audio_data[:frame_size])
+    # 初始化变量
+    idx = 0
+    while idx + frame_size <= len(audio_buffer):
+        chunk = audio_buffer[idx: idx + frame_size]
+        idx += frame_size
 
-    print("vad result: {}", vad_result)
-    if vad_result == "1":
-        # 语音活动检测到，继续累积数据
-        return None
-    elif vad_result == "X":
-        # 语音活动结束，清空缓冲区并返回完整的音频数据
-        speech_bytes = bytes(audio_buffer)
-        session_buffers[session_id] = bytearray()
-        # 确保音频数据长度为 16000 的倍数
-        if len(speech_bytes) % 16000 != 0:
-            padding_length = 16000 - (len(speech_bytes) % 16000)
-            speech_bytes += b'\x00' * padding_length
-        
-        # 将缓冲区中的音频数据写入文件（同步写入）
-        asr_wav_path = f"./audio_{session_id}.wav"
-        with wave.open(asr_wav_path, 'wb') as wf:
-            wf.setnchannels(1)  # 单声道
-            wf.setsampwidth(2)  # 16位PCM
-            wf.setframerate(16000)  # 采样率
-            wf.writeframes(speech_bytes)
+        # 使用 WebRTCVAD 进行语音活动检测
+        vad_result = webrtc_vad.voice_activity_detection(chunk)
 
-        res = {"speech_bytes": speech_bytes, "audio": asr_wav_path}
-        return res
-    else:
-        # 语音尚未结束，继续等待
-        return None
+        print("vad result: {}", vad_result)
+        if vad_result == "1":
+            # 语音活动检测到，继续累积数据
+            continue
+        elif vad_result == "X":
+            # 语音活动结束，清空缓冲区并返回完整的音频数据
+            speech_bytes = bytes(audio_buffer)
+            session_buffers[session_id] = bytearray()
 
-async def process_audio_optimized(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
+            return speech_bytes
+
+    # 语音尚未结束，继续等待
+    return None
+
+
+async def process_audio(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
-        # 1. 音频数据预处理: 缓冲音频并检测语音结束
+        # 0. 音频数据预处理: 缓冲音频并检测语音结束
         speech_res = await buffer_and_detect_speech(session_id, audio_data)
         if speech_res is None:
             # 语音尚未结束，继续等待
-            return {'status': 'listening'}        
+            return {'status': 'listening'} 
 
-        asr_wav_path = speech_res["audio"]
-        # 2. 音频转写ASR
-        asr_res = await transcribe(speech_res["audio"])
-        query = asr_res['text']
+        speech_bytes = speech_res
+        loop = asyncio.get_running_loop()
+
+        # 1. 音频数据预处理
+        audio_np = await loop.run_in_executor(
+            process_pool, 
+            np.frombuffer, 
+            speech_bytes, 
+            np.int16
+        )
+
+        # 2. 音频转写
+        async def transcribe_audio():
+            if audio_np is not None:
+                asr_res = await transcribe((16000, audio_np))
+                return asr_res['text'], asr_res['file_path']
+            return '', None
 
         # 3. 准备对话历史
         if history is None:
@@ -244,9 +253,12 @@ async def process_audio_optimized(session_id: str, audio_data: bytes, history: L
 
         system = default_system
         messages = history_to_messages(history, system)
-        # 4. 并行处理GPT对话处理
+
+        # 4. 并行处理音频转写和GPT对话处理
+        transcribe_task = asyncio.create_task(transcribe_audio())
+        query, asr_wav_path = await transcribe_task
         messages.append({'role': 'user', 'content': query})
-        
+
         gpt_task = asyncio.create_task(
             asyncio.to_thread(
                 openai.chat.completions.create,
@@ -325,7 +337,7 @@ async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundT
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
-            result = await process_audio_optimized(
+            result = await process_audio(
                 session_id,
                 base64.b64decode(message[2]),
                 message[0],
@@ -334,9 +346,7 @@ async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundT
             )
             await websocket.send_json(result)
     except WebSocketDisconnect:
-        # 移除会话的缓冲区
-        if session_id in session_buffers:
-            del session_buffers[session_id]
+        pass
     except Exception as e:
         print(f"WebSocket error: {e}")
         await websocket.close()
@@ -346,7 +356,7 @@ async def stream_audio(filename: str):
     file_path = os.path.join('/tmp', filename)
     if not os.path.exists(file_path):
         return {"error": "File not found"}
-    
+
     mime_types = {
         '.mp3': 'audio/mpeg',
         '.wav': 'audio/wav',
@@ -354,7 +364,7 @@ async def stream_audio(filename: str):
     }
     ext = os.path.splitext(filename)[1].lower()
     media_type = mime_types.get(ext, 'application/octet-stream')
-    
+
     return FileResponse(
         path=file_path,
         media_type=media_type,
@@ -389,4 +399,3 @@ if __name__ == "__main__":
     )
 
     server = uvicorn.Server(uvicorn_config)
-    server.run()
