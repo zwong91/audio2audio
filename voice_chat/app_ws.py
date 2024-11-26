@@ -35,6 +35,7 @@ from ChatTTS import ChatTTS
 from OpenVoice import se_extractor
 from OpenVoice.api import ToneColorConverter
 
+# 导入 WebRTC VAD
 from VAD.vad_webrtc import WebRTCVAD
 # 创建WebRTCVAD 实例
 webrtc_vad = WebRTCVAD()
