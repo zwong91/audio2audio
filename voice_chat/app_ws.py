@@ -426,7 +426,7 @@ import uvloop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 '''
-uvicorn app_ws:app --host 0.0.0.0 --port 5555 --log-level debug
+uvicorn app_ws:app --host 0.0.0.0 --port 5555 --ssl-keyfile cf.key --ssl-certfile cf.pem --log-level debug
 '''
 # 启动服务器时的优化配置
 if __name__ == "__main__":
