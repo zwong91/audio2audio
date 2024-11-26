@@ -9,6 +9,7 @@ import numpy as np
 import tempfile
 import soundfile as sf
 import io
+import wave
 import sys
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -133,8 +134,11 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
-    async with aiofiles.open(file_path, 'wb') as f:
-        await f.write(data.tobytes())
+    with wave.open(file_path, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(16000)
+        wav_file.writeframes(data)
 
     res = await asyncio.to_thread(
         sense_voice_model.generate,
@@ -216,9 +220,6 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
 
             return speech_bytes
 
-    # 更新缓冲区，保留未处理的数据
-    #session_buffers[session_id] = audio_buffer[idx:]
-
     # 语音尚未结束，继续等待
     return None
 
@@ -226,27 +227,18 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
 async def process_audio(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
-        # 0. 音频数据预处理: 缓冲音频并检测语音结束
+        # 1. 音频数据预处理: 缓冲音频并检测语音结束
         speech_res = await buffer_and_detect_speech(session_id, audio_data)
         if speech_res is None:
             # 语音尚未结束，继续等待
             return {'status': 'listening'} 
 
         speech_bytes = speech_res
-        loop = asyncio.get_running_loop()
-
-        # 1. 音频数据预处理
-        audio_np = await loop.run_in_executor(
-            process_pool, 
-            np.frombuffer, 
-            audio_data, 
-            np.int16
-        )
 
         # 2. 音频转写
         async def transcribe_audio():
-            if audio_np is not None:
-                asr_res = await transcribe((16000, audio_np))
+            if speech_bytes is not None:
+                asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
                 return asr_res['text'], asr_res['file_path']
             return '', None
 
@@ -388,7 +380,7 @@ if __name__ == "__main__":
     uvicorn_config = uvicorn.Config(
         "app_ws:app",
         host="0.0.0.0",
-        port=5555,
+        port=6666,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
         workers=os.cpu_count(),  # 根据CPU核心数设置workers
