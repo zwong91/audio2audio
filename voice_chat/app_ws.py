@@ -49,7 +49,7 @@ sense_voice_model = AutoModel(
 chat = ChatTTS.Chat()
 print("loading ChatTTS model...")
 chat.load(compile=False)
-speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
+speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'), weights_only=True)
 
 
 ckpt_converter = '../OpenVoice/checkpoints/converter'
