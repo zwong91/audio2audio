@@ -220,7 +220,7 @@ async def text_to_speech(text):
     wav = tts.tts(
         text=text, 
         speaker_wav="../speaker/liuyifei.wav", 
-        language="cn"
+        language="zh-cn"
     )
     
     # Text to speech to a file
@@ -229,7 +229,7 @@ async def text_to_speech(text):
         tts.tts_to_file(
             text=text,
             speaker_wav="../speaker/liuyifei.wav",  # 添加逗号
-            language="cn",
+            language="zh-cn",
             file_path=audio_file_path
         )
 
