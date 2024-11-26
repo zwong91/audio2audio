@@ -69,7 +69,7 @@ openai.api_key = OPENAI_API_KEY
 
 
 import torch
-from TTS.api import TTS
+from XTTS_v2.api import TTS
 
 # Get device
 device = "cuda" if torch.cuda.is_available() else "cpu"
