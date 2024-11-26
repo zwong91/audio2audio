@@ -9,6 +9,7 @@ import numpy as np
 import tempfile
 import soundfile as sf
 import io
+import wave
 import sys
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -34,16 +35,38 @@ from ChatTTS import ChatTTS
 from OpenVoice import se_extractor
 from OpenVoice.api import ToneColorConverter
 
+from VAD.vad_handler import VADHandler
+# 创建全局的 VADHandler 实例
+vad_handler = VADHandler()
+vad_handler.setup(
+    should_listen=asyncio.Event(),  # 用于控制监听状态
+    thresh=0.5,  # 自行调整阈值
+    sample_rate=16000,
+    min_silence_ms=1000,
+    min_speech_ms=500,
+    max_speech_ms=float("inf"),
+    speech_pad_ms=30,
+    audio_enhancement=False,  # 根据需要开启音频增强
+)
+
+from VAD.vad_webrtc import WebRTCVAD
+# 创建WebRTCVAD 实例
+webrtc_vad = WebRTCVAD()
+
+# 初始化缓冲区
+session_buffers = {}  # 用于存储每个会话的音频缓冲区
+
 # 初始化模型
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
-asr_model_name_or_path = "iic/SenseVoiceSmall"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 sense_voice_model = AutoModel(
-    model=asr_model_name_or_path,
+    model="iic/SenseVoiceSmall",
     vad_model="fsmn-vad",
     vad_kwargs={"max_single_segment_time": 30000},
-    trust_remote_code=True, device="cuda:0", remote_code="./sensevoice/model.py"
+    trust_remote_code=True, device=device, remote_code="./sensevoice/model.py"
 )
 
 chat = ChatTTS.Chat()
@@ -53,7 +76,7 @@ speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device(
 
 
 ckpt_converter = '../OpenVoice/checkpoints/converter'
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
 tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
@@ -112,8 +135,11 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
-    async with aiofiles.open(file_path, 'wb') as f:
-        await f.write(data.tobytes())
+    with wave.open(file_path, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(16000)
+        wav_file.writeframes(data)
 
     res = await asyncio.to_thread(
         sense_voice_model.generate,
@@ -150,23 +176,70 @@ async def cleanup_temp_files(file_path: str) -> None:
     except Exception as e:
         logging.error(f"清理临时文件失败 {file_path}: {str(e)}")
 
-async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: str, 
+
+async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[bytes]:
+    """
+    缓冲音频数据并使用 VAD 检测语音结束。
+
+    参数：
+    - session_id: 会话 ID，用于区分不同的会话。
+    - audio_data: 接收到的音频数据，字节格式。
+
+    返回值：
+    - 如果尚未检测到语音结束，返回 None。
+    - 如果检测到语音结束，返回完整的音频数据（bytes）。
+    """
+    # 获取对应会话的缓冲区，没有则创建
+    if session_id not in session_buffers:
+        session_buffers[session_id] = bytearray()
+
+    audio_buffer = session_buffers[session_id]
+
+    # 将音频数据添加到缓冲区
+    audio_buffer.extend(audio_data)
+
+    # 确保音频帧长度为 480 个采样点
+    frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
+
+    # 初始化变量
+    idx = 0
+    while idx + frame_size <= len(audio_buffer):
+        chunk = audio_buffer[idx: idx + frame_size]
+        idx += frame_size
+
+        # 使用 WebRTCVAD 进行语音活动检测
+        vad_result = webrtc_vad.voice_activity_detection(chunk)
+
+        print("vad result: {}", vad_result)
+        if vad_result == "1":
+            # 语音活动检测到，继续累积数据
+            continue
+        elif vad_result == "X":
+            # 语音活动结束，清空缓冲区并返回完整的音频数据
+            speech_bytes = bytes(audio_buffer)
+            session_buffers[session_id] = bytearray()
+
+            return speech_bytes
+
+    # 语音尚未结束，继续等待
+    return None
+
+
+async def process_audio(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
-        loop = asyncio.get_running_loop()
+        # 1. 音频数据预处理: 缓冲音频并检测语音结束
+        speech_res = await buffer_and_detect_speech(session_id, audio_data)
+        if speech_res is None:
+            # 语音尚未结束，继续等待
+            return {'status': 'listening'} 
 
-        # 1. 音频数据预处理
-        audio_np = await loop.run_in_executor(
-            process_pool, 
-            np.frombuffer, 
-            audio_data, 
-            np.int16
-        )
+        speech_bytes = speech_res
 
         # 2. 音频转写
         async def transcribe_audio():
-            if audio_np is not None:
-                asr_res = await transcribe((16000, audio_np))
+            if speech_bytes is not None:
+                asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
                 return asr_res['text'], asr_res['file_path']
             return '', None
 
@@ -255,11 +328,13 @@ async def process_audio_optimized(audio_data: bytes, history: List, speaker_id: 
 @app.websocket("/transcribe")
 async def websocket_endpoint(websocket: WebSocket, background_tasks: BackgroundTasks):
     await websocket.accept()
+    session_id = str(uuid4())  # 为每个连接生成一个唯一的会话 ID
     try:
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
-            result = await process_audio_optimized(
+            result = await process_audio(
+                session_id,
                 base64.b64decode(message[2]),
                 message[0],
                 message[1],
