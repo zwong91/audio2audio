@@ -38,23 +38,22 @@ from OpenVoice.api import ToneColorConverter
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
 asr_model_name_or_path = "iic/SenseVoiceSmall"
 sense_voice_model = AutoModel(
     model=asr_model_name_or_path,
     vad_model="fsmn-vad",
     vad_kwargs={"max_single_segment_time": 30000},
-    trust_remote_code=True, device=device, remote_code="./sensevoice/model.py"
+    trust_remote_code=True, device="cuda:0", remote_code="./sensevoice/model.py"
 )
 
-# chat = ChatTTS.Chat()
-# print("loading ChatTTS model...")
-# chat.load(compile=False)
-speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'), weights_only=True)
+chat = ChatTTS.Chat()
+print("loading ChatTTS model...")
+chat.load(compile=False)
+speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
 
 
 ckpt_converter = '../OpenVoice/checkpoints/converter'
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
 tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
@@ -307,10 +306,10 @@ if __name__ == "__main__":
     uvicorn_config = uvicorn.Config(
         "app_ws:app",
         host="0.0.0.0",
-        port=6666,
+        port=5555,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
-        workers=1,  # 根据CPU核心数设置workers
+        workers=os.cpu_count(),  # 根据CPU核心数设置workers
         loop="uvloop",
         http="httptools",
         ws="websockets",
