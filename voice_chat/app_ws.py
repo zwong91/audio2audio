@@ -234,7 +234,6 @@ async def process_audio(session_id: str, audio_data: bytes, history: List, speak
             return {'status': 'listening'} 
 
         speech_bytes = speech_res
-        loop = asyncio.get_running_loop()
 
         # 2. 音频转写
         async def transcribe_audio():
@@ -381,7 +380,7 @@ if __name__ == "__main__":
     uvicorn_config = uvicorn.Config(
         "app_ws:app",
         host="0.0.0.0",
-        port=7777,
+        port=6666,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
         workers=os.cpu_count(),  # 根据CPU核心数设置workers
