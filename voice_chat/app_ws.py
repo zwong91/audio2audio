@@ -46,9 +46,9 @@ sense_voice_model = AutoModel(
     trust_remote_code=True, device="cuda:0", remote_code="./sensevoice/model.py"
 )
 
-chat = ChatTTS.Chat()
-print("loading ChatTTS model...")
-chat.load(compile=False)
+# chat = ChatTTS.Chat()
+# print("loading ChatTTS model...")
+# chat.load(compile=False)
 speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'), weights_only=True)
 
 
