@@ -134,11 +134,11 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
-    with wave.open(file_path, "wb") as wav_file:
-        wav_file.setnchannels(1)
-        wav_file.setsampwidth(2)
-        wav_file.setframerate(16000)
-        wav_file.writeframes(data)
+    # with wave.open(file_path, "wb") as wav_file:
+    #     wav_file.setnchannels(1)
+    #     wav_file.setsampwidth(2)
+    #     wav_file.setframerate(16000)
+    #     wav_file.writeframes(data)
 
     res = await asyncio.to_thread(
         sense_voice_model.generate,
