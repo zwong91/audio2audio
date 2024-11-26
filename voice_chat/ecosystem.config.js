@@ -8,7 +8,7 @@ module.exports = {
       interpreter: "/home/ubuntu/miniconda3/envs/chattts/bin/python",
       env: {
         CONDA_DEFAULT_ENV: "chattts",
-        OPENAI_API_KEY: ""
+        OPENAI_API_KEY: "sk-xxxxx",
       },
     },
   ],
