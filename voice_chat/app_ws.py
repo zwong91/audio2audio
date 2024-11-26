@@ -23,9 +23,13 @@ import aiofiles.os
 import logging
 from pathlib import Path
 import base64
+from dotenv import load_dotenv
 import traceback
 import json
 import ssl
+
+# Load environment variables
+load_dotenv(override=True)
 
 sys.path.insert(1, "../sensevoice")
 sys.path.insert(1, "../")
@@ -59,7 +63,7 @@ sense_voice_model = AutoModel(
 chat = ChatTTS.Chat()
 print("loading ChatTTS model...")
 chat.load(compile=False)
-speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
+speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device(device), weights_only=True)
 
 
 ckpt_converter = '../OpenVoice/checkpoints/converter'

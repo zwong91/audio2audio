@@ -12,3 +12,4 @@ aiodns
 uvloop
 aiofiles
 webrtcvad
+python-dotenv
