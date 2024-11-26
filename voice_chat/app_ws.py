@@ -309,7 +309,7 @@ if __name__ == "__main__":
         port=6666,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
-        workers=os.cpu_count(),  # 根据CPU核心数设置workers
+        workers=1,  # 根据CPU核心数设置workers
         loop="uvloop",
         http="httptools",
         ws="websockets",
