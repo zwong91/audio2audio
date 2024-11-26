@@ -20,6 +20,7 @@ from fastapi.templating import Jinja2Templates
 from collections import deque
 import time
 import aiofiles.os
+from functools import wraps
 import logging
 from pathlib import Path
 import base64
@@ -27,6 +28,12 @@ from dotenv import load_dotenv
 import traceback
 import json
 import ssl
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(duration).2fs',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 # Load environment variables
 load_dotenv(override=True)
@@ -82,6 +89,17 @@ sense_voice_model = None
 chat = None
 tone_color_converter = None
 
+def timer_decorator(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = await func(*args, **kwargs)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f"{func.__name__} took {elapsed_time:.2f} seconds")
+        return result
+    return wrapper
+
 def create_app():
     app = FastAPI()
 
@@ -135,6 +153,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
         history.append([format_str_v2(q['content']), r['content']])
     return system, history
 
+@timer_decorator
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
@@ -157,6 +176,7 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     res_dict = {"file_path": file_path, "text": text}
     return res_dict
 
+@timer_decorator
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
     response = await asyncio.to_thread(
@@ -170,7 +190,7 @@ async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     file_name = os.path.basename(speech_file_path)
     return file_name, text
 
-
+@timer_decorator
 async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):     
     # 句子全局设置：讲话人音色和速度
     params_infer_code = ChatTTS.Chat.InferCodeParams(
@@ -239,7 +259,7 @@ async def cleanup_temp_files(file_path: str) -> None:
     except Exception as e:
         logging.error(f"清理临时文件失败 {file_path}: {str(e)}")
 
-
+@timer_decorator
 async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Optional[bytes]:
     """
     缓冲音频数据并使用 VAD 检测语音结束。
@@ -287,7 +307,7 @@ async def buffer_and_detect_speech(session_id: str, audio_data: bytes) -> Option
     # 语音尚未结束，继续等待
     return None
 
-
+@timer_decorator
 async def process_audio(session_id: str, audio_data: bytes, history: List, speaker_id: str, 
                                 background_tasks: BackgroundTasks) -> dict:
     try:
