@@ -213,7 +213,7 @@ async def text_to_speech_v2(text: str) -> Tuple[str, str]:
 
 
 @timer_decorator
-async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):     
+async def text_to_speech(text):     
     # Run TTS
     # ❗ Since this model is multi-lingual voice cloning model, we must set the target speaker_wav and language
     # Text to speech list of amplitude values as output
