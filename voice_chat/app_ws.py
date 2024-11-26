@@ -31,9 +31,17 @@ import ssl
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(duration).2fs',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+class TimingLogger:
+    def __init__(self, name):
+        self.logger = logging.getLogger(name)
+    
+    def log_timing(self, func_name: str, elapsed_time: float):
+        self.logger.info(f"{func_name} took {elapsed_time:.2f} seconds")
+
+logger = TimingLogger(__name__)
 
 # Load environment variables
 load_dotenv(override=True)
@@ -96,7 +104,7 @@ def timer_decorator(func):
         result = await func(*args, **kwargs)
         end_time = time.time()
         elapsed_time = end_time - start_time
-        logging.info(f"{func.__name__} took {elapsed_time:.2f} seconds")
+        logger.log_timing(func.__name__, elapsed_time)
         return result
     return wrapper
 
