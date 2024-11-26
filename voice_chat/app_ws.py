@@ -8,6 +8,7 @@ from uuid import uuid4
 import numpy as np
 import tempfile
 import soundfile as sf
+import soundfile
 import io
 import wave
 import sys
@@ -66,7 +67,18 @@ session_buffers = {}  # 用于存储每个会话的音频缓冲区
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
+import torch
+from TTS.api import TTS
+
+# Get device
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# List available 🐸TTS models
+print(TTS().list_models())
+
+# Init TTS
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
 
 # 定义默认系统消息
@@ -96,6 +108,7 @@ process_pool = ProcessPoolExecutor(max_workers=os.cpu_count())
 sense_voice_model = None
 chat = None
 tone_color_converter = None
+speaker = None
 
 def timer_decorator(func):
     @wraps(func)
@@ -198,8 +211,35 @@ async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     file_name = os.path.basename(speech_file_path)
     return file_name, text
 
+
 @timer_decorator
 async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):     
+    # Run TTS
+    # ❗ Since this model is multi-lingual voice cloning model, we must set the target speaker_wav and language
+    # Text to speech list of amplitude values as output
+    wav = tts.tts(
+        text=text, 
+        speaker_wav="../speaker/liuyifei.wav", 
+        language="cn"
+    )
+    
+    # Text to speech to a file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+        audio_file_path = tmpfile.name
+        tts.tts_to_file(
+            text=text,
+            speaker_wav="../speaker/liuyifei.wav",  # 添加逗号
+            language="cn",
+            file_path=audio_file_path
+        )
+
+    file_name = os.path.basename(audio_file_path)
+    return [file_name, text]
+
+
+
+@timer_decorator
+async def text_to_speech_v1(text, audio_ref='', oral=3, laugh=3, bk=3):     
     # 句子全局设置：讲话人音色和速度
     params_infer_code = ChatTTS.Chat.InferCodeParams(
         spk_emb = speaker, # add sampled speaker 
@@ -378,17 +418,17 @@ async def process_audio(session_id: str, audio_data: bytes, history: List, speak
                     tts_text = "".join(parts[:-1])
                 processed_tts_text += tts_text
 
-                tts_result = await text_to_speech_v2(tts_text)
+                tts_result = await text_to_speech(tts_text)
                 audio_file_path, text_data = tts_result
             else:
-                tts_result = await text_to_speech_v2(response_content)
+                tts_result = await text_to_speech(response_content)
                 audio_file_path, text_data = tts_result
                 processed_tts_text = response_content
 
             # 7. 处理剩余文本
             if processed_tts_text != response_content:
                 remaining_text = re.sub(f"^{re.escape(processed_tts_text)}", "", response_content)
-                tts_result = await text_to_speech_v2(remaining_text)
+                tts_result = await text_to_speech(remaining_text)
                 audio_file_path, text_data = tts_result
                 processed_tts_text += remaining_text
 

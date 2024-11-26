@@ -9,7 +9,9 @@ flask_sockets
 aiohttp-wsgi
 uvicorn[standard]
 aiodns
+soundfile
 uvloop
 aiofiles
 webrtcvad
 python-dotenv
+TTS
