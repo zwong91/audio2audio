@@ -429,9 +429,17 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 uvicorn app_ws:app --host 0.0.0.0 --port 5555 --ssl-keyfile cf.key --ssl-certfile cf.pem --log-level debug
 '''
 import uvicorn
+import resource
+import os
+
 if __name__ == "__main__":
-    uvicorn.run(
-        "app_ws:app",
+    # 设置文件描述符限制
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (65536, hard))
+
+    # 确保 'app_ws:app' 指定的应用实例是正确的
+    uvicorn_config = uvicorn.Config(
+        "app_ws:app",  # 确保 'app_ws' 模块中存在 'app' 实例
         host="0.0.0.0",
         port=5555,
         ssl_keyfile="cf.key",
@@ -443,3 +451,9 @@ if __name__ == "__main__":
         limit_max_requests=10000,
         backlog=2048
     )
+
+    # 创建 server 实例并启动
+    server = uvicorn.Server(uvicorn_config)
+
+    # 启动服务器
+    server.run()
