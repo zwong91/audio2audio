@@ -52,10 +52,10 @@ chat.load(compile=False)
 speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'), weights_only=True)
 
 
-ckpt_converter = '../OpenVoice/checkpoints/converter'
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
-tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
+# ckpt_converter = '../OpenVoice/checkpoints/converter'
+# device = "cuda:0" if torch.cuda.is_available() else "cpu"
+# tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+# tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
 # 定义默认系统消息
 default_system = """
