@@ -69,7 +69,7 @@ openai.api_key = OPENAI_API_KEY
 
 
 sys.path.insert(1, "../XTTS_v2")
-from XTTS_v2.api import TTS
+from XTTS_v2.TTS.api import TTS
 
 # Get device
 device = "cuda" if torch.cuda.is_available() else "cpu"
