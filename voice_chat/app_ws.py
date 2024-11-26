@@ -56,10 +56,10 @@ sense_voice_model = AutoModel(
     trust_remote_code=True, device=device, remote_code="./sensevoice/model.py"
 )
 
-chat = ChatTTS.Chat()
-print("loading ChatTTS model...")
-chat.load(compile=False)
-speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
+# chat = ChatTTS.Chat()
+# print("loading ChatTTS model...")
+# chat.load(compile=False)
+# speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'))
 
 
 ckpt_converter = '../OpenVoice/checkpoints/converter'
