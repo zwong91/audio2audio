@@ -35,20 +35,6 @@ from ChatTTS import ChatTTS
 from OpenVoice import se_extractor
 from OpenVoice.api import ToneColorConverter
 
-from VAD.vad_handler import VADHandler
-# 创建全局的 VADHandler 实例
-vad_handler = VADHandler()
-vad_handler.setup(
-    should_listen=asyncio.Event(),  # 用于控制监听状态
-    thresh=0.5,  # 自行调整阈值
-    sample_rate=16000,
-    min_silence_ms=1000,
-    min_speech_ms=500,
-    max_speech_ms=float("inf"),
-    speech_pad_ms=30,
-    audio_enhancement=False,  # 根据需要开启音频增强
-)
-
 from VAD.vad_webrtc import WebRTCVAD
 # 创建WebRTCVAD 实例
 webrtc_vad = WebRTCVAD()
