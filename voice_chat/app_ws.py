@@ -53,23 +53,6 @@ openai.api_key = OPENAI_API_KEY
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-sense_voice_model = AutoModel(
-    model="iic/SenseVoiceSmall",
-    vad_model="fsmn-vad",
-    vad_kwargs={"max_single_segment_time": 30000},
-    trust_remote_code=True, device=device, remote_code="./sensevoice/model.py"
-)
-
-chat = ChatTTS.Chat()
-print("loading ChatTTS model...")
-chat.load(compile=False)
-speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device(device), weights_only=True)
-
-
-ckpt_converter = '../OpenVoice/checkpoints/converter'
-
-tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
-tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
 # 定义默认系统消息
 default_system = """
@@ -93,11 +76,40 @@ os.makedirs("./tmp", exist_ok=True)
 History = List[Tuple[str, str]]
 Messages = List[Dict[str, str]]
 
-# 创建全局的进程池
 process_pool = ProcessPoolExecutor(max_workers=os.cpu_count())
+
+sense_voice_model = None
+chat = None
+tone_color_converter = None
 
 def create_app():
     app = FastAPI()
+
+    global sense_voice_model, chat, tone_color_converter
+    
+    # 初始化 ASR 模型
+    print("loading ASR model...")
+    sense_voice_model = AutoModel(
+        model="iic/SenseVoiceSmall",
+        vad_model="fsmn-vad",
+        vad_kwargs={"max_single_segment_time": 30000},
+        trust_remote_code=True, 
+        device=device, 
+        remote_code="./sensevoice/model.py"
+    )
+
+    # 初始化 TTS 模型
+    print("loading ChatTTS model...")
+    chat = ChatTTS.Chat()
+    chat.load(compile=False)
+    speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device(device), weights_only=True)
+
+    # 初始化音色转换器
+    ckpt_converter = '../OpenVoice/checkpoints/converter'
+    tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+    tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
+    
+
     templates = Jinja2Templates(directory="templates")
 
     @app.get("/")
