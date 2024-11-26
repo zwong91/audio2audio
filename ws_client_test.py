@@ -27,11 +27,7 @@ async def test_websocket():
     try:
         with open(audio_file_path, "rb") as audio_file:
             audio_data = audio_file.read()  # 读取音频文件内容
-            original_rate = 22050
-            target_rate = 16000
-            audio_data = np.random.randn(22050)  # 示例音频数据
-            resampled_audio = resample_audio(audio_data, original_rate, target_rate)    
-            encoded_audio = base64.b64encode(resampled_audio).decode('utf-8')  # 转换为Base64编码并解码为字符串
+            encoded_audio = base64.b64encode(audio_data).decode('utf-8')  # 转换为Base64编码并解码为字符串
 
 
         print(f"Encoded audio data: {encoded_audio[:50]}...")  # 只打印前50个字符，避免输出过长
@@ -70,14 +66,15 @@ async def test_websocket():
                         print(f"Total elapsed time: {elapsed_time:.2f} seconds")
 
                         # 发送静音数据来通知 VAD 检测到语音活动结束
-                        silence_duration = 1  # 发送静音数据的持续时间（秒）
-                        silence_chunk = b'\x00' * frame_size  # 每一帧的静音数据
-                        for _ in range(int(silence_duration / 0.03)):  # 发送静音数据，通常每帧间隔 30 毫秒
-                            encoded_audio = base64.b64encode(silence_chunk).decode('utf-8')
-                            data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
-                            json_data = json.dumps(data_to_send)
-                            await websocket.send(json_data)
-                            print("Silence data sent")
+                        # frame_size = 480 * 2  # 每帧 480 个采样点，每个采样点 2 个字节
+                        # silence_duration = 1  # 发送静音数据的持续时间（秒）
+                        # silence_chunk = b'\x00' * frame_size  # 每一帧的静音数据
+                        # for _ in range(int(silence_duration / 0.03)):  # 发送静音数据，通常每帧间隔 30 毫秒
+                        #     encoded_audio = base64.b64encode(silence_chunk).decode('utf-8')
+                        #     data_to_send = [[[' 只是雨滴 受什么麻烦的这还没有打雷呢 ', '下雨总让人心情沉重呢。要不要聊聊？']], "Azure-xiaoxiao", encoded_audio]
+                        #     json_data = json.dumps(data_to_send)
+                        #     await websocket.send(json_data)
+                        #     print("Silence data sent")
 
                         # 保持连接一段时间，以便服务器处理静音数据
                         await asyncio.sleep(60)

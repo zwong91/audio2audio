@@ -9,6 +9,7 @@ import numpy as np
 import tempfile
 import soundfile as sf
 import io
+import wave
 import sys
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -133,8 +134,11 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     samplerate, data = audio
     file_path = f"./tmp/asr_{uuid4()}.wav"
-    async with aiofiles.open(file_path, 'wb') as f:
-        await f.write(data.tobytes())
+    with wave.open(file_path, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(16000)
+        wav_file.writeframes(data)
 
     res = await asyncio.to_thread(
         sense_voice_model.generate,
@@ -232,18 +236,10 @@ async def process_audio(session_id: str, audio_data: bytes, history: List, speak
         speech_bytes = speech_res
         loop = asyncio.get_running_loop()
 
-        # 1. 音频数据预处理
-        audio_np = await loop.run_in_executor(
-            process_pool, 
-            np.frombuffer, 
-            speech_bytes, 
-            np.int16
-        )
-
-        # 2. 音频转写
+        # 1. 音频转写
         async def transcribe_audio():
-            if audio_np is not None:
-                asr_res = await transcribe((16000, audio_np))
+            if speech_bytes is not None:
+                asr_res = await transcribe((16000, np.frombuffer(speech_bytes, dtype=np.int16)))
                 return asr_res['text'], asr_res['file_path']
             return '', None
 
