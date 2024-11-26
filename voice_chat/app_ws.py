@@ -38,12 +38,14 @@ from OpenVoice.api import ToneColorConverter
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 openai.api_key = OPENAI_API_KEY
 
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 asr_model_name_or_path = "iic/SenseVoiceSmall"
 sense_voice_model = AutoModel(
     model=asr_model_name_or_path,
     vad_model="fsmn-vad",
     vad_kwargs={"max_single_segment_time": 30000},
-    trust_remote_code=True, device="cuda:0", remote_code="./sensevoice/model.py"
+    trust_remote_code=True, device=device, remote_code="./sensevoice/model.py"
 )
 
 # chat = ChatTTS.Chat()
@@ -52,10 +54,9 @@ sense_voice_model = AutoModel(
 speaker = torch.load('../speaker/speaker_5_girl.pth', map_location=torch.device('cpu'), weights_only=True)
 
 
-# ckpt_converter = '../OpenVoice/checkpoints/converter'
-# device = "cuda:0" if torch.cuda.is_available() else "cpu"
-# tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
-# tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
+ckpt_converter = '../OpenVoice/checkpoints/converter'
+tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
 # 定义默认系统消息
 default_system = """
