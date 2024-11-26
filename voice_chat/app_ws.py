@@ -167,6 +167,66 @@ async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     file_name = os.path.basename(speech_file_path)
     return file_name, text
 
+
+async def text_to_speech(text, audio_ref='', oral=3, laugh=3, bk=3):     
+    # 句子全局设置：讲话人音色和速度
+    params_infer_code = ChatTTS.Chat.InferCodeParams(
+        spk_emb = speaker, # add sampled speaker 
+        temperature = .3,   # using custom temperature
+        top_P = 0.7,        # top P decode
+        top_K = 20,         # top K decode
+    )
+
+    ###################################
+    # For sentence level manual control.
+
+    # 句子全局设置：口语连接、笑声、停顿程度
+    # oral：连接词，AI可能会自己加字，取值范围 0-9，比如：卡壳、嘴瓢、嗯、啊、就是之类的词。不宜调的过高。
+    # laugh：笑，取值范围 0-9
+    # break：停顿，取值范围 0-9
+    # use oral_(0-9), laugh_(0-2), break_(0-7)
+    # to generate special token in text to synthesize.
+    params_refine_text = ChatTTS.Chat.RefineTextParams(
+        prompt='[oral_{}][laugh_{}][break_{}]'.format(oral, laugh, bk)
+    )
+
+    wavs = await asyncio.to_thread(chat.infer, text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
+
+    # Run the base speaker tts, get the tts audio file
+    audio_data = np.array(wavs[0]).flatten()
+    sample_rate = 24000
+    text_data = text[0] if isinstance(text, list) else text
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+        src_path = tmpfile.name
+        soundfile.write(src_path, audio_data, sample_rate)
+
+    #audio_ref = '../speaker/liuyifei.wav'
+    if audio_ref != "" :
+      print("Ready for voice cloning!")
+      source_se, audio_name = se_extractor.get_se(src_path, tone_color_converter, target_dir='processed', vad=True)
+      reference_speaker = audio_ref
+      target_se, audio_name = se_extractor.get_se(reference_speaker, tone_color_converter, target_dir='processed', vad=True)
+
+      print("Get voices segment!")
+
+      # Run the tone color converter
+      # convert from file
+      with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+          audio_file_path = tmpfile.name
+          tone_color_converter.convert(
+              audio_src_path=src_path,
+              src_se=source_se,
+              tgt_se=target_se,
+              output_path=audio_file_path)
+    else:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+            audio_file_path = tmpfile.name
+            soundfile.write(audio_file_path, audio_data, sample_rate)
+
+    file_name = os.path.basename(audio_file_path)
+    return [file_name, text_data]
+
+
 async def cleanup_temp_files(file_path: str) -> None:
     try:
         path = Path(file_path)
@@ -377,6 +437,11 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 # 启动服务器时的优化配置
 if __name__ == "__main__":
     import uvicorn
+    import resource
+
+    # 设置文件描述符限制
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (65536, hard))
 
     uvicorn_config = uvicorn.Config(
         "app_ws:app",
