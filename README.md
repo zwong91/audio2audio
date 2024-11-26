@@ -19,10 +19,17 @@ For `SenseVoice`, visit [SenseVoice repo](https://github.com/FunAudioLLM/SenseVo
 - Clone the repo and submodules
 
 ``` sh
-git clone --recursive URL
-# If you failed to clone submodule due to network failures, please run following command until success
-cd rt-audio
-git submodule update --init --recursive
+
+#0  source code
+
+apt update
+# If you encounter sox compatibility issues
+# ubuntu
+apt-get install sox libsox-dev  ffmpeg  git-lfs -y
+
+git clone https://github.com/zwong91/rt-audio.git
+cd /workspace/rt-audio
+git pull
 
 #1 pre_install.sh
 # 安装 miniconda, PyTorch/CUDA 的 conda 环境
@@ -34,26 +41,11 @@ rm -rf ~/miniconda3/miniconda.sh
 conda config --set auto_activate_base false
 
 
-# Chatts 
+#2. Chatts 
 cd /workspace/rt-audio/ChatTTS
 conda create -n chatts python=3.10  -y
 conda activate chatts
 pip install -r requirements.txt 
-
-
-#2 CosyVoice (Optional)
-cd /workspace/rt-audio/cosyvoice
-conda create -n cosyvoice python=3.8  -y
-conda activate cosyvoice
-# pynini is required by WeTextProcessing, use conda to install it as it can be executed on all platform.
-conda install -y -c conda-forge pynini==2.1.5
-#pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
-pip install -r requirements.txt
-
-apt update
-# If you encounter sox compatibility issues
-# ubuntu
-apt-get install sox libsox-dev  ffmpeg  -y
 
 
 #3 SenseVoice
@@ -64,6 +56,7 @@ pip install -r requirements.txt
 #4  rt-audio
 cd /workspace/rt-audio
 pip install -r requirements.txt
+
 
 ```
 
