@@ -14,4 +14,3 @@ uvloop
 aiofiles
 webrtcvad
 python-dotenv
-TTS
