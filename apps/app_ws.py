@@ -197,6 +197,115 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     res_dict = {"file_path": file_path, "text": text}
     return res_dict
 
+
+@timer_decorator
+async def text_to_speech(text: str, language: str = "zh-cn") -> Tuple[str, str]:
+    """
+    使用 XTTS v2 实现快速多语言 TTS
+    
+    Args:
+        text: 要转换的文本
+        language: 语言代码 ("zh" 或 "en")
+    """
+    speech_file_path = f"/tmp/audio_{uuid4()}.wav"
+    
+    # 设置话者音色 (使用预定义的参考音频)
+    speaker_wav = "../speaker/liuyifei.wav"
+    
+    # 使用半精度推理加速
+    with torch.cuda.amp.autocast():
+        wav = await asyncio.to_thread(
+            tts.tts,
+            text=text,
+            speaker_wav=speaker_wav,
+            language=language
+        )
+    
+    # 异步写入文件
+    async with aiofiles.open(speech_file_path, 'wb') as f:
+        await f.write(wav)
+    
+    return os.path.basename(speech_file_path), text
+
+@timer_decorator
+async def text_to_speech_v1(text: str, audio_ref: str = '', oral: int = 3, laugh: int = 3, bk: int = 3) -> Tuple[str, str]:
+    """TTS 函数
+    Args:
+        text: 输入文本
+        audio_ref: 参考音频路径
+        oral: 口语程度 (0-9)
+        laugh: 笑声程度 (0-9)
+        bk: 停顿程度 (0-9)
+    Returns:
+        Tuple[音频文件名, 文本]
+    """
+    # 参数设置
+    params = {
+        'infer': ChatTTS.Chat.InferCodeParams(
+            spk_emb=speaker,
+            temperature=0.3,
+            top_P=0.7,
+            top_K=20
+        ),
+        'refine': ChatTTS.Chat.RefineTextParams(
+            prompt=f'[oral_{oral}][laugh_{laugh}][break_{bk}]'
+        )
+    }
+
+    # 生成音频
+    wavs = await asyncio.to_thread(
+        chat.infer, 
+        text, 
+        params_refine_text=params['refine'],
+        params_infer_code=params['infer']
+    )
+
+    # 处理音频数据
+    audio_data = np.array(wavs[0]).flatten()
+    sample_rate = 24000
+    text_data = text[0] if isinstance(text, list) else text
+
+    # 创建临时文件
+    async with aiofiles.tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+        audio_file_path = temp_file.name
+        
+        if audio_ref:
+            # 音色克隆
+            source_se, _ = await asyncio.to_thread(
+                se_extractor.get_se,
+                audio_file_path,
+                tone_color_converter,
+                target_dir='processed',
+                vad=True
+            )
+            
+            target_se, _ = await asyncio.to_thread(
+                se_extractor.get_se,
+                audio_ref,
+                tone_color_converter,
+                target_dir='processed',
+                vad=True
+            )
+            
+            # 转换音色
+            await asyncio.to_thread(
+                tone_color_converter.convert,
+                audio_src_path=audio_file_path,
+                src_se=source_se,
+                tgt_se=target_se,
+                output_path=audio_file_path
+            )
+        else:
+            # 直接写入音频
+            await asyncio.to_thread(
+                soundfile.write,
+                audio_file_path,
+                audio_data,
+                sample_rate
+            )
+
+    return os.path.basename(audio_file_path), text_data
+
 @timer_decorator
 async def text_to_speech_v2(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
@@ -210,92 +319,6 @@ async def text_to_speech_v2(text: str) -> Tuple[str, str]:
         await f.write(response.content)
     file_name = os.path.basename(speech_file_path)
     return file_name, text
-
-
-@timer_decorator
-async def text_to_speech(text):     
-    # Run TTS
-    # ❗ Since this model is multi-lingual voice cloning model, we must set the target speaker_wav and language
-    # Text to speech list of amplitude values as output
-    wav = tts.tts(
-        text=text, 
-        speaker_wav="../speaker/liuyifei.wav", 
-        language="zh-cn"
-    )
-    
-    # Text to speech to a file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-        audio_file_path = tmpfile.name
-        tts.tts_to_file(
-            text=text,
-            speaker_wav="../speaker/liuyifei.wav",  # 添加逗号
-            language="zh-cn",
-            file_path=audio_file_path
-        )
-
-    file_name = os.path.basename(audio_file_path)
-    return [file_name, text]
-
-
-
-@timer_decorator
-async def text_to_speech_v1(text, audio_ref='', oral=3, laugh=3, bk=3):     
-    # 句子全局设置：讲话人音色和速度
-    params_infer_code = ChatTTS.Chat.InferCodeParams(
-        spk_emb = speaker, # add sampled speaker 
-        temperature = .3,   # using custom temperature
-        top_P = 0.7,        # top P decode
-        top_K = 20,         # top K decode
-    )
-
-    ###################################
-    # For sentence level manual control.
-
-    # 句子全局设置：口语连接、笑声、停顿程度
-    # oral：连接词，AI可能会自己加字，取值范围 0-9，比如：卡壳、嘴瓢、嗯、啊、就是之类的词。不宜调的过高。
-    # laugh：笑，取值范围 0-9
-    # break：停顿，取值范围 0-9
-    # use oral_(0-9), laugh_(0-2), break_(0-7)
-    # to generate special token in text to synthesize.
-    params_refine_text = ChatTTS.Chat.RefineTextParams(
-        prompt='[oral_{}][laugh_{}][break_{}]'.format(oral, laugh, bk)
-    )
-
-    wavs = await asyncio.to_thread(chat.infer, text, params_refine_text=params_refine_text, params_infer_code=params_infer_code)
-
-    # Run the base speaker tts, get the tts audio file
-    audio_data = np.array(wavs[0]).flatten()
-    sample_rate = 24000
-    text_data = text[0] if isinstance(text, list) else text
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-        src_path = tmpfile.name
-        soundfile.write(src_path, audio_data, sample_rate)
-
-    #audio_ref = '../speaker/liuyifei.wav'
-    if audio_ref != "" :
-      print("Ready for voice cloning!")
-      source_se, audio_name = se_extractor.get_se(src_path, tone_color_converter, target_dir='processed', vad=True)
-      reference_speaker = audio_ref
-      target_se, audio_name = se_extractor.get_se(reference_speaker, tone_color_converter, target_dir='processed', vad=True)
-
-      print("Get voices segment!")
-
-      # Run the tone color converter
-      # convert from file
-      with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-          audio_file_path = tmpfile.name
-          tone_color_converter.convert(
-              audio_src_path=src_path,
-              src_se=source_se,
-              tgt_se=target_se,
-              output_path=audio_file_path)
-    else:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-            audio_file_path = tmpfile.name
-            soundfile.write(audio_file_path, audio_data, sample_rate)
-
-    file_name = os.path.basename(audio_file_path)
-    return [file_name, text_data]
 
 
 async def cleanup_temp_files(file_path: str) -> None:
@@ -517,16 +540,15 @@ if __name__ == "__main__":
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(resource.RLIMIT_NOFILE, (65536, hard))
 
-    # 确保 'app_ws:app' 指定的应用实例是正确的
     uvicorn_config = uvicorn.Config(
-        "app_ws:app",  # 确保 'app_ws' 模块中存在 'app' 实例
+        "app_ws:app",
         host="0.0.0.0",
         port=5555,
         ssl_keyfile="cf.key",
         ssl_certfile="cf.pem",
         loop="uvloop",
         log_level="debug",
-        workers=os.cpu_count(),  # 根据CPU核心数设置workers
+        workers=os.cpu_count(),
         limit_concurrency=1000,
         limit_max_requests=10000,
         backlog=2048
