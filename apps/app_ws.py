@@ -213,7 +213,7 @@ async def text_to_speech(text: str, language: str = "zh-cn") -> Tuple[str, str]:
     speaker_wav = "../speaker/liuyifei.wav"
     
     # 使用半精度推理加速
-    with torch.cuda.amp.autocast():
+    with torch.amp.autocast():
         wav = await asyncio.to_thread(
             tts.tts,
             text=text,
@@ -441,17 +441,17 @@ async def process_audio(session_id: str, audio_data: bytes, history: List, speak
                     tts_text = "".join(parts[:-1])
                 processed_tts_text += tts_text
 
-                tts_result = await text_to_speech(tts_text)
+                tts_result = await text_to_speech_v1(tts_text)
                 audio_file_path, text_data = tts_result
             else:
-                tts_result = await text_to_speech(response_content)
+                tts_result = await text_to_speech_v1(response_content)
                 audio_file_path, text_data = tts_result
                 processed_tts_text = response_content
 
             # 7. 处理剩余文本
             if processed_tts_text != response_content:
                 remaining_text = re.sub(f"^{re.escape(processed_tts_text)}", "", response_content)
-                tts_result = await text_to_speech(remaining_text)
+                tts_result = await text_to_speech_v1(remaining_text)
                 audio_file_path, text_data = tts_result
                 processed_tts_text += remaining_text
 
