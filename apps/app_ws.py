@@ -227,8 +227,7 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
             wav = await asyncio.to_thread(
                 tts.tts,
                 text=text,
-                speaker_wav="../speaker/liuyifei.wav",
-                language="zh"
+                speaker_wav="../speaker/liuyifei.wav"
             )
             
             # 确保音频数据是字节格式

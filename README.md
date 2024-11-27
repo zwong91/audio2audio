@@ -25,7 +25,7 @@ For `SenseVoice`, visit [SenseVoice repo](https://github.com/FunAudioLLM/SenseVo
 apt update
 # If you encounter sox compatibility issues
 # ubuntu
-apt-get install sox libsox-dev  ffmpeg  git-lfs -y
+apt-get install espeak-ng sox libsox-dev  ffmpeg  git-lfs -y
 
 git clone https://github.com/zwong91/rt-audio.git
 cd /workspace/rt-audio
