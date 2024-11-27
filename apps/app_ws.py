@@ -90,7 +90,9 @@ print(TTS().list_models())
 # Init TTS
 #tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 #"tts_models/zh-CN/baker/tacotron2-DDC"  # 中文模型
-tts = TTS("tts_models/en/vctk/vits").to(device)
+#tts_models/en/vctk/vits
+#tts_models/zh-CN/baker/vits
+tts = TTS("tts_models/zh-CN/baker/vits").to(device)
 
 # 定义默认系统消息
 default_system = """
@@ -231,7 +233,7 @@ async def text_to_speech(text: str, speaker_id: str = "p226") -> Tuple[str, str]
             wav = await asyncio.to_thread(
                 tts.tts,
                 text=text,
-                speaker_id=speaker_id,
+                speaker=speaker_id,
                 style_wav="../speaker/liuyifei.wav"
             )
             
