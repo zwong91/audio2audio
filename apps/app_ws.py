@@ -210,31 +210,34 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 
 
 @timer_decorator
-async def text_to_speech(text: str) -> Tuple[str, str]:
+async def text_to_speech(text: str, speaker_id: str = "p226") -> Tuple[str, str]:
     """
-    使用半精度加速的TTS实现
+    VITS TTS 实现
     
     Args:
         text: 输入文本
-    Returns:
-        Tuple[音频文件名, 文本]
+        speaker_id: 说话人ID (p226-p316 之间的值)
     """
     speech_file_path = f"/tmp/audio_{uuid4()}.wav"
 
     try:
+        # 使用半精度加速
         with torch.inference_mode(), \
              torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
+            
+            # VITS特有参数:
+            # speaker_id: 选择说话人 (p226-p316)
+            # style_wav: 风格参考音频
             wav = await asyncio.to_thread(
                 tts.tts,
                 text=text,
-                speaker_wav="../speaker/liuyifei.wav"
+                speaker_id=speaker_id,
+                style_wav="../speaker/liuyifei.wav"
             )
             
-            # 确保音频数据是字节格式
             if isinstance(wav, list):
                 wav = np.array(wav).tobytes()
         
-        # 异步写入文件
         async with aiofiles.open(speech_file_path, 'wb') as f:
             await f.write(wav)
         
