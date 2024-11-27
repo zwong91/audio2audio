@@ -1,6 +1,6 @@
 torch>=1.13
 torchaudio
-modelscope
+modelscope[audio]
 huggingface
 huggingface_hub
 funasr
