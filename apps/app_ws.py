@@ -226,7 +226,7 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
         am='fastspeech2_csmsc',
         voc='hifigan_csmsc',
         lang='zh',
-        device='cpu',
+        device=device,
         output=speech_file_path
     )
     
