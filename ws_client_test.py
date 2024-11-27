@@ -77,7 +77,7 @@ async def test_websocket():
                         #     print("Silence data sent")
 
                         # 保持连接一段时间，以便服务器处理静音数据
-                        await asyncio.sleep(60)
+                        await asyncio.sleep(1)
 
                     except websockets.exceptions.ConnectionClosedOK as e:
                         print(f"Connection closed normally: {e}")

@@ -217,7 +217,7 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
     communicate = edge_tts.Communicate(text=text, voice='zh-CN-XiaoxiaoNeural')
     await communicate.save(speech_file_path)
-    return speech_file_path, text
+    return os.path.basename(speech_file_path), text
 
 @timer_decorator
 async def text_to_speech_v1(text: str, audio_ref: str = '', oral: int = 3, laugh: int = 3, bk: int = 3) -> Tuple[str, str]:
