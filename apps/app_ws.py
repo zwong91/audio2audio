@@ -209,40 +209,28 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     return res_dict
 
 
+from paddlespeech.cli.tts import TTSExecutor
+
+tts_executor = TTSExecutor()
+
 @timer_decorator
 async def text_to_speech(text: str) -> Tuple[str, str]:
     """
-    实时中文TTS (RTF < 0.05)
-    使用 ParaformerTTS 实现
+    使用 FastSpeech 2 实现实时中文语音合成
     """
-    from paraformer_tts import TTSExecutor
-
-    try:
-        # 1. 初始化TTS (首次调用时)
-        if not hasattr(text_to_speech, 'tts'):
-            text_to_speech.tts = TTSExecutor(
-                model="speech_paraformer-large-tts-zh-cn-standard",
-                device=device,
-                use_fp16=True  # 使用半精度加速
-            )
-
-        # 2. 生成语音
-        with torch.inference_mode():
-            wav = await asyncio.to_thread(
-                text_to_speech.tts.synthesis,
-                text=text
-            )
-
-        # 3. 保存音频
-        speech_file_path = f"/tmp/audio_{uuid4()}.wav"
-        async with aiofiles.open(speech_file_path, 'wb') as f:
-            await f.write(wav)
-
-        return os.path.basename(speech_file_path), text
-
-    except Exception as e:
-        logger.error(f"ParaformerTTS failed: {str(e)}")
-        raise
+    speech_file_path = f"/tmp/audio_{uuid4()}.wav"
+    
+    await asyncio.to_thread(
+        tts_executor,
+        text=text,
+        am='fastspeech2_csmsc',
+        voc='hifigan_csmsc',
+        lang='zh',
+        device='cpu',
+        output=speech_file_path
+    )
+    
+    return speech_file_path, text
 
 @timer_decorator
 async def text_to_speech_v1(text: str, audio_ref: str = '', oral: int = 3, laugh: int = 3, bk: int = 3) -> Tuple[str, str]:
