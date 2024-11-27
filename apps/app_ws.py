@@ -85,18 +85,16 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # List available 🐸TTS models
 print("Available models:")
-available_models = TTS().list_models()
-print("Available Chinese models:")
+tts = TTS()
+available_models = tts.list_models()
 for model in available_models:
     if "zh-CN" in model:
         print(f"- {model}")
 
 # Init TTS
 #tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-#"tts_models/zh-CN/baker/tacotron2-DDC"  # 中文模型
 #tts_models/en/vctk/vits
-#tts_models/zh-CN/baker/vits
-tts = TTS("tts_models/zh-CN/baker/tacotron2-DDC").to(device)
+tts = TTS("tts_models/zh-CN/baker/vits").to(device)
 
 # 定义默认系统消息
 default_system = """
