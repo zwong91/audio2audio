@@ -92,22 +92,6 @@ print("Available models: {}", models.list_tts_models())
 #tts_models/en/vctk/vits
 tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
-import paddle
-from paddlespeech.cli.tts import TTSExecutor
-
-tts_executor = TTSExecutor()
-
-def initialize_tts():
-    _ = tts_executor(
-        text="初始化",  # 输入任意文本
-        am='fastspeech2_csmsc',
-        voc='hifigan_csmsc',
-        lang='zh',
-        device='gpu' if paddle.is_compiled_with_cuda() else 'cpu',
-        output=None  # 不需要输出文件
-    )
-
-initialize_tts()
 
 import edge_tts
 
