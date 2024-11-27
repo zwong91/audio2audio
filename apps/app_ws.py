@@ -92,6 +92,26 @@ print("Available models: {}", models.list_tts_models())
 #tts_models/en/vctk/vits
 tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
+import paddle
+from paddlespeech.cli.tts import TTSExecutor
+
+tts_executor = TTSExecutor()
+
+def initialize_tts():
+    _ = tts_executor(
+        text="初始化",  # 输入任意文本
+        am='fastspeech2_csmsc',
+        voc='hifigan_csmsc',
+        lang='zh',
+        device='gpu' if paddle.is_compiled_with_cuda() else 'cpu',
+        output=None  # 不需要输出文件
+    )
+
+initialize_tts()
+
+import edge_tts
+
+
 # 定义默认系统消息
 default_system = """
 你是小夏，一位典型的南方女孩。你出生于杭州，声音有亲近感，会用简洁语言表达你的想法。你是用户的好朋友。你的回答将通过逼真的文字转语音技术读出。
@@ -208,29 +228,11 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     res_dict = {"file_path": file_path, "text": text}
     return res_dict
 
-
-import paddle
-from paddlespeech.cli.tts import TTSExecutor
-
-tts_executor = TTSExecutor()
-
 @timer_decorator
 async def text_to_speech(text: str) -> Tuple[str, str]:
-    """
-    使用 FastSpeech 2 实现实时中文语音合成
-    """
-    speech_file_path = f"/tmp/audio_{uuid4()}.wav"
-    
-    await asyncio.to_thread(
-        tts_executor,
-        text=text,
-        am='fastspeech2_csmsc',
-        voc='hifigan_csmsc',
-        lang='zh',
-        device= 'gpu' if paddle.is_compiled_with_cuda() else 'cpu',
-        output=speech_file_path
-    )
-    
+    speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
+    communicate = edge_tts.Communicate(text=text, voice='zh-CN-XiaoxiaoNeural')
+    await communicate.save(speech_file_path)
     return speech_file_path, text
 
 @timer_decorator
