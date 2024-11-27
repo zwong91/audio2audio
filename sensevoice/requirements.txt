@@ -4,3 +4,5 @@ modelscope[audio]==1.9.5
 huggingface
 huggingface_hub
 funasr
+addict
+kwsbp==0.0.6
