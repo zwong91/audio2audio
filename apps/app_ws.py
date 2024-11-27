@@ -90,8 +90,7 @@ print("Available models: {}", models.list_tts_models())
 # Init TTS
 #tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 #tts_models/en/vctk/vits
-# 使用 FastPitch 或 VITS 架构的多语言模型
-tts = TTS("tts_models/multilingual/multi-dataset/your_tts").to(device)
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
 # 定义默认系统消息
 default_system = """
@@ -221,10 +220,11 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
         with torch.inference_mode(), \
              torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
             
+            # XTTS v2 支持中文
             wav = await asyncio.to_thread(
                 tts.tts,
                 text=text,
-                language="zh",
+                language="zh-CN",  # 修改为 zh-CN
                 speaker_wav="../speaker/liuyifei.wav"
             )
             
