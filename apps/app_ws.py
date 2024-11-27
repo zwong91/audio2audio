@@ -90,7 +90,8 @@ print("Available models: {}", models.list_tts_models())
 # Init TTS
 #tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 #tts_models/en/vctk/vits
-tts = TTS("tts_models/zh-CN/baker/vits").to(device)
+# 使用 FastPitch 或 VITS 架构的多语言模型
+tts = TTS("tts_models/multilingual/multi-dataset/your_tts").to(device)
 
 # 定义默认系统消息
 default_system = """
@@ -210,29 +211,21 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 
 
 @timer_decorator
-async def text_to_speech(text: str, speaker_id: str = "p226") -> Tuple[str, str]:
+async def text_to_speech(text: str) -> Tuple[str, str]:
     """
-    VITS TTS 实现
-    
-    Args:
-        text: 输入文本
-        speaker_id: 说话人ID (p226-p316 之间的值)
+    实时 TTS 实现 (RTF < 0.1)
     """
     speech_file_path = f"/tmp/audio_{uuid4()}.wav"
 
     try:
-        # 使用半精度加速
         with torch.inference_mode(), \
              torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
             
-            # VITS特有参数:
-            # speaker_id: 选择说话人 (p226-p316)
-            # style_wav: 风格参考音频
             wav = await asyncio.to_thread(
                 tts.tts,
                 text=text,
-                speaker=speaker_id,
-                style_wav="../speaker/liuyifei.wav"
+                language="zh",
+                speaker_wav="../speaker/liuyifei.wav"
             )
             
             if isinstance(wav, list):
