@@ -72,7 +72,7 @@ sys.path.insert(1, "../XTTS_v2")
 from XTTS_v2.TTS.api import TTS
 
 # Get device
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # List available 🐸TTS models
 print(TTS().list_models())
@@ -199,33 +199,39 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 
 
 @timer_decorator
-async def text_to_speech(text: str, language: str = "zh-cn") -> Tuple[str, str]:
+async def text_to_speech(text: str) -> Tuple[str, str]:
     """
-    使用 XTTS v2 实现快速多语言 TTS
+    使用半精度加速的TTS实现
     
     Args:
-        text: 要转换的文本
-        language: 语言代码 ("zh" 或 "en")
+        text: 输入文本
+    Returns:
+        Tuple[音频文件名, 文本]
     """
     speech_file_path = f"/tmp/audio_{uuid4()}.wav"
-    
-    # 设置话者音色 (使用预定义的参考音频)
-    speaker_wav = "../speaker/liuyifei.wav"
-    
-    # 使用半精度推理加速
-    with torch.amp.autocast():
-        wav = await asyncio.to_thread(
-            tts.tts,
-            text=text,
-            speaker_wav=speaker_wav,
-            language=language
-        )
-    
-    # 异步写入文件
-    async with aiofiles.open(speech_file_path, 'wb') as f:
-        await f.write(wav)
-    
-    return os.path.basename(speech_file_path), text
+
+    try:
+        # 使用新版 torch.amp API
+        scaler = torch.cuda.amp.GradScaler()
+        
+        with torch.inference_mode(), \
+             torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
+            wav = await asyncio.to_thread(
+                tts.tts,
+                text=text,
+                speaker_wav="../speaker/liuyifei.wav",
+                language="zh"
+            )
+        
+        # 异步写入文件
+        async with aiofiles.open(speech_file_path, 'wb') as f:
+            await f.write(wav)
+        
+        return os.path.basename(speech_file_path), text
+            
+    except Exception as e:
+        logger.error(f"TTS generation failed: {str(e)}")
+        raise
 
 @timer_decorator
 async def text_to_speech_v1(text: str, audio_ref: str = '', oral: int = 3, laugh: int = 3, bk: int = 3) -> Tuple[str, str]:
@@ -441,17 +447,17 @@ async def process_audio(session_id: str, audio_data: bytes, history: List, speak
                     tts_text = "".join(parts[:-1])
                 processed_tts_text += tts_text
 
-                tts_result = await text_to_speech_v1(tts_text)
+                tts_result = await text_to_speech(tts_text)
                 audio_file_path, text_data = tts_result
             else:
-                tts_result = await text_to_speech_v1(response_content)
+                tts_result = await text_to_speech(response_content)
                 audio_file_path, text_data = tts_result
                 processed_tts_text = response_content
 
             # 7. 处理剩余文本
             if processed_tts_text != response_content:
                 remaining_text = re.sub(f"^{re.escape(processed_tts_text)}", "", response_content)
-                tts_result = await text_to_speech_v1(remaining_text)
+                tts_result = await text_to_speech(remaining_text)
                 audio_file_path, text_data = tts_result
                 processed_tts_text += remaining_text
 
