@@ -41,6 +41,15 @@ class TimingLogger:
     
     def log_timing(self, func_name: str, elapsed_time: float):
         self.logger.info(f"{func_name} took {elapsed_time:.2f} seconds")
+    
+    def error(self, message: str):
+        self.logger.error(message)
+    
+    def info(self, message: str):
+        self.logger.info(message)
+    
+    def debug(self, message: str):
+        self.logger.debug(message)
 
 logger = TimingLogger(__name__)
 
@@ -75,11 +84,13 @@ from XTTS_v2.TTS.api import TTS
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # List available 🐸TTS models
+print("Available models:")
 print(TTS().list_models())
 
 # Init TTS
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-
+#tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+#"tts_models/zh-CN/baker/tacotron2-DDC"  # 中文模型
+tts = TTS("tts_models/en/vctk/vits").to(device)
 
 # 定义默认系统消息
 default_system = """
@@ -211,9 +222,6 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
     speech_file_path = f"/tmp/audio_{uuid4()}.wav"
 
     try:
-        # 使用新版 torch.amp API
-        scaler = torch.cuda.amp.GradScaler()
-        
         with torch.inference_mode(), \
              torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
             wav = await asyncio.to_thread(
@@ -222,6 +230,10 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
                 speaker_wav="../speaker/liuyifei.wav",
                 language="zh"
             )
+            
+            # 确保音频数据是字节格式
+            if isinstance(wav, list):
+                wav = np.array(wav).tobytes()
         
         # 异步写入文件
         async with aiofiles.open(speech_file_path, 'wb') as f:
