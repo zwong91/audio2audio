@@ -212,32 +212,42 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 @timer_decorator
 async def text_to_speech(text: str) -> Tuple[str, str]:
     """
-    实时 TTS 实现 (RTF < 0.1)
+    实时中文TTS (RTF < 0.1)
+    使用 FastSpeech2 + HiFiGAN 实现
     """
-    speech_file_path = f"/tmp/audio_{uuid4()}.wav"
+    import numpy as np
+    import soundfile as sf
+    from modelscope.pipelines import pipeline
+    from modelscope.utils.constant import Tasks
 
     try:
+        # 1. 初始化TTS pipeline (首次调用时)
+        if not hasattr(text_to_speech_realtime, 'tts_pipeline'):
+            text_to_speech_realtime.tts_pipeline = pipeline(
+                task=Tasks.TEXT_TO_SPEECH,
+                model='damo/speech_sambert-hifigan_tts_zh-cn_16k',  # 快速中文模型
+                output_dir='./tmp',
+                device=device
+            )
+
+        # 2. 生成语音
         with torch.inference_mode(), \
              torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
             
-            # XTTS v2 支持中文
-            wav = await asyncio.to_thread(
-                tts.tts,
-                text=text,
-                language="zh-CN",  # 修改为 zh-CN
-                speaker_wav="../speaker/liuyifei.wav"
+            result = await asyncio.to_thread(
+                text_to_speech_realtime.tts_pipeline,
+                input=text
             )
-            
-            if isinstance(wav, list):
-                wav = np.array(wav).tobytes()
-        
+
+        # 3. 保存音频
+        speech_file_path = f"/tmp/audio_{uuid4()}.wav"
         async with aiofiles.open(speech_file_path, 'wb') as f:
-            await f.write(wav)
-        
+            await f.write(result['output_wav'])
+
         return os.path.basename(speech_file_path), text
-            
+
     except Exception as e:
-        logger.error(f"TTS generation failed: {str(e)}")
+        logger.error(f"Fast TTS failed: {str(e)}")
         raise
 
 @timer_decorator
