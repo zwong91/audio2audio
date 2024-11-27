@@ -1,8 +1,6 @@
 torch>=1.13
 torchaudio
-modelscope[audio]==1.9.5
+modelscope
 huggingface
 huggingface_hub
 funasr
-addict
-kwsbp==0.0.6

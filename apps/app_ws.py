@@ -212,42 +212,36 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
 @timer_decorator
 async def text_to_speech(text: str) -> Tuple[str, str]:
     """
-    实时中文TTS (RTF < 0.1)
-    使用 FastSpeech2 + HiFiGAN 实现
+    实时中文TTS (RTF < 0.05)
+    使用 ParaformerTTS 实现
     """
-    import numpy as np
-    import soundfile as sf
-    from modelscope.pipelines import pipeline
-    from modelscope.utils.constant import Tasks
+    from paraformer_tts import TTSExecutor
 
     try:
-        # 1. 初始化TTS pipeline (首次调用时)
-        if not hasattr(text_to_speech_realtime, 'tts_pipeline'):
-            text_to_speech_realtime.tts_pipeline = pipeline(
-                task=Tasks.TEXT_TO_SPEECH,
-                model='damo/speech_sambert-hifigan_tts_zh-cn_16k',  # 快速中文模型
-                output_dir='./tmp',
-                device=device
+        # 1. 初始化TTS (首次调用时)
+        if not hasattr(text_to_speech, 'tts'):
+            text_to_speech.tts = TTSExecutor(
+                model="speech_paraformer-large-tts-zh-cn-standard",
+                device=device,
+                use_fp16=True  # 使用半精度加速
             )
 
         # 2. 生成语音
-        with torch.inference_mode(), \
-             torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
-            
-            result = await asyncio.to_thread(
-                text_to_speech_realtime.tts_pipeline,
-                input=text
+        with torch.inference_mode():
+            wav = await asyncio.to_thread(
+                text_to_speech.tts.synthesis,
+                text=text
             )
 
         # 3. 保存音频
         speech_file_path = f"/tmp/audio_{uuid4()}.wav"
         async with aiofiles.open(speech_file_path, 'wb') as f:
-            await f.write(result['output_wav'])
+            await f.write(wav)
 
         return os.path.basename(speech_file_path), text
 
     except Exception as e:
-        logger.error(f"Fast TTS failed: {str(e)}")
+        logger.error(f"ParaformerTTS failed: {str(e)}")
         raise
 
 @timer_decorator
