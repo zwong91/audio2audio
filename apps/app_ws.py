@@ -84,12 +84,8 @@ from XTTS_v2.TTS.api import TTS
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # List available 🐸TTS models
-print("Available models:")
-tts = TTS()
-available_models = tts.list_models()
-for model in available_models:
-    if "zh-CN" in model:
-        print(f"- {model}")
+models = TTS().list_models()
+print("Available models: {}", models.list_tts_models())
 
 # Init TTS
 #tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
