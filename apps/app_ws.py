@@ -209,6 +209,7 @@ async def transcribe(audio: Tuple[int, np.ndarray]) -> Dict[str, str]:
     return res_dict
 
 
+import paddle
 from paddlespeech.cli.tts import TTSExecutor
 
 tts_executor = TTSExecutor()
@@ -226,7 +227,7 @@ async def text_to_speech(text: str) -> Tuple[str, str]:
         am='fastspeech2_csmsc',
         voc='hifigan_csmsc',
         lang='zh',
-        device=device,
+        device= 'gpu' if paddle.is_compiled_with_cuda() else 'cpu',
         output=speech_file_path
     )
     
