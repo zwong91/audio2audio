@@ -84,15 +84,17 @@ from XTTS_v2.TTS.api import TTS
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # List available 🐸TTS models
-print("Available models:")
-print(TTS().list_models())
+available_models = tts.list_models()
+print("Available Chinese models:")
+for model in available_models:
+    if "zh-CN" in model:
+        print(f"- {model}")
 
 # Init TTS
 #tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 #"tts_models/zh-CN/baker/tacotron2-DDC"  # 中文模型
 #tts_models/en/vctk/vits
-#tts_models/zh-CN/baker/vits
-tts = TTS("tts_models/zh-CN/baker/vits").to(device)
+tts = TTS("tts_models/zh-CN/baker/tacotron2-DDC").to(device)
 
 # 定义默认系统消息
 default_system = """
