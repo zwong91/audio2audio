@@ -52,8 +52,11 @@ pip install -r requirements.txt
 cd /workspace/rt-audio/sensevoice
 pip install -r requirements.txt
 
+#4 XTTS
+cd /workspace/rt-audio/XTTS_v2
+pip install -e .[all]
 
-#4  rt-audio
+#5  rt-audio
 cd /workspace/rt-audio
 pip install -r requirements.txt
 
