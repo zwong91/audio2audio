@@ -9,7 +9,6 @@ load_dotenv(override=True)
 
 # 初始化模型
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-openai.api_key = OPENAI_API_KEY
 
 # 定义默认系统消息
 default_system = """
@@ -48,7 +47,7 @@ def messages_to_history(messages: Messages) -> Tuple[str, History]:
 class OpenAILLM(LLMInterface):
     def __init__(self, model: str = "gpt-4o-mini"):
         self.model = model
-        openai.api_key = "YOUR_OPENAI_API_KEY"
+        openai.api_key = OPENAI_API_KEY
 
     async def generate(self, history: List, messages: List[Dict[str, str]], max_tokens: int = 64) -> Tuple[str, List[Dict[str, str]]]:
         """根据对话历史生成回复"""
