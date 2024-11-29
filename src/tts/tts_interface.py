@@ -1,4 +1,5 @@
 from typing import Tuple
+
 class TTSInterface:
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
         """
