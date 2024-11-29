@@ -15,7 +15,7 @@ def parse_args():
         description="Audio AI Server: Real-time audio transcription "
                     "using self-hosted Sensevoice and WebSocket."
     )
-    parser.add_argument("--vad-type", type=str, default="sensevoice", help="VAD pipeline type")
+    parser.add_argument("--vad-type", type=str, default="webrtc", help="VAD pipeline type")
     parser.add_argument("--vad-args", type=str, default='{"auth_token": "huggingface_token"}', help="VAD args (JSON string)")
     parser.add_argument("--asr-type", type=str, default="faster_whisper", help="ASR pipeline type")
     parser.add_argument("--asr-args", type=str, default='{"model_size": "large-v3"}', help="ASR args (JSON string)")
