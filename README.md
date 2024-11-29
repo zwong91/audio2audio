@@ -33,7 +33,8 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm -rf ~/miniconda3/miniconda.sh
 ~/miniconda3/bin/conda init bash && source ~/miniconda3/bin/activate
 conda config --set auto_activate_base false
-
+conda create -n rt python=3.10  -y
+conda activate rt
 
 #2  rt-audio
 cd /workspace/rt-audio

@@ -2,7 +2,7 @@ import os
 
 from faster_whisper import WhisperModel
 
-from src.audio_utils import save_audio_to_file
+from src.utils.audio_utils import save_audio_to_file
 
 from .asr_interface import ASRInterface
 
