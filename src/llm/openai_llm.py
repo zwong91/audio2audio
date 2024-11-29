@@ -1,5 +1,5 @@
 import openai
-from llm_interface import LLMInterface
+from .llm_interface import LLMInterface
 from typing import List, Optional, Tuple, Dict
 import re
 from dotenv import load_dotenv

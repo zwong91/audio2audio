@@ -17,9 +17,7 @@ For `SenseVoice`, visit [SenseVoice repo](https://github.com/FunAudioLLM/SenseVo
 #0  source code
 
 apt update
-# If you encounter sox compatibility issues
-# ubuntu
-apt-get install vim espeak-ng sox libsox-dev  ffmpeg  git-lfs -y
+apt-get install vim  ffmpeg  git-lfs -y
 
 git clone https://github.com/zwong91/rt-audio.git
 cd /workspace/rt-audio
@@ -51,11 +49,6 @@ pip install -r requirements.txt
 
 [pem file](https://blog.csdn.net/liuchenbaidu/article/details/136722001)
 
-**voice chat**
-
 ``` sh
-cd src
-OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
+python3 -m src.app --vad-args '{"auth_token": "vad token here"}'
 ```
-
-<https://YOUR-IP-ADDRESS:5555/>
