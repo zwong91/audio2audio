@@ -5,6 +5,7 @@ from src.tts.tts_factory import TTSFactory
 
 from src.server import Server
 
+import logging
 import argparse
 
 def parse_args():
