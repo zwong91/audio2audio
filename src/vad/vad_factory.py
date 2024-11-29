@@ -1,5 +1,5 @@
 from .pyannote_vad import PyannoteVAD
-
+from .webrtc_vad import WebRTCVAD
 
 class VADFactory:
     """
@@ -20,5 +20,7 @@ class VADFactory:
         """
         if type == "pyannote":
             return PyannoteVAD(**kwargs)
+        elif type == "webrtc":
+            return WebRTCVAD(**kwargs)
         else:
             raise ValueError(f"Unknown VAD pipeline type: {type}")
