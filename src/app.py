@@ -9,6 +9,7 @@ from src.tts.tts_factory import TTSFactory
 
 from src.server import Server
 
+import asyncio
 
 def parse_args():
     parser = argparse.ArgumentParser(
