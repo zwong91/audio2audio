@@ -91,7 +91,7 @@ class Server:
                     logging.warning(f"Unexpected message type from {client.client_id}")
                 
                 client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline)
-            except websockets.ConnectionClosed as e:
+            except WebSocketDisconnect as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
                 break
             except Exception as e:
