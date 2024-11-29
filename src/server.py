@@ -53,7 +53,7 @@ class Server:
 
         # Add route to serve static files from the 'assets' directory
         self.app.add_event_handler("startup", self.startup)
-        self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
+        #self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
         # Define additional HTTP routes
         self.app.get("/asset/{filename}")(self.get_asset_file)
