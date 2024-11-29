@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Tuple, Dict
 
 class LLMInterface:
     async def generate(self, messages: List[Dict[str, str]], max_tokens: int = 64) -> Tuple[str, List[Dict[str, str]]]:
