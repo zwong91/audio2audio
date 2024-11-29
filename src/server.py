@@ -23,6 +23,8 @@ class Server:
         self,
         vad_pipeline,
         asr_pipeline,
+        llm_pipeline,
+        tts_pipeline,
         host="localhost",
         port=8765,
         sampling_rate=16000,
@@ -33,6 +35,8 @@ class Server:
     ):
         self.vad_pipeline = vad_pipeline
         self.asr_pipeline = asr_pipeline
+        self.llm_pipeline = llm_pipeline
+        self.tts_pipeline = tts_pipeline
         self.host = host
         self.port = port
         self.sampling_rate = sampling_rate
@@ -55,24 +59,38 @@ class Server:
         self.app.get("/asset/{filename}")(self.get_asset_file)
            
         # Add WebSocket route for audio transcription
-        self.app.websocket("/transcribe")(self.handle_websocket)
+        self.app.websocket("/transcribe")(self.websocket_endpoint)
 
     async def startup(self):
         """Called on startup to set up additional services."""
         logging.info(f"Starting server at {self.host}:{self.port}")
 
+    async def websocket_endpoint(self, websocket: WebSocket):
+        await websocket.accept()
+        client_id = str(uuid.uuid4())
+        client = Client(client_id, self.sampling_rate, self.samples_width)
+        self.connected_clients[client_id] = client
+        logging.info(f"Client {client_id} connected")
+
+        try:
+            await self.handle_audio(client, websocket)
+        finally:
+            del self.connected_clients[client_id]
+            logging.info(f"Client {client_id} disconnected")
+
     async def handle_audio(self, client, websocket):
         while True:
             try:
-                message = await websocket.recv()
-                if isinstance(message, bytes):
-                    client.append_audio_data(message)
-                elif isinstance(message, str):
+                payload = await websocket.receive_text()
+                message = json.loads(payload)
+                bytes = base64.b64decode(message[2])
+                client.append_audio_data(bytes)
+                if isinstance(message, str):
                     await self.handle_text_message(client, message)
                 else:
                     logging.warning(f"Unexpected message type from {client.client_id}")
                 
-                client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline)
+                client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline)
             except websockets.ConnectionClosed as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
                 break
@@ -89,18 +107,6 @@ class Server:
                 logging.debug(f"Updated config: {client.config}")
         except json.JSONDecodeError as e:
             logging.error(f"Failed to decode config message: {e}")
-
-    async def handle_websocket(self, websocket):
-        client_id = str(uuid.uuid4())
-        client = Client(client_id, self.sampling_rate, self.samples_width)
-        self.connected_clients[client_id] = client
-        logging.info(f"Client {client_id} connected")
-
-        try:
-            await self.handle_audio(client, websocket)
-        finally:
-            del self.connected_clients[client_id]
-            logging.info(f"Client {client_id} disconnected")
 
     async def get_asset_file(self, filename: str):
         file_path = os.path.join('/tmp', filename)

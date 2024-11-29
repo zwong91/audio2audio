@@ -57,7 +57,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
 
         self.processing_flag = False
 
-    def process_audio(self, websocket, vad_pipeline, asr_pipeline):
+    def process_audio(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
         Process audio chunks by checking their length and scheduling
         asynchronous processing.
@@ -87,10 +87,10 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             self.processing_flag = True
             # Schedule the processing in a separate task
             asyncio.create_task(
-                self.process_audio_async(websocket, vad_pipeline, asr_pipeline)
+                self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
             )
 
-    async def process_audio_async(self, websocket, vad_pipeline, asr_pipeline):
+    async def process_audio_async(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
         Asynchronously process audio for activity detection and transcription.
 
@@ -103,6 +103,8 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                                    transcriptions.
             vad_pipeline: The voice activity detection pipeline.
             asr_pipeline: The automatic speech recognition pipeline.
+            llm_pipeline: The language model pipeline.
+            tts_pipeline: The text-to-speech pipeline.
         """
         start = time.time()
         vad_results = await vad_pipeline.detect_activity(self.client)
@@ -118,13 +120,21 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             / (self.client.sampling_rate * self.client.samples_width)
         ) - self.chunk_offset_seconds
         if vad_results[-1]["end"] < last_segment_should_end_before:
-            #TODO: Add 
+            #TODO:
             transcription = await asr_pipeline.transcribe(self.client)
             if transcription["text"] != "":
+                tts_text, updated_history = await llm_pipeline.generate(
+                    transcription["text"]
+                )
+                speech_file, text = await tts_pipeline.text_to_speech(tts_text)
+                
                 end = time.time()
-                transcription["processing_time"] = end - start
-                json_transcription = json.dumps(transcription)
-                await websocket.send(json_transcription)
+                res["processing_time"] = end - start
+                res["history"] = updated_history
+                res["audio"] = speech_file
+                res["text"] = tts_text
+                res["transcription"] = transcription["text"]
+                await websocket.send(json.dumps(res))
             self.client.scratch_buffer.clear()
             self.client.increment_file_counter()
 
