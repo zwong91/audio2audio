@@ -130,11 +130,13 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 speech_file, text = await tts_pipeline.text_to_speech(tts_text)
                 
                 end = time.time()
-                res["processing_time"] = end - start
-                res["history"] = updated_history
-                res["audio"] = speech_file
-                res["text"] = tts_text
-                res["transcription"] = transcription["text"]
+                res = {
+                    "processing_time": end - start,
+                    "history": updated_history,
+                    "audio": speech_file,
+                    "text": tts_text,
+                    "transcription": transcription["text"]
+                }
                 await websocket.send(json.dumps(res))
             self.client.scratch_buffer.clear()
             self.client.increment_file_counter()
