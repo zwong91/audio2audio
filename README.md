@@ -1,14 +1,8 @@
-# rt-audio repo
+# rt-audio
 
 Welcome to the rt-audio repository! This project hosts two exciting applications leveraging advanced audio understand and speech generation models to bring your audio experiences to life:
 
 **Voice Chat** :  This application is designed to provide an interactive and natural chatting experience, making it easier to adopt sophisticated AI-driven dialogues in various settings.
-
-**Voice Translation**: Break down language barriers with our real-time voice translation tool. This application seamlessly translates spoken language on the fly, allowing for effective and fluid communication between speakers of different languages.
-
-For Details, visit [FunAudioLLM Homepage](https://fun-audio-llm.github.io/), [CosyVoice Paper](https://fun-audio-llm.github.io/pdf/CosyVoice_v1.pdf), [FunAudioLLM Technical Report](https://fun-audio-llm.github.io/pdf/FunAudioLLM.pdf)
-
-For `CosyVoice`, visit [CosyVoice repo](https://github.com/FunAudioLLM/CosyVoice) and [CosyVoice space](https://www.modelscope.cn/studios/iic/CosyVoice-300M).
 
 For `SenseVoice`, visit [SenseVoice repo](https://github.com/FunAudioLLM/SenseVoice) and [SenseVoice space](https://www.modelscope.cn/studios/iic/SenseVoice).
 
@@ -41,22 +35,7 @@ rm -rf ~/miniconda3/miniconda.sh
 conda config --set auto_activate_base false
 
 
-#2. Chatts 
-cd /workspace/rt-audio/ChatTTS
-conda create -n chatts python=3.10  -y
-conda activate chatts
-pip install -r requirements.txt 
-
-
-#3 SenseVoice
-cd /workspace/rt-audio/sensevoice
-pip install -r requirements.txt
-
-#4 XTTS
-cd /workspace/rt-audio/XTTS_v2
-pip install -e .[all]
-
-#5  rt-audio
+#2  rt-audio
 cd /workspace/rt-audio
 pip install -r requirements.txt
 
@@ -74,17 +53,8 @@ pip install -r requirements.txt
 **voice chat**
 
 ``` sh
-cd voice_chat
+cd src
 OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
 ```
 
 <https://YOUR-IP-ADDRESS:5555/>
-
-**voice translation**
-
-``` sh
-cd voice_translation
-OPENAI_API_KEY="YOUR-OPENAI-API-TOKEN" python app.py >> ./log.txt
-```
-
-<https://YOUR-IP-ADDRESS:60002/>

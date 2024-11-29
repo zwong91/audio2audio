@@ -1,6 +1,12 @@
+torch>=1.13
+torchaudio
 openai
 whisper
-gradio
+faster-whisper==1.0.2
+modelscope
+huggingface
+huggingface_hub
+funasr
 onnxruntime
 hyperpyyaml
 Flask
@@ -8,7 +14,6 @@ gevent-websocket
 flask_sockets
 aiohttp-wsgi
 uvicorn[standard]
-aiodns
 soundfile
 uvloop
 aiofiles

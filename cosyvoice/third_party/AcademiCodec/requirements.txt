@@ -1,6 +1,0 @@
-torchaudio
-tensorboard
-einops
-matplotlib
-pyyaml
-tqdm
