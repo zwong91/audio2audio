@@ -3,7 +3,7 @@ import json
 import logging
 import ssl
 import uuid
-import websockets
+import base64
 import uvicorn
 import os
 

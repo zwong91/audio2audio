@@ -50,5 +50,5 @@ pip install -r requirements.txt
 [pem file](https://blog.csdn.net/liuchenbaidu/article/details/136722001)
 
 ``` sh
-python3 -m src.app --vad-args '{"auth_token": "vad token here"}'
+python3 -m src.app --certfile cf.pem --keyfile cf.key --vad-args '{"auth_token": "vad token here"}'
 ```
