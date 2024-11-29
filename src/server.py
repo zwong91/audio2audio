@@ -11,6 +11,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks, Re
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
+from starlette.middleware.cors import CORSMiddleware
 
 from src.client import Client
 
@@ -47,7 +48,14 @@ class Server:
         
         # Initialize FastAPI app
         self.app = FastAPI()
-
+        # 配置 CORS 中间件
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         # Add HTTP routes (like rendering HTML)
         self.templates = Jinja2Templates(directory="templates")
 
