@@ -137,7 +137,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     "text": tts_text,
                     "transcription": transcription["text"]
                 }
-                await websocket.send(json.dumps(res))
+                await websocket.send_json(res)
             self.client.scratch_buffer.clear()
             self.client.increment_file_counter()
 
