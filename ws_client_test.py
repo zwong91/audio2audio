@@ -22,7 +22,7 @@ async def test_websocket():
     uri = "wss://108.136.246.72:8765/transcribe"  # WebSocket 服务器的地址
     
     # 读取音频文件并进行Base64编码
-    audio_file_path = "eng_speech.wav"  # 替换成你自己的音频文件路径
+    audio_file_path = "test.wav"  # 替换成你自己的音频文件路径
     
     try:
         with open(audio_file_path, "rb") as audio_file:
@@ -32,7 +32,7 @@ async def test_websocket():
 
         print(f"Encoded audio data: {encoded_audio[:50]}...")  # 只打印前50个字符，避免输出过长
         # 创建要发送的 JSON 数据
-        data_to_send = [[[' Q ', 'A']], "Azure-xiaoxiao", encoded_audio]
+        data_to_send = [[[' 今天打老虎吗? ', '没妞啊']], "Azure-xiaoxiao", encoded_audio]
         json_data = json.dumps(data_to_send)
 
         # 创建 SSL 上下文，忽略证书验证
