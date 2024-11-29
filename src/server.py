@@ -49,7 +49,7 @@ class Server:
         # Initialize FastAPI app
         self.app = FastAPI()
         # 配置 CORS 中间件
-        app.add_middleware(
+        self.app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=True,
