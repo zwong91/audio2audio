@@ -1,3 +1,7 @@
+import logging
+import json
+import argparse
+
 from src.asr.asr_factory import ASRFactory
 from src.vad.vad_factory import VADFactory
 from src.llm.llm_factory import LLMFactory
@@ -5,8 +9,6 @@ from src.tts.tts_factory import TTSFactory
 
 from src.server import Server
 
-import logging
-import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(
