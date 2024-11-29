@@ -1,7 +1,7 @@
 import os
 from uuid import uuid4
 import edge_tts
-from tts_interface import TTSInterface
+from .tts_interface import TTSInterface
 
 class EdgeTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
