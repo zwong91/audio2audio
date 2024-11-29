@@ -124,8 +124,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             transcription = await asr_pipeline.transcribe(self.client)
             if transcription["text"] != "":
                 tts_text, updated_history = await llm_pipeline.generate(
-                    [],
-                    transcription["text"]
+                    self.client.history, transcription["text"]
                 )
                 speech_file, text = await tts_pipeline.text_to_speech(tts_text)
                 

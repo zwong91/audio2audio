@@ -27,6 +27,8 @@ class Client:
 
     def __init__(self, client_id, sampling_rate, samples_width):
         self.client_id = client_id
+        self.history = []
+        self.speaker = None
         self.buffer = bytearray()
         self.scratch_buffer = bytearray()
         self.config = {
@@ -59,9 +61,12 @@ class Client:
             )
         )
 
-    def append_audio_data(self, audio_data):
+    def append_audio_data(self, audio_data, history, speaker):
         self.buffer.extend(audio_data)
         self.total_samples += len(audio_data) / self.samples_width
+        
+        self.history = history
+        self.speaker = speaker
 
     def clear_buffer(self):
         self.buffer.clear()

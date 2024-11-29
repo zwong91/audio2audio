@@ -84,7 +84,7 @@ class Server:
                 payload = await websocket.receive_text()
                 message = json.loads(payload)
                 bytes = base64.b64decode(message[2])
-                client.append_audio_data(bytes)
+                client.append_audio_data(bytes, message[0], message[1])
                 if isinstance(message, str):
                     await self.handle_text_message(client, message)
                 else:
