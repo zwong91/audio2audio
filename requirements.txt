@@ -6,9 +6,7 @@ faster-whisper
 huggingface
 huggingface_hub
 funasr
-Flask
-flask_sockets
-aiohttp-wsgi
+fastapi
 uvicorn[standard]
 soundfile
 uvloop
