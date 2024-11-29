@@ -1,4 +1,5 @@
 import os
+import torch
 
 from funasr import AutoModel
 
