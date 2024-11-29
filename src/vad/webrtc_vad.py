@@ -57,7 +57,7 @@ class WebRTCVAD(VADInterface):
         while idx + frame_size <= len(client.scratch_buffer):
             chunk = client.scratch_buffer[idx: idx + frame_size]
             idx += frame_size
-            vad_result = voice_activity_detection(chunk)
+            vad_result = self.voice_activity_detection(chunk)
             #print("vad result: {}", vad_result)
             if vad_result == "1":
                 # 语音活动检测到，继续累积数据
