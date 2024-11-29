@@ -152,8 +152,6 @@ class Server:
         """Start the WebSocket server."""
         ssl_context = None
         if self.certfile and self.keyfile:
-            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ssl_context.load_cert_chain(certfile=self.certfile, keyfile=self.keyfile)
             logging.info(f"Starting secure WebSocket server on {self.host}:{self.port}")
         else:
             logging.info(f"Starting WebSocket server on {self.host}:{self.port}")
