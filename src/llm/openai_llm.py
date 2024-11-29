@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
 
-from utils.rich_format_small import format_str_v2
+from src.utils.rich_format_small import format_str_v2
 
 # 初始化模型
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
