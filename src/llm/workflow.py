@@ -67,6 +67,7 @@ class WorkflowLLM(LLMInterface):
                     escaped_processed_tts_text = re.escape(processed_tts_text)
                     tts_text = re.sub(f"^{escaped_processed_tts_text}", "", out_text)
 
+                    logging.info(f"tts: {tts_text}")
                     # 更新对话历史
                     updated_history = history + [{'role': 'Emily Smith', 'text': out_text}]
                     return tts_text, updated_history
