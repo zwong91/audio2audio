@@ -23,7 +23,7 @@ class EdgeTTS(TTSInterface):
         await communicate.save(temp_file)
 
         # 使用 os.path 确保路径正确拼接
-        target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../vc")), "liuyifei.wav")
+        target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
         speech_file_path = f"/tmp/audio_{uuid4()}.wav"
 
         # 调用语音转换方法
