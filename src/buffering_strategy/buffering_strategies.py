@@ -140,6 +140,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     "text": tts_text,
                     "transcription": transcription["text"]
                 }
+                logger.info(f"res: {res}")
                 try:
                     await websocket.send_json(res)       
                 except Exception as e:
