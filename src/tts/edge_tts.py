@@ -14,10 +14,10 @@ class EdgeTTS(TTSInterface):
 
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
         """使用 edge_tts 库将文本转语音"""
-        temp_file = f"/tmp/audio_{uuid4()}.mp3"
+        temp_file = f"/tmp/audio_{uuid4()}.wav"
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
 
-        speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
+        speech_file_path = f"/tmp/audio_{uuid4()}.wav"
         self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav="../vc/liuyifei.wav", file_path=speech_file_path)
         return os.path.basename(speech_file_path), text
