@@ -7,6 +7,8 @@ from typing import Tuple
 import edge_tts
 from .tts_interface import TTSInterface
 
+sys.path.insert(1, "../vc")
+
 from src.xtts.TTS.api import TTS
 
 class EdgeTTS(TTSInterface):
@@ -22,5 +24,5 @@ class EdgeTTS(TTSInterface):
         await communicate.save(temp_file)
 
         speech_file_path = f"/tmp/audio_{uuid4()}.wav"
-        self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav="../../vc/liuyifei.wav", file_path=speech_file_path)
+        self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav="liuyifei.wav", file_path=speech_file_path)
         return os.path.basename(speech_file_path), text
