@@ -98,24 +98,13 @@ class Server:
                 else:
                     logging.warning(f"Unexpected message type from {client.client_id}")
                 
-                # 异步处理音频
-                asyncio.create_task(self._process_audio(client, websocket))
-                
+                client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline)
             except WebSocketDisconnect as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
                 break
             except Exception as e:
                 logging.error(f"Error handling audio for {client.client_id}: {e}")
                 break
-
-    async def _process_audio(self, client, websocket):
-        try:
-            # 异步执行音频处理
-             client.process_audio(
-                websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
-            )
-        except RuntimeError as e:
-            logging.error(f"Processing error for {client.client_id}: {e}")
 
     async def handle_text_message(self, client, message):
         """Handles incoming JSON text messages for config updates."""
