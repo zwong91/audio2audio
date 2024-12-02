@@ -1,5 +1,4 @@
 import torch
-
 import os
 import sys
 from uuid import uuid4
@@ -23,6 +22,11 @@ class EdgeTTS(TTSInterface):
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
 
+        # 使用 os.path 确保路径正确拼接
+        target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../vc")), "liuyifei.wav")
         speech_file_path = f"/tmp/audio_{uuid4()}.wav"
-        self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav="liuyifei.wav", file_path=speech_file_path)
+
+        # 调用语音转换方法
+        self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav=target_wav, file_path=speech_file_path)
+
         return os.path.basename(speech_file_path), text
