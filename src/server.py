@@ -13,6 +13,8 @@ from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+import concurrent.futures
+
 from src.client import Client
 
 class Server:
@@ -46,16 +48,8 @@ class Server:
         self.keyfile = keyfile
         self.connected_clients = {}
         
-        # Initialize FastAPI app
         self.app = FastAPI()
-        # 配置 CORS 中间件
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+
         # Add HTTP routes (like rendering HTML)
         self.templates = Jinja2Templates(directory="templates")
 
@@ -68,6 +62,9 @@ class Server:
            
         # Add WebSocket route for audio transcription
         self.app.websocket("/transcribe")(self.websocket_endpoint)
+        
+        # 创建线程池
+        self.executor = concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count() * 2)  # 根据需要调整线程池大小
 
     async def startup(self):
         """Called on startup to set up additional services."""
@@ -109,8 +106,14 @@ class Server:
                 break
 
     async def _process_audio(self, client, websocket):
+        loop = asyncio.get_event_loop()
+        
+        # 异步执行处理任务
+        result = await loop.run_in_executor(self.executor, self._process_audio_sync, client, websocket)
+        return result
+
+    def _process_audio_sync(self, client, websocket):
         try:
-            # 异步执行音频处理
             client.process_audio(
                 websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
             )
@@ -159,7 +162,7 @@ class Server:
             ssl_keyfile=self.keyfile,
             loop="uvloop",
             log_level="debug",
-            workers=os.cpu_count(),
+            workers=os.cpu_count() * 2,
             limit_concurrency=1000,
             limit_max_requests=10000,
             backlog=2048
