@@ -6,7 +6,7 @@ import aiohttp
 import asyncio
 import json
 from dotenv import load_dotenv
-from loguru import logger
+import logging
 
 # 加载环境变量
 load_dotenv(override=True)
@@ -53,7 +53,7 @@ class WorkflowLLM(LLMInterface):
             try:
                 async with session.post(url, headers=headers, json=data) as response:
                     if response.status != 200:
-                        logger.error(f"请求失败, 错误代码: {response.status}, 原因: {await response.text()}")
+                        logging.error(f"请求失败, 错误代码: {response.status}, 原因: {await response.text()}")
                         return "", history  # 请求失败返回空字符串并保留历史
 
                     # 获取返回的数据
@@ -72,5 +72,5 @@ class WorkflowLLM(LLMInterface):
                     return tts_text, updated_history
 
             except Exception as e:
-                logger.error(f"请求错误: {e}")
+                logging.error(f"请求错误: {e}")
                 return "", history  # 如果发生异常，返回空字符串并保留历史
