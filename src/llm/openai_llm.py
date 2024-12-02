@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
 
+import asyncio
+
 from src.utils.rich_format_small import format_str_v2
 
 # 初始化模型
