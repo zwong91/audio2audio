@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument("--llm-type", type=str, default="openai", help="OPENAI pipeline type")
     parser.add_argument("--tts-type", type=str, default="edge", help="TTS pipeline type")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host for the WebSocket server")
-    parser.add_argument("--port", type=int, default=5555, help="Port for the WebSocket server")
+    parser.add_argument("--port", type=int, default=8765, help="Port for the WebSocket server")
     parser.add_argument("--certfile", type=str, default=None, help="Path to SSL certificate file")
     parser.add_argument("--keyfile", type=str, default=None, help="Path to SSL key file")
     parser.add_argument("--log-level", type=str, default="error", choices=["debug", "info", "warning", "error"], help="Logging level")
