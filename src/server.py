@@ -99,7 +99,7 @@ class Server:
                     logging.warning(f"Unexpected message type from {client.client_id}")
                 
                 # 异步处理音频
-                await asyncio.to_thread(self._process_audio, client, websocket)
+                asyncio.create_task(self._process_audio(client, websocket))
                 
             except WebSocketDisconnect as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
