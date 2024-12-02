@@ -7,10 +7,15 @@ from .tts_interface import TTSInterface
 class EdgeTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
         self.voice = voice
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.tts = TTS(model_name="voice_conversion_models/multilingual/vctk/freevc24", progress_bar=False).to(device)
 
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
         """使用 edge_tts 库将文本转语音"""
-        speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
+        temp_file = f"/tmp/audio_{uuid4()}.mp3"
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
-        await communicate.save(speech_file_path)
+        await communicate.save(temp_file)
+
+        speech_file_path = f"/tmp/audio_{uuid4()}.mp3"
+        self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav="../vc/liuyifei.wav", file_path=speech_file_path)
         return os.path.basename(speech_file_path), text
