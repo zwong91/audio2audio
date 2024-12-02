@@ -7,9 +7,9 @@ class ASRFactory:
     def create_asr_pipeline(asr_type, **kwargs):
         if asr_type == "whisper":
             return WhisperASR(**kwargs)
-        if asr_type == "faster_whisper":
+        elif asr_type == "faster_whisper":
             return FasterWhisperASR(**kwargs)
-        if asr_type == "sensevoice":
+        elif asr_type == "sensevoice":
             return SenseVoiceASR(**kwargs)
         else:
             raise ValueError(f"Unknown ASR pipeline type: {asr_type}")
