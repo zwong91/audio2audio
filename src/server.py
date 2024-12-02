@@ -106,8 +106,15 @@ class Server:
                 break
 
     async def _process_audio(self, client, websocket):
+        loop = asyncio.get_event_loop()
+        
+        # 在线程池中异步执行处理任务
+        result = await loop.run_in_executor(self.executor, self._process_audio_sync, client, websocket)
+        return result
+
+    def _process_audio_sync(self, client, websocket):
+        # 这个方法将在线程池中执行
         try:
-            # 异步执行音频处理
             client.process_audio(
                 websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
             )
