@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
       {
-        name: "rt-audio",
+        name: "rt-audio2",
         script: "python3",
         args: "-m src.main --certfile cf.pem --keyfile cf.key",
         cwd: "/home/ubuntu/proj/rt-audio", // 替换为你的项目目录
