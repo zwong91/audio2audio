@@ -53,14 +53,14 @@ class OpenAILLM(LLMInterface):
         self.model = model
         openai.api_key = OPENAI_API_KEY
 
-    async def generate(self, history: List, messages: List[Dict[str, str]], max_tokens: int = 90) -> Tuple[str, List[Dict[str, str]]]:
+    async def generate(self, history: List, query: str, max_tokens: int = 128) -> Tuple[str, List[Dict[str, str]]]:
         """根据对话历史生成回复"""
         if history is None:
             history = []
 
         system = default_system
         messages = history_to_messages(history, system)
-
+        messages.append({'role': 'user', 'content': query})
         gpt_task = asyncio.create_task(
             asyncio.to_thread(
                 openai.chat.completions.create,
