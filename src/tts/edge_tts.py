@@ -5,7 +5,6 @@ from typing import Tuple
 import edge_tts
 from .tts_interface import TTSInterface
 
-sys.path.insert(1, "../xtts")
 from src.xtts.TTS.api import TTS
 
 class EdgeTTS(TTSInterface):
