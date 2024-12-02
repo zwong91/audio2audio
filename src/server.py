@@ -45,7 +45,7 @@ class Server:
         self.certfile = certfile
         self.keyfile = keyfile
         self.connected_clients = {}
-        
+
         # Initialize FastAPI app
         self.app = FastAPI()
         # 配置 CORS 中间件
@@ -65,7 +65,7 @@ class Server:
 
         # Define additional HTTP routes
         self.app.get("/asset/{filename}")(self.get_asset_file)
-           
+
         # Add WebSocket route for audio transcription
         self.app.websocket("/transcribe")(self.websocket_endpoint)
 
@@ -97,14 +97,25 @@ class Server:
                     await self.handle_text_message(client, message)
                 else:
                     logging.warning(f"Unexpected message type from {client.client_id}")
-                
-                client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline)
+
+                # 异步处理音频
+                asyncio.create_task(self._process_audio(client, websocket))
+
             except WebSocketDisconnect as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
                 break
             except Exception as e:
                 logging.error(f"Error handling audio for {client.client_id}: {e}")
                 break
+
+    async def _process_audio(self, client, websocket):
+        try:
+            # 异步执行音频处理
+            client.process_audio(
+                websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
+            )
+        except RuntimeError as e:
+            logging.error(f"Processing error for {client.client_id}: {e}")
 
     async def handle_text_message(self, client, message):
         """Handles incoming JSON text messages for config updates."""
@@ -137,7 +148,7 @@ class Server:
                 'Content-Disposition': 'inline'
             }
         )
-    
+
     def create_uvicorn_server(self, ssl_context=None):
         """Creates and returns a Uvicorn server instance."""
         uvicorn_config = uvicorn.Config(
@@ -166,4 +177,3 @@ class Server:
 
         server = self.create_uvicorn_server(ssl_context)
         server.run()
-
