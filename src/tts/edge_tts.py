@@ -1,3 +1,5 @@
+import torch
+
 import os
 import sys
 from uuid import uuid4
