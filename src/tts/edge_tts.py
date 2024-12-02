@@ -4,6 +4,8 @@ from typing import Tuple
 import edge_tts
 from .tts_interface import TTSInterface
 
+from xtts.TTS.api import TTS
+
 class EdgeTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
         self.voice = voice
