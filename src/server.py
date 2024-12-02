@@ -64,7 +64,7 @@ class Server:
         self.app.websocket("/transcribe")(self.websocket_endpoint)
         
         # 创建线程池
-        self.executor = concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count() * 2)  # 根据需要调整线程池大小
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() * 2)  # 根据需要调整线程池大小
 
     async def startup(self):
         """Called on startup to set up additional services."""
@@ -106,14 +106,8 @@ class Server:
                 break
 
     async def _process_audio(self, client, websocket):
-        loop = asyncio.get_event_loop()
-        
-        # 异步执行处理任务
-        result = await loop.run_in_executor(self.executor, self._process_audio_sync, client, websocket)
-        return result
-
-    def _process_audio_sync(self, client, websocket):
         try:
+            # 异步执行音频处理
             client.process_audio(
                 websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
             )
