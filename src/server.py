@@ -98,7 +98,11 @@ class Server:
                 else:
                     logging.warning(f"Unexpected message type from {client.client_id}")
                 
-                client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline)
+                try:
+                    client.process_audio(websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline)
+                except RuntimeError as e:
+                    logging.error(f"Processing error: {e}")
+                
             except WebSocketDisconnect as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
                 break
