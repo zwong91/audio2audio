@@ -137,8 +137,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     "transcription": transcription["text"]
                 }
                 try:
-                    if websocket.client_state == WebSocketState.CONNECTED:
-                        await websocket.send_json(res)
+                    await websocket.send_json(res)       
                 except Exception as e:
                     logging.error(f"Error sending WebSocket message: {e}")
             self.client.history = []
