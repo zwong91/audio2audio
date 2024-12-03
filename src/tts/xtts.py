@@ -18,9 +18,6 @@ class XTTS(TTSInterface):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts = TTS(model_name="voice_conversion_models/multilingual/vctk/freevc24", progress_bar=False).to(device)
 
-    async def voice_conversion_to_file(self, source_wav: str, target_wav: str, file_path: str):
-        self.tts.voice_conversion_to_file(source_wav=temp_file, target_wav=target_wav, file_path=speech_file_path)
-
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
@@ -33,9 +30,16 @@ class XTTS(TTSInterface):
         target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
         speech_file_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
 
-        # 调用语音转换方法
-        await asyncio.to_thread(self.voice_conversion_to_file, temp_file, target_wav, speech_file_path)
- 
+        tts_task = asyncio.create_task(
+            asyncio.to_thread(
+                self.tts.voice_conversion_to_file,
+                source_wav=temp_file,
+                target_wav=target_wav,
+                file_path=speech_file_path
+            )
+        )
+        await tts_task
+
         end_time = time.time()
         print(f"XTTS text_to_speech time: {end_time - start_time:.4f} seconds")
 
