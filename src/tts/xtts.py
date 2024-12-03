@@ -11,12 +11,13 @@ sys.path.insert(1, "../vc")
 from src.xtts.TTS.api import TTS
 
 class XTTS(TTSInterface):
-    def __init__(self, voice: str = ''):
+    def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
+        self.voice = voice
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts = TTS(model_name="voice_conversion_models/multilingual/vctk/freevc24", progress_bar=False).to(device)
 
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
-        """使用 edge_tts 库将文本转语音"""
+        """使用 x_tts 库将文本转语音"""
         temp_file = f"/tmp/audio_{uuid4()}.wav"
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
