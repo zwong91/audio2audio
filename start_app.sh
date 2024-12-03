@@ -1,4 +1,4 @@
 #!/bin/bash
 
-# 启动 FastAPI 应用
-python3 -m src.main --certfile cf.pem --keyfile cf.key
+# Start the app
+python3 -m src.main --certfile cf.pem --keyfile cf.key --port 5555
