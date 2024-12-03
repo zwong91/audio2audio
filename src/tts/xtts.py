@@ -23,7 +23,7 @@ class XTTS(TTSInterface):
         self.tts.tts_to_file(
             text,
             speaker_wav=target_wav,
-            language="zh-CN", 
+            language="zh-cn", 
             file_path=speech_file_path
         )
         return os.path.basename(speech_file_path), text
