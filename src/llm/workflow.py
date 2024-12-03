@@ -54,7 +54,7 @@ class WorkflowLLM(LLMInterface):
                 async with session.post(url, headers=headers, json=data) as response:
                     if response.status != 200:
                         logging.error(f"请求失败, 错误代码: {response.status}, 原因: {await response.text()}")
-                        return "", history  # 请求失败返回空字符串并保留历史
+                        return "服务器繁忙, 请稍后!", history  # 请求失败返回空字符串并保留历史
 
                     # 获取返回的数据
                     result_json = await response.json()

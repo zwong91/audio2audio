@@ -11,7 +11,7 @@ class EdgeTTS(TTSInterface):
 
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
         """使用 edge_tts 库将文本转语音"""
-        temp_file = f"/tmp/audio_{uuid4()}.mp3"
+        temp_file = f"/tmp/audio_{uuid4().hex[:8]}.mp3"
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
 

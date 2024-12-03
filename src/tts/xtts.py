@@ -21,7 +21,7 @@ class XTTS(TTSInterface):
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
         
-        temp_file = f"/tmp/audio_{uuid4()}.wav"
+        temp_file = f"/tmp/audio_{uuid4().hex[:8]}.mp3"
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
 
