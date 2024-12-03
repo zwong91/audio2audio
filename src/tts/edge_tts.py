@@ -6,7 +6,8 @@ import edge_tts
 from .tts_interface import TTSInterface
 
 class EdgeTTS(TTSInterface):
-    def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
+    #edge-tts --list-voices
+    def __init__(self, voice: str = 'zh-TW-HsiaoChenNeural'):
         self.voice = voice
 
     async def text_to_speech(self, text: str, rate: str = '50%', pitch: str = '-50Hz', volume: int = 70) -> Tuple[str, str]:
