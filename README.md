@@ -38,6 +38,9 @@ conda activate rt
 cd /workspace/rt-audio
 pip install -r requirements.txt
 
+#3 xtts
+cd cd /workspace/rt-audio/src/xtts
+pip install -e .[all,dev,notebooks]  # Select the relevant extras
 
 ```
 
