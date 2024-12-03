@@ -1,5 +1,6 @@
 import os
 from os import remove
+import time
 
 import webrtcvad
 
@@ -51,6 +52,7 @@ class WebRTCVAD(VADInterface):
                 return "_"
 
     async def detect_activity(self, client):
+        start_time = time.time()
         # 确保音频帧长度为 480 个采样点
         frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
         idx = 0
@@ -64,7 +66,11 @@ class WebRTCVAD(VADInterface):
                 continue
             elif vad_result == "X":
                 # 语音活动结束，返回结果
+                end_time = time.time()
+                print(f"VAD spent time: {end_time - start_time:.4f} seconds")
                 return [{"start": 0, "end": 0, "confidence": 1.0}]
         
+        end_time = time.time()
+        print(f"VAD spent time: {end_time - start_time:.4f} seconds")
         #语音尚未结束，继续等待数据
         return [{"start": 0, "end": 1e10, "confidence": 1.0}]
