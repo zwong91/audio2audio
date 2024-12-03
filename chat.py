@@ -40,7 +40,7 @@ def chat_ai(chat_phone, chat_text):
 if __name__ == '__main__':
     logger.info('')
 
-    phone = ''
+    phone = '13766058975'
     text = '你好?!'
     answer = chat_ai(phone, text)
     logger.info(f"ai 聊天, 问: {text}, 答: {answer}")

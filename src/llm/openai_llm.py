@@ -3,6 +3,7 @@ from .llm_interface import LLMInterface
 from typing import List, Optional, Tuple, Dict
 import re
 import os
+import time
 from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
@@ -54,6 +55,7 @@ class OpenAILLM(LLMInterface):
         openai.api_key = OPENAI_API_KEY
 
     async def generate(self, history: List, query: str, max_tokens: int = 128) -> Tuple[str, List[Dict[str, str]]]:
+        start_time = time.time()
         """根据对话历史生成回复"""
         if history is None:
             history = []
@@ -84,5 +86,6 @@ class OpenAILLM(LLMInterface):
         escaped_processed_tts_text = re.escape(processed_tts_text)
         tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
 
-
+        end_time = time.time()
+        print(f"openai llm time: {end_time - start_time:.4f} seconds")
         return tts_text, updated_history
