@@ -54,5 +54,5 @@ pip install -e .[all,dev,notebooks]  # Select the relevant extras
 [pem file](https://blog.csdn.net/liuchenbaidu/article/details/136722001)
 
 ``` sh
-python3 -m src.main --certfile cf.pem --keyfile cf.key --vad-args '{"auth_token": "vad token here"}'
+python3 -m src.main --certfile cf.pem --keyfile cf.key --vad-type pyannote --vad-args '{"auth_token": "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"}'
 ```

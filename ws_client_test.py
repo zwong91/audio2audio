@@ -19,8 +19,8 @@ def resample_audio(audio_data: np.ndarray, original_rate: int, target_rate: int)
 
 
 async def test_websocket():
-    uri = "wss://gtp.aleopool.cc/transcribe"  # WebSocket 服务器的地址
-    #uri = "wss:/108.136.246.72:8765/transcribe"  # WebSocket 服务器的地址
+    #uri = "wss://gtp.aleopool.cc/transcribe"  # WebSocket 服务器的地址
+    uri = "wss://108.136.246.72:8765/transcribe"  # WebSocket 服务器的地址
     # 读取音频文件并进行Base64编码
     audio_file_path = "vc/liuyifei.wav"  # 替换成你自己的音频文件路径
     
