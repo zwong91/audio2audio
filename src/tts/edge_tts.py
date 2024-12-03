@@ -20,9 +20,9 @@ class EdgeTTS(TTSInterface):
         temp_file = f"/tmp/audio_{uuid4().hex[:8]}.mp3"
         communicate = edge_tts.Communicate(
             text=text, 
-            voice=voice,
-            rate=rate, 
-            pitch=pitch, 
+            voice=self.voice,
+            rate=rate,
+            pitch=pitch,
             volume=volume
         )
         await communicate.save(temp_file)
