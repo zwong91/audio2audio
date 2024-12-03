@@ -12,7 +12,7 @@ from src.xtts.TTS.api import TTS
 class XTTS(TTSInterface):
     def __init__(self, voice: str = ''):
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False).to(device)
+        self.tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
     async def text_to_speech(self, text: str) -> Tuple[str, str]:
       
