@@ -1,7 +1,6 @@
 import openai
 from .llm_interface import LLMInterface
 from typing import List, Optional, Tuple, Dict
-import re
 import os
 import time
 from dotenv import load_dotenv
@@ -54,7 +53,7 @@ class OpenAILLM(LLMInterface):
         self.model = model
         openai.api_key = OPENAI_API_KEY
 
-    async def generate(self, history: List, query: str, max_tokens: int = 128) -> Tuple[str, List[Dict[str, str]]]:
+    async def generate(self, history: List, query: str, max_tokens: int = 64) -> Tuple[str, List[Dict[str, str]]]:
         start_time = time.time()
         """根据对话历史生成回复"""
         if history is None:
@@ -72,9 +71,6 @@ class OpenAILLM(LLMInterface):
             )
         )
         response = await gpt_task
-        
-        processed_tts_text = ""
-        punctuation_pattern = r'([!?;。！？])'
 
         role = response.choices[0].message.role
         response_content = response.choices[0].message.content
@@ -83,9 +79,6 @@ class OpenAILLM(LLMInterface):
             messages + [{'role': role, 'content': response_content}]
         )
 
-        escaped_processed_tts_text = re.escape(processed_tts_text)
-        tts_text = re.sub(f"^{escaped_processed_tts_text}", "", response_content)
-
         end_time = time.time()
         print(f"openai llm time: {end_time - start_time:.4f} seconds")
-        return tts_text, updated_history
+        return response_content, updated_history
