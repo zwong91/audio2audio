@@ -130,13 +130,14 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 tts_text, updated_history = await llm_pipeline.generate(
                     self.client.history, transcription["text"]
                 )
-                speech_audio, text = await tts_pipeline.text_to_speech(tts_text)
+                speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
                 encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
                 end = time.time()
                 res = {
                     "processing_time": end - start,
                     "history": updated_history,
-                    "audio": encoded_speech,
+                    "audio": speech_file,
+                    "stream": encoded_speech,
                     "text": tts_text,
                     "transcription": transcription["text"]
                 }
