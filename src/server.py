@@ -14,10 +14,6 @@ from starlette.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from src.client import Client
-from src.utils.logger import TimingLogger
-
-logger = TimingLogger(__name__)
-
 class Server:
     """
     WebSocket server for real-time audio transcription with VAD and ASR pipelines.
@@ -74,20 +70,20 @@ class Server:
 
     async def startup(self):
         """Called on startup to set up additional services."""
-        logger.info(f"Starting server at {self.host}:{self.port}")
+        logging.info(f"Starting server at {self.host}:{self.port}")
 
     async def websocket_endpoint(self, websocket: WebSocket):
         await websocket.accept()
         client_id = str(uuid.uuid4())
         client = Client(client_id, self.sampling_rate, self.samples_width)
         self.connected_clients[client_id] = client
-        logger.info(f"Client {client_id} connected")
+        logging.info(f"Client {client_id} connected")
 
         try:
             await self.handle_audio(client, websocket)
         finally:
             del self.connected_clients[client_id]
-            logger.info(f"Client {client_id} disconnected")
+            logging.info(f"Client {client_id} disconnected")
 
     async def handle_audio(self, client, websocket):
         while True:
@@ -99,16 +95,16 @@ class Server:
                 if isinstance(message, str):
                     await self.handle_text_message(client, message)
                 else:
-                    logger.warning(f"Unexpected message type from {client.client_id}")
+                    logging.warning(f"Unexpected message type from {client.client_id}")
 
                 # 异步处理音频
                 asyncio.create_task(self._process_audio(client, websocket))
 
             except WebSocketDisconnect as e:
-                logger.error(f"Connection with {client.client_id} closed: {e}")
+                logging.error(f"Connection with {client.client_id} closed: {e}")
                 break
             except Exception as e:
-                logger.error(f"Error handling audio for {client.client_id}: {e}")
+                logging.error(f"Error handling audio for {client.client_id}: {e}")
                 break
 
     async def _process_audio(self, client, websocket):
@@ -118,7 +114,7 @@ class Server:
                 websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
             )
         except RuntimeError as e:
-            logger.error(f"Processing error for {client.client_id}: {e}")
+            logging.error(f"Processing error for {client.client_id}: {e}")
 
     async def handle_text_message(self, client, message):
         """Handles incoming JSON text messages for config updates."""
@@ -126,9 +122,9 @@ class Server:
             config = json.loads(message)
             if config.get("type") == "config":
                 client.update_config(config["data"])
-                logger.debug(f"Updated config: {client.config}")
+                logging.debug(f"Updated config: {client.config}")
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to decode config message: {e}")
+            logging.error(f"Failed to decode config message: {e}")
 
     async def get_asset_file(self, filename: str):
         file_path = os.path.join('/tmp', filename)
@@ -174,9 +170,9 @@ class Server:
         """Start the WebSocket server."""
         ssl_context = None
         if self.certfile and self.keyfile:
-            logger.info(f"Starting secure WebSocket server on {self.host}:{self.port}")
+            logging.info(f"Starting secure WebSocket server on {self.host}:{self.port}")
         else:
-            logger.info(f"Starting WebSocket server on {self.host}:{self.port}")
+            logging.info(f"Starting WebSocket server on {self.host}:{self.port}")
 
         server = self.create_uvicorn_server(ssl_context)
         server.run()
