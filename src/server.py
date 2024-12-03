@@ -92,10 +92,10 @@ class Server:
                 message = json.loads(payload)
                 bytes = base64.b64decode(message[2])
                 client.append_audio_data(bytes, message[0], message[1])
-                if isinstance(message, str):
-                    await self.handle_text_message(client, message)
-                else:
-                    logging.warning(f"Unexpected message type from {client.client_id}")
+                # if isinstance(payload, str):
+                #     await self.handle_text_message(client, payload)
+                # else:
+                #     logging.warning(f"Unexpected message type from {client.client_id}")
 
                 # 异步处理音频
                 asyncio.create_task(self._process_audio(client, websocket))
