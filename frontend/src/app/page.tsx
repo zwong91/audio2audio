@@ -23,14 +23,18 @@ export default function Home() {
           if (event.data.size > 0) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                const base64data = reader.result.split(',')[1];
+              if (reader.result) {
+                const base64data = (reader.result as string).split(',')[1];
                 const data_to_send = [
-                    [[' 你好 ', '再见']],
-                    "xiaoxiao",
-                    base64data
+                  [[' 你好 ', '再见']],
+                  "xiaoxiao",
+                  base64data
                 ];
                 const json_data = JSON.stringify(data_to_send);
                 socket.send(json_data);
+              } else {
+                console.error("FileReader result is null");
+              }
             };
             reader.readAsDataURL(event.data);
           }
