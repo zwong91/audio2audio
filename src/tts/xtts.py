@@ -22,7 +22,7 @@ class XTTS(TTSInterface):
         # 调用语音转换方法
         self.tts.tts_to_file(
             text,
-            speaker=target_wav,
+            speaker_wav=target_wav,
             language="zh-CN", 
             file_path=speech_file_path
         )
