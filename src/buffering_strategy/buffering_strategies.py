@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 import time
-import logging
+import base64
 from .buffering_strategy_interface import BufferingStrategyInterface
 
 from src.utils.logger import TimingLogger, timer_decorator
@@ -130,13 +130,13 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 tts_text, updated_history = await llm_pipeline.generate(
                     self.client.history, transcription["text"]
                 )
-                speech_file, text = await tts_pipeline.text_to_speech(tts_text)
-                
+                speech_audio, text = await tts_pipeline.text_to_speech(tts_text)
+                encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
                 end = time.time()
                 res = {
                     "processing_time": end - start,
                     "history": updated_history,
-                    "audio": speech_file,
+                    "audio": encoded_speech,
                     "text": tts_text,
                     "transcription": transcription["text"]
                 }
