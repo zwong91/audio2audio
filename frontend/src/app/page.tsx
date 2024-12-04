@@ -12,9 +12,13 @@ export default function Home() {
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
 
-  const audioContext = new AudioContext();
+  let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
   let isPlaying = false;
+
+  if (typeof window !== "undefined" && window.AudioContext) {
+    audioContext = new AudioContext();
+  }
 
   const audioManager = {
     stopCurrentAudio: () => {
@@ -29,8 +33,6 @@ export default function Home() {
 
     playNewAudio: async (audioBlob: Blob) => {
       audioManager.stopCurrentAudio();
-
-      //await new Promise(resolve => setTimeout(resolve, 100));
 
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
@@ -66,12 +68,14 @@ export default function Home() {
   };
 
   function bufferAudio(data: ArrayBuffer) {
-    audioContext.decodeAudioData(data, (buffer) => {
-      audioBufferQueue.push(buffer);
-      if (!isPlaying) {
-        playAudioBufferQueue();
-      }
-    });
+    if (audioContext) {
+      audioContext.decodeAudioData(data, (buffer) => {
+        audioBufferQueue.push(buffer);
+        if (!isPlaying) {
+          playAudioBufferQueue();
+        }
+      });
+    }
   }
 
   function playAudioBufferQueue() {
@@ -82,7 +86,7 @@ export default function Home() {
 
     isPlaying = true;
     const buffer = audioBufferQueue.shift();
-    if (buffer) {
+    if (buffer && audioContext) {
       const source = audioContext.createBufferSource();
       source.buffer = buffer;
       source.connect(audioContext.destination);
