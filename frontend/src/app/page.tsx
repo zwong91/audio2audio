@@ -5,7 +5,8 @@ import styles from "./page.module.css";
 
 export default function Home() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [isRecording, setIsRecording] = useState(true);
+  const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
 
   useEffect(() => {
     // Ensure screen stays awake
@@ -96,17 +97,18 @@ export default function Home() {
           };
 
           socket.onmessage = (event) => {
-            setIsRecording(false); // 停止录音指示器
-          
+            setIsRecording(false); // Stop recording when receiving message
+            setIsPlayingAudio(true); // Start playing audio
+            
             try {
               const jsonData = JSON.parse(event.data);
               const audioBase64 = jsonData["stream"];
-          
+
               if (!audioBase64) {
                 console.error("No audio stream data received");
                 return;
               }
-          
+
               // Convert Base64 to Audio Blob
               const binaryString = atob(audioBase64);
               const len = binaryString.length;
@@ -114,28 +116,28 @@ export default function Home() {
               for (let i = 0; i < len; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
               }
-          
+
               const blob = new Blob([bytes], { type: "audio/mp3" });
-          
+
               // Play the received audio
               const audioUrl = URL.createObjectURL(blob);
               const audioElement = new Audio(audioUrl);
-          
-              // Listen for when the audio finishes playing and reset the state
+
+              // Listen for when the audio finishes playing
               audioElement.onended = () => {
-                setIsRecording(true); // 重新开始录音
-                URL.revokeObjectURL(audioUrl); // 释放 URL 对象
+                setIsPlayingAudio(false); // Finished playing, stop audio playback state
+                setIsRecording(true); // Resume recording after playback
+                URL.revokeObjectURL(audioUrl); // Clean up URL
               };
-          
+
               audioElement.play().catch((error) => {
                 console.error("Error playing audio:", error);
               });
-          
+
             } catch (error) {
               console.error("Error processing WebSocket message:", error);
             }
           };
-          
 
           // Clean up the socket connection on component unmount
           return () => {
@@ -175,13 +177,13 @@ export default function Home() {
       <div className={styles.title}>AudioChat - your voice AI assistant</div>
       <div className={styles["center-vertical"]}>
         <div
-          className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording ? styles.pulsate : ""}`}
+          className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording && !isPlayingAudio ? styles.pulsate : ""}`}
         ></div>
         <br />
-        <div>{isRecording ? "Listening..." : "Speaking..."}</div>
+        <div>{isRecording && !isPlayingAudio ? "Listening..." : "Speaking..."}</div>
         <br />
         <div
-          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording ? styles.pulsate : ""}`}
+          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate : ""}`}
         ></div>
       </div>
     </>
