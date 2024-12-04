@@ -29,12 +29,7 @@ class EdgeTTS(TTSInterface):
                 pitch=pitch_str,
                 volume=volume_str
             )
-
-            # 将音频数据流直接写入 BytesIO 缓冲区
-            async for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    # 根据edge_tts的文档，chunk["data"] 是音频流的字节数据
-                    audio_buffer.write(chunk["data"])
+            await communicate.write_to_fp(audio_buffer)
 
             # 重置 BytesIO 文件指针，以便后续读取
             audio_buffer.seek(0)
