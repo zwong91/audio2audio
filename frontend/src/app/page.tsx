@@ -8,7 +8,10 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [history, setHistory] = useState<any[]>([]); // Store the history
+  const [history, setHistory] = useState<any[]>([ // Store the history
+    ['今天打老虎吗?', '没妞啊'],
+    ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
+  ]);
 
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
@@ -87,7 +90,7 @@ export default function Home() {
                         // Convert ArrayBuffer to Base64
                         const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
 
-                        // Prepare the data to be sent
+                        // Prepare the data to be sent (including history)
                         const dataToSend = [
                           history, // Include the stored history
                           "xiaoxiao", // The user identifier or other identifier
@@ -124,7 +127,9 @@ export default function Home() {
                 const receivedHistory = jsonData["history"]; // Extract the history
                 if (receivedHistory) {
                   setHistory(receivedHistory); // Update the history state
+                  console.log("Updated history:", receivedHistory); // Debug log
                 }
+
                 if (!audioBase64) {
                   console.error("No audio stream data received");
                   return;
@@ -192,7 +197,7 @@ export default function Home() {
         socket.close();
       }
     };
-  }, [mediaRecorder]);
+  }, [mediaRecorder, history]); // Add history to dependencies
 
   useEffect(() => {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -226,9 +231,4 @@ export default function Home() {
         <div>{isRecording && !isPlayingAudio ? "Listening..." : "Speaking..."}</div>
         <br />
         <div
-          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate : ""}`}
-        ></div>
-      </div>
-    </>
-  );
-}
+          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate
