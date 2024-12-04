@@ -58,11 +58,12 @@ export default function Home() {
   type History = HistoryItem[];
 
   // 在组件中使用
-  const [history, setHistory] = useState<History>([
-    ['今天打老虎吗?', '没妞啊'],
-    ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', 
-    '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
-  ]);
+  // const [history, setHistory] = useState<History>([
+  //   ['今天打老虎吗?', '没妞啊'],
+  //   ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', 
+  //   '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
+  // ]);
+  const [history, setHistory] = useState<History>([]);
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
   useEffect(() => {
@@ -110,7 +111,6 @@ export default function Home() {
     script.onload = () => {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
-      let currentAudioElement: HTMLAudioElement | null = null; // Track the current playing audio element
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
