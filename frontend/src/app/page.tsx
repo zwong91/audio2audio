@@ -84,7 +84,7 @@ export default function Home() {
               }
 
               const audioArrayBuffer = bytes.buffer;
-              const blob = new Blob([audioArrayBuffer], { type: "audio/wav" }); // Use audio/wav for WAV files
+              const blob = new Blob([audioArrayBuffer], { type: "audio/mp3" });
 
               // Play the received audio
               const audioUrl = URL.createObjectURL(blob);
