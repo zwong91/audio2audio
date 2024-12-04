@@ -8,6 +8,33 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true);
 
   useEffect(() => {
+    // Ensure screen stays awake
+    let wakeLock: WakeLockSentinel | null = null;
+
+    async function requestWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        console.log("Screen wake lock acquired");
+      } catch (error) {
+        console.error("Failed to acquire wake lock", error);
+      }
+    }
+
+    requestWakeLock();
+
+    // Clean up the wake lock on unmount
+    return () => {
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          console.log("Screen wake lock released");
+        }).catch((error) => {
+          console.error("Failed to release wake lock", error);
+        });
+      }
+    };
+  }, []); // Only run on mount and unmount
+
+  useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
         setMediaRecorder(new MediaRecorder(stream));
