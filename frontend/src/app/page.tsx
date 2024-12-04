@@ -26,6 +26,9 @@ export default function Home() {
     playNewAudio: async (audioBlob: Blob) => {
       audioManager.stopCurrentAudio();
 
+      // 加入0.2秒的暂停
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       
