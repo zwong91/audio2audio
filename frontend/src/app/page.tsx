@@ -53,7 +53,7 @@ export default function Home() {
   };
 
 
-  // 首先定义 history 的类型
+  // 定义类型
   type HistoryItem = [string, string]; // [用户输入, AI响应]
   type History = HistoryItem[];
 
@@ -176,10 +176,15 @@ export default function Home() {
                 
                 const receivedHistory = jsonData["history"]; // Extract the history
                 if (Array.isArray(receivedHistory)) {
-                  // 确保收到的历史记录是二维数组结构
-                  const formattedHistory = receivedHistory.map(item => 
-                    Array.isArray(item) ? item : [item[0], item[1]]
-                  );
+                  // 验证并格式化历史记录
+                  const formattedHistory: History = receivedHistory
+                    .filter((item): item is [string, string] => {
+                      return Array.isArray(item) && 
+                             item.length === 2 && 
+                             typeof item[0] === 'string' && 
+                             typeof item[1] === 'string';
+                    });
+                  
                   setHistory(formattedHistory);
                 }
                 if (!audioBase64) {
