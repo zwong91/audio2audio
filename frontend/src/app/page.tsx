@@ -20,33 +20,48 @@ export default function Home() {
   }, []); // Setup mediaRecorder initially
 
   useEffect(() => {
-    if (mediaRecorder) {
-      const socket = new WebSocket("wss://gtp.aleopool.cc/stream");
+    const script = document.createElement("script");
+    script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
+    script.onload = () => {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          const socket = new WebSocket("wss://gtp.aleopool.cc/stream");
 
-      socket.onopen = () => {
-        console.log("client connected to websocket");
-        mediaRecorder.addEventListener("dataavailable", (event) => {
-          if (event.data.size > 0) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              if (reader.result) {
-                const base64data = (reader.result as string).split(',')[1];
-                const data_to_send = [
-                  [[' 你好 ', '再见']],
-                  "xiaoxiao",
-                  base64data
-                ];
-                const json_data = JSON.stringify(data_to_send);
-                socket.send(json_data);
-              } else {
-                console.error("FileReader result is null");
+          socket.onopen = () => {
+            console.log("client connected to websocket");
+
+            const recorder = new RecordRTC(stream, {
+              type: 'audio',
+              recorderType: StereoAudioRecorder,
+              mimeType: 'audio/wav',
+              timeSlice: 500,
+              desiredSampRate: 16000,
+              numberOfAudioChannels: 1,
+              ondataavailable: (blob) => {
+                if (blob.size > 0) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    if (reader.result) {
+                      const base64data = (reader.result as string).split(',')[1];
+                      const data_to_send = [
+                        [],
+                        "xiaoxiao",
+                        base64data
+                      ];
+                      const json_data = JSON.stringify(data_to_send);
+                      socket.send(json_data);
+                    } else {
+                      console.error("FileReader result is null");
+                    }
+                  };
+                  reader.readAsDataURL(blob);
+                }
               }
-            };
-            reader.readAsDataURL(event.data);
-          }
-        });
-        mediaRecorder.start(500);
-      };
+            });
+
+            recorder.startRecording();
+          };
+
 
       socket.onmessage = (event) => {
         setIsRecording(false);
