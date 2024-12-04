@@ -5,7 +5,35 @@ import styles from "./page.module.css";
 
 export default function Home() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [isRecording, setIsRecording] = useState(true);
+  const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
+
+  useEffect(() => {
+    // Ensure screen stays awake
+    let wakeLock: WakeLockSentinel | null = null;
+
+    async function requestWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        console.log("Screen wake lock acquired");
+      } catch (error) {
+        console.error("Failed to acquire wake lock", error);
+      }
+    }
+
+    requestWakeLock();
+
+    // Clean up the wake lock on unmount
+    return () => {
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          console.log("Screen wake lock released");
+        }).catch((error) => {
+          console.error("Failed to release wake lock", error);
+        });
+      }
+    };
+  }, []); // Only run on mount and unmount
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -37,7 +65,7 @@ export default function Home() {
               type: 'audio',
               recorderType: StereoAudioRecorder,
               mimeType: 'audio/wav',
-              timeSlice: 500,
+              timeSlice: 250,
               desiredSampRate: 16000,
               numberOfAudioChannels: 1,
               ondataavailable: (blob: Blob) => {
@@ -69,13 +97,19 @@ export default function Home() {
           };
 
           socket.onmessage = (event) => {
-            setIsRecording(false);
-            const received = event.data;
+            setIsRecording(false); // Stop recording when receiving message
+            setIsPlayingAudio(true); // Start playing audio
+            
             try {
-              const jsonData = JSON.parse(received);
+              const jsonData = JSON.parse(event.data);
               const audioBase64 = jsonData["stream"];
-              
-              // Convert Base64 back to audio data and create a Blob
+
+              if (!audioBase64) {
+                console.error("No audio stream data received");
+                return;
+              }
+
+              // Convert Base64 to Audio Blob
               const binaryString = atob(audioBase64);
               const len = binaryString.length;
               const bytes = new Uint8Array(len);
@@ -83,16 +117,25 @@ export default function Home() {
                 bytes[i] = binaryString.charCodeAt(i);
               }
 
-              const audioArrayBuffer = bytes.buffer;
-              const blob = new Blob([audioArrayBuffer], { type: "audio/mp3" });
+              const blob = new Blob([bytes], { type: "audio/mp3" });
 
               // Play the received audio
               const audioUrl = URL.createObjectURL(blob);
               const audioElement = new Audio(audioUrl);
-              audioElement.onended = () => setIsRecording(true);
-              audioElement.play();
+
+              // Listen for when the audio finishes playing
+              audioElement.onended = () => {
+                setIsPlayingAudio(false); // Finished playing, stop audio playback state
+                setIsRecording(true); // Resume recording after playback
+                URL.revokeObjectURL(audioUrl); // Clean up URL
+              };
+
+              audioElement.play().catch((error) => {
+                console.error("Error playing audio:", error);
+              });
+
             } catch (error) {
-              console.error("Error parsing WebSocket message", error);
+              console.error("Error processing WebSocket message:", error);
             }
           };
 
@@ -134,13 +177,13 @@ export default function Home() {
       <div className={styles.title}>AudioChat - your voice AI assistant</div>
       <div className={styles["center-vertical"]}>
         <div
-          className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording ? styles.pulsate : ""}`}
+          className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording && !isPlayingAudio ? styles.pulsate : ""}`}
         ></div>
         <br />
-        <div>{isRecording ? "Listening..." : "Speaking..."}</div>
+        <div>{isRecording && !isPlayingAudio ? "Listening..." : "Speaking..."}</div>
         <br />
         <div
-          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording ? styles.pulsate : ""}`}
+          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate : ""}`}
         ></div>
       </div>
     </>
