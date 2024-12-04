@@ -19,7 +19,7 @@ class EdgeTTS(TTSInterface):
         pitch_str = f"{pitch:+d}Hz"
 
         # 初始化 Communicate 对象，设置语音参数
-        communicate = edge_tts.Communicate(text=text, voice=self.voice, rate=rate, pitch=pitch, volume=volume)
+        communicate = edge_tts.Communicate(text=text, voice=self.voice, rate=rate_str, pitch=pitch_str, volume=volume)
         
         # 异步读取音频数据并将其写入 BytesIO 流
         async for chunk in communicate.stream():
