@@ -14,6 +14,8 @@ export default function Home() {
   ]);
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
+  let lastMessageTime = 0;
+
   useEffect(() => {
     // Ensure screen stays awake
     let wakeLock: WakeLockSentinel | null = null;
@@ -131,6 +133,12 @@ export default function Home() {
                   console.error("No audio stream data received");
                   return;
                 }
+
+                // Stop the current audio if it's playing
+                if (currentAudioElement && !currentAudioElement.paused) {
+                  currentAudioElement.pause();  // Stop the audio
+                  currentAudioElement.currentTime = 0;  // Reset the playback position to the beginning
+                }
             
                 // Convert Base64 to Audio Blob
                 const binaryString = atob(audioBase64);
@@ -140,13 +148,7 @@ export default function Home() {
                   bytes[i] = binaryString.charCodeAt(i);
                 }
             
-                const blob = new Blob([bytes], { type: "audio/mp3" });
-            
-                // Stop the current audio if it's playing
-                if (currentAudioElement && !currentAudioElement.paused) {
-                  currentAudioElement.pause();  // Stop the audio
-                  currentAudioElement.currentTime = 0;  // Reset the playback position to the beginning
-                }
+                const blob = new Blob([bytes], { type: "audio/wav" });
             
                 // Create a new audio element and play the received audio
                 const audioUrl = URL.createObjectURL(blob);
