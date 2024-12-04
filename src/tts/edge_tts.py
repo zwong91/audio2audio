@@ -13,6 +13,7 @@ class EdgeTTS(TTSInterface):
     async def text_to_speech(self, text: str, rate: str = '50%', pitch: str = '-50Hz', volume: int = 70) -> Tuple[bytes, str, str]:
         start_time = time.time()
         """使用 edge_tts 库将文本转语音"""
+        audio_file = BytesIO()
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         # 直接将音频数据写入内存
         async for chunk in communicate.stream():
@@ -25,4 +26,4 @@ class EdgeTTS(TTSInterface):
         print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
         # 生成一个虚拟的文件名，用于标识音频流
         virtual_filename = f"audio_{uuid4().hex[:8]}.mp3"
-        return audio_file.read(), text, virtual_filename
+        return audio_file.read(), text,virtual_filename
