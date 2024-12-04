@@ -45,19 +45,22 @@ export default function Home() {
                   const reader = new FileReader();
                   reader.onloadend = () => {
                     if (reader.result) {
-                      const base64data = (reader.result as string).split(',')[1];
-                      const data_to_send = [
-                        [],
-                        "xiaoxiao",
-                        base64data
+                      // Convert ArrayBuffer to Base64
+                      const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
+
+                      // Prepare the data to be sent
+                      const dataToSend = [
+                        [], // Empty array, could be used for other data
+                        "xiaoxiao", // The user identifier or other identifier
+                        base64data // The base64 encoded audio data
                       ];
-                      const json_data = JSON.stringify(data_to_send);
-                      socket.send(json_data);
+                      const jsonData = JSON.stringify(dataToSend);
+                      socket.send(jsonData);
                     } else {
                       console.error("FileReader result is null");
                     }
                   };
-                  reader.readAsDataURL(blob);
+                  reader.readAsArrayBuffer(blob); // Read as ArrayBuffer
                 }
               }
             });
@@ -68,34 +71,37 @@ export default function Home() {
           socket.onmessage = (event) => {
             setIsRecording(false);
             const received = event.data;
-            // 解析接收到的 JSON 数据
-            const jsonData = JSON.parse(received);
-            const history = jsonData["history"];
-            const audio = jsonData["audio"];
-            const text = jsonData["text"];
-            
-            const audioBase64 = jsonData["stream"];
-            const binaryString = atob(audioBase64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            
-            for (let i = 0; i < len; i++) {
+            try {
+              const jsonData = JSON.parse(received);
+              const audioBase64 = jsonData["stream"];
+              
+              // Convert Base64 back to audio data and create a Blob
+              const binaryString = atob(audioBase64);
+              const len = binaryString.length;
+              const bytes = new Uint8Array(len);
+              for (let i = 0; i < len; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
+              }
+
+              const audioArrayBuffer = bytes.buffer;
+              const blob = new Blob([audioArrayBuffer], { type: "audio/wav" }); // Use audio/wav for WAV files
+
+              // Play the received audio
+              const audioUrl = URL.createObjectURL(blob);
+              const audioElement = new Audio(audioUrl);
+              audioElement.onended = () => setIsRecording(true);
+              audioElement.play();
+            } catch (error) {
+              console.error("Error parsing WebSocket message", error);
             }
-            
-            const audioArrayBuffer = bytes.buffer;
-      
-            const blob = new Blob([audioArrayBuffer], { type: "audio/mpeg" });
-            const audioUrl = URL.createObjectURL(blob);
-
-            const audioElement = new Audio(audioUrl);
-            audioElement.onended = () => setIsRecording(true);
-            audioElement.play();
           };
 
+          // Clean up the socket connection on component unmount
           return () => {
-            socket.close(); // Clean up the socket connection on component unmount
+            socket.close();
           };
+        }).catch((error) => {
+          console.error("Error with getUserMedia", error);
         });
       }
     };
@@ -111,6 +117,17 @@ export default function Home() {
       }
     }
   }, [isRecording, mediaRecorder]);
+
+  // Helper function to convert ArrayBuffer to Base64
+  function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
+    let binary = '';
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const len = uint8Array.length;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return btoa(binary); // Convert binary string to base64
+  }
 
   return (
     <>
