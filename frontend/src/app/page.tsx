@@ -70,7 +70,7 @@ export default function Home() {
   function bufferAudio(data: ArrayBuffer) {
     if (audioContext) {
       audioContext.decodeAudioData(data, (buffer) => {
-        audioBufferQueue.push(buffer);
+        splitAndQueueAudioBuffer(buffer);
         if (!isPlaying) {
           playAudioBufferQueue();
         }
@@ -78,9 +78,36 @@ export default function Home() {
     }
   }
 
+  function splitAndQueueAudioBuffer(buffer: AudioBuffer) {
+    const chunkDuration = 1; // Duration of each chunk in seconds
+    const numberOfChunks = Math.ceil(buffer.duration / chunkDuration);
+
+    for (let i = 0; i < numberOfChunks; i++) {
+      const chunkStart = i * chunkDuration;
+      const chunkEnd = Math.min(chunkStart + chunkDuration, buffer.duration);
+      const chunkLength = chunkEnd - chunkStart;
+
+      const chunkBuffer = audioContext!.createBuffer(
+        buffer.numberOfChannels,
+        chunkLength * buffer.sampleRate,
+        buffer.sampleRate
+      );
+
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        chunkBuffer.copyToChannel(
+          buffer.getChannelData(channel).subarray(chunkStart * buffer.sampleRate, chunkEnd * buffer.sampleRate),
+          channel
+        );
+      }
+
+      audioBufferQueue.push(chunkBuffer);
+    }
+  }
+
   function playAudioBufferQueue() {
     if (audioBufferQueue.length === 0) {
       isPlaying = false;
+      setIsPlayingAudio(false); // Set the state to false when all audio has been played
       return;
     }
 
