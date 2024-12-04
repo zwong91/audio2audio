@@ -21,7 +21,7 @@ export default function Home() {
 
   useEffect(() => {
     if (mediaRecorder) {
-      const socket = new WebSocket("wss://gtp.aleopool.cc/transcribe");
+      const socket = new WebSocket("wss://gtp.aleopool.cc/stream");
 
       socket.onopen = () => {
         console.log("client connected to websocket");
