@@ -15,15 +15,15 @@ class EdgeTTS(TTSInterface):
         """使用 edge_tts 库将文本转语音"""
         temp_file = f"/tmp/audio_{uuid4().hex[:8]}.mp3"
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
-        await communicate.save(temp_file)
-
-        # 将音频文件保存到内存缓冲区
-        audio_file = BytesIO()
-        with open(temp_file, 'rb') as f:
-            audio_file.write(f.read())
+        # 直接将音频数据写入内存
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_file.write(chunk["data"])
+        
         audio_file.seek(0)
 
         end_time = time.time()
         print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
-
-        return audio_file.read(), text, os.path.basename(temp_file)
+        # 生成一个虚拟的文件名，用于标识音频流
+        virtual_filename = f"audio_{uuid4().hex[:8]}.mp3"
+        return audio_file.read(), text, virtual_filename
