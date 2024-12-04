@@ -92,7 +92,13 @@ export default function Home() {
                           base64data // The base64 encoded audio data
                         ];
                         const jsonData = JSON.stringify(dataToSend);
-                        websocket.send(jsonData);
+
+                        // Safe check to ensure websocket is not null
+                        if (websocket) {
+                          websocket.send(jsonData);
+                        } else {
+                          console.error("WebSocket is null, cannot send data.");
+                        }
                       } else {
                         console.error("FileReader result is null");
                       }
