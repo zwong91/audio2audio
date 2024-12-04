@@ -69,32 +69,46 @@ export default function Home() {
           };
 
           socket.onmessage = (event) => {
-            setIsRecording(false);
-            const received = event.data;
+            setIsRecording(false); // 停止录音指示器
+          
             try {
-              const jsonData = JSON.parse(received);
+              const jsonData = JSON.parse(event.data);
               const audioBase64 = jsonData["stream"];
-              
-              // Convert Base64 back to audio data and create a Blob
+          
+              if (!audioBase64) {
+                console.error("No audio stream data received");
+                return;
+              }
+          
+              // Convert Base64 to Audio Blob
               const binaryString = atob(audioBase64);
               const len = binaryString.length;
               const bytes = new Uint8Array(len);
               for (let i = 0; i < len; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
               }
-
-              const audioArrayBuffer = bytes.buffer;
-              const blob = new Blob([audioArrayBuffer], { type: "audio/mp3" });
-
+          
+              const blob = new Blob([bytes], { type: "audio/mp3" });
+          
               // Play the received audio
               const audioUrl = URL.createObjectURL(blob);
               const audioElement = new Audio(audioUrl);
-              audioElement.onended = () => setIsRecording(true);
-              audioElement.play();
+          
+              // Listen for when the audio finishes playing and reset the state
+              audioElement.onended = () => {
+                setIsRecording(true); // 重新开始录音
+                URL.revokeObjectURL(audioUrl); // 释放 URL 对象
+              };
+          
+              audioElement.play().catch((error) => {
+                console.error("Error playing audio:", error);
+              });
+          
             } catch (error) {
-              console.error("Error parsing WebSocket message", error);
+              console.error("Error processing WebSocket message:", error);
             }
           };
+          
 
           // Clean up the socket connection on component unmount
           return () => {
