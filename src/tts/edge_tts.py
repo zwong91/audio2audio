@@ -11,10 +11,12 @@ class EdgeTTS(TTSInterface):
     async def text_to_speech(self, text: str, rate: str = '50%', pitch: str = '-50Hz', volume: int = 70) -> Tuple[bytes, str, str]:
         start_time = time.time()
         """使用 edge_tts 库将文本转语音"""
-        
+
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         audio_bytes = BytesIO()
         async for chunk in communicate.stream():
+            if isinstance(chunk, dict):
+                chunk = chunk.get('audio', b'')
             audio_bytes.write(chunk)
         audio_bytes.seek(0)
 
