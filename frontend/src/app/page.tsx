@@ -94,7 +94,7 @@ export default function Home() {
 
   return (
     <>
-      <div className={styles.title}>VoiceGPT - your voice AI assistant</div>
+      <div className={styles.title}>AudioChat - your voice AI assistant</div>
       <div className={styles["center-vertical"]}>
         <div
           className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording ? styles.pulsate : ""}`}
