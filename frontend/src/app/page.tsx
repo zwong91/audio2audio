@@ -1,94 +1,73 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 
 export default function Home() {
-  // 状态定义
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [isRecording, setIsRecording] = useState(true);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
+
+  // 在组件顶部声明状态
   const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
-  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
 
-  // 类型定义
-  type HistoryItem = [string, string];
-  type History = HistoryItem[];
-  const [history, setHistory] = useState<History>([]);
-  
-  const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
+  // 音频管理函数
+  const audioManager = {
+    stopCurrentAudio: () => {
+      if (currentAudioElement) {
+        currentAudioElement.pause();
+        currentAudioElement.currentTime = 0;
+        URL.revokeObjectURL(currentAudioElement.src);
+        setCurrentAudioElement(null);
+        setIsPlayingAudio(false);
+      }
+    },
 
-  // 音频控制函数
-  const stopCurrentAudio = useCallback(() => {
-    if (currentAudioElement) {
-      currentAudioElement.pause();
-      currentAudioElement.currentTime = 0;
-      URL.revokeObjectURL(currentAudioElement.src);
-      setCurrentAudioElement(null);
-      setIsPlayingAudio(false);
-    }
-  }, [currentAudioElement]);
+    playNewAudio: async (audioBlob: Blob) => {
+      // 停止当前播放
+      audioManager.stopCurrentAudio();
 
-  const playNewAudio = useCallback(async (audioBlob: Blob) => {
-    stopCurrentAudio();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    
-    setCurrentAudioElement(audio);
-    setIsPlayingAudio(true);
-    
-    audio.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-      setCurrentAudioElement(null);
-      setIsPlayingAudio(false);
-      setIsRecording(true);
-      processQueue();
-    };
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      setCurrentAudioElement(audio);
+      setIsPlayingAudio(true);
+      
+      // 设置结束事件
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        setCurrentAudioElement(null);
+        setIsPlayingAudio(false);
+        setIsRecording(true);
+      };
 
-    await audio.play();
-  }, [stopCurrentAudio]);
-
-  const processQueue = useCallback(async () => {
-    if (audioQueue.length === 0) {
-      setIsProcessingQueue(false);
-      return;
-    }
-
-    setIsProcessingQueue(true);
-    const nextBlob = audioQueue[0];
-    setAudioQueue(prevQueue => prevQueue.slice(1));
-
-    try {
-      await playNewAudio(nextBlob);
-    } catch (error) {
-      console.error("播放音频失败:", error);
-      setIsProcessingQueue(false);
-    }
-  }, [audioQueue, playNewAudio]);
-
-  const audioManager = useMemo(() => ({
-    stopCurrentAudio,
-    playNewAudio,
-    processQueue,
-    addToQueue: (audioBlob: Blob) => {
-      // 直接替换队列内容，保持最大长度为1
-      setAudioQueue([audioBlob]);
-      if (!isProcessingQueue) {
-        processQueue();
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error("播放音频失败:", error);
+        audioManager.stopCurrentAudio();
       }
     }
-  }), [stopCurrentAudio, playNewAudio, processQueue, isProcessingQueue]);
-
-  // 工具函数
-  const arrayBufferToBase64 = (arrayBuffer: ArrayBuffer): string => {
-    const uint8Array = new Uint8Array(arrayBuffer);
-    return btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
   };
 
-  // 屏幕常亮
+
+  // 定义类型
+  type HistoryItem = [string, string]; // [用户输入, AI响应]
+  type History = HistoryItem[];
+
+  // 在组件中使用
+  // const [history, setHistory] = useState<History>([
+  //   ['今天打老虎吗?', '没妞啊'],
+  //   ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', 
+  //   '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
+  // ]);
+  const [history, setHistory] = useState<History>([]);
+  const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
+
   useEffect(() => {
+    // Ensure screen stays awake
     let wakeLock: WakeLockSentinel | null = null;
 
     async function requestWakeLock() {
@@ -102,53 +81,51 @@ export default function Home() {
 
     requestWakeLock();
 
+    // Clean up the wake lock on unmount
     return () => {
-      wakeLock?.release().then(() => {
-        console.log("Screen wake lock released");
-      }).catch(console.error);
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          console.log("Screen wake lock released");
+        }).catch((error) => {
+          console.error("Failed to release wake lock", error);
+        });
+      }
     };
-  }, []);
+  }, []); // Only run on mount and unmount
 
-  // 音频设备初始化
   useEffect(() => {
-    const initMediaDevices = async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        console.error("Media devices API not supported.");
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
         setMediaRecorder(new MediaRecorder(stream));
-      } catch (error) {
-        console.error("Error accessing media devices:", error);
-      }
-    };
+      }).catch((error) => {
+        console.error("Error accessing media devices.", error);
+      });
+    } else {
+      console.error("Media devices API not supported.");
+    }
+  }, []); // Setup mediaRecorder initially
 
-    initMediaDevices();
-  }, []);
-
-  // WebRTC 初始化
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
-    
     script.onload = () => {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
+      let currentAudioElement: HTMLAudioElement | null = null; // Track the current playing audio element
 
-      const initWebSocket = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           let websocket: WebSocket | null = null;
 
+          // WebSocket reconnect logic
           const reconnectWebSocket = () => {
-            if (websocket) websocket.close();
+            if (websocket) websocket.close(); // Close existing WebSocket if it exists
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
 
             websocket.onopen = () => {
-              console.log("Connected to websocket");
+              console.log("client connected to websocket");
+
               const recorder = new RecordRTC(stream, {
                 type: 'audio',
                 recorderType: StereoAudioRecorder,
@@ -161,12 +138,28 @@ export default function Home() {
                     const reader = new FileReader();
                     reader.onloadend = () => {
                       if (reader.result) {
+                        // Convert ArrayBuffer to Base64
                         const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
-                        const dataToSend = [history, "xiaoxiao", base64data];
-                        websocket?.send(JSON.stringify(dataToSend));
+
+                        // Prepare the data to be sent
+                        const dataToSend = [
+                          history, // Include the stored history
+                          "xiaoxiao", // The user identifier or other identifier
+                          base64data // The base64 encoded audio data
+                        ];
+                        const jsonData = JSON.stringify(dataToSend);
+
+                        // Safe check to ensure websocket is not null
+                        if (websocket) {
+                          websocket.send(jsonData);
+                        } else {
+                          console.error("WebSocket is null, cannot send data.");
+                        }
+                      } else {
+                        console.error("FileReader result is null");
                       }
                     };
-                    reader.readAsArrayBuffer(blob);
+                    reader.readAsArrayBuffer(blob); // Read as ArrayBuffer
                   }
                 }
               });
@@ -175,39 +168,48 @@ export default function Home() {
             };
 
             websocket.onmessage = (event) => {
-              setIsRecording(false);
-              setIsPlayingAudio(true);
-
+              setIsRecording(false); // Stop recording when receiving message
+              setIsPlayingAudio(true); // Start playing audio
+            
               try {
                 const jsonData = JSON.parse(event.data);
-                const { stream: audioBase64, history: receivedHistory } = jsonData;
-
+                const audioBase64 = jsonData["stream"];
+                
+                const receivedHistory = jsonData["history"]; // Extract the history
                 if (Array.isArray(receivedHistory)) {
+                  // 验证并格式化历史记录
                   const formattedHistory: History = receivedHistory
-                    .filter((item): item is [string, string] => 
-                      Array.isArray(item) && 
-                      item.length === 2 && 
-                      typeof item[0] === 'string' && 
-                      typeof item[1] === 'string'
-                    );
+                    .filter((item): item is [string, string] => {
+                      return Array.isArray(item) && 
+                             item.length === 2 && 
+                             typeof item[0] === 'string' && 
+                             typeof item[1] === 'string';
+                    });
+                  
                   setHistory(formattedHistory);
                 }
-
-                if (audioBase64) {
-                  const binaryString = atob(audioBase64);
-                  const bytes = new Uint8Array(binaryString.length);
-                  bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
-                  const audioBlob = new Blob([bytes], { type: "audio/mp3" });
-                  audioManager.addToQueue(audioBlob);
+                if (!audioBase64) {
+                  console.error("No audio stream data received");
+                  return;
                 }
+
+              // 转换音频数据
+              const binaryString = atob(audioBase64);
+              const bytes = new Uint8Array(binaryString.length);
+              bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
+              const audioBlob = new Blob([bytes], { type: "audio/mp3" });
+
+              // 播放新音频
+              audioManager.playNewAudio(audioBlob);
+            
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
               }
             };
 
             websocket.onclose = () => {
-              console.log("WebSocket closed, reconnecting...");
-              setTimeout(reconnectWebSocket, 5000);
+              console.log("WebSocket connection closed, attempting to reconnect...");
+              setTimeout(reconnectWebSocket, 5000); // Retry after 5 seconds
             };
 
             websocket.onerror = (error) => {
@@ -216,31 +218,42 @@ export default function Home() {
             };
           };
 
-          reconnectWebSocket();
-        } catch (error) {
-          console.error("Error initializing:", error);
-        }
-      };
-
-      initWebSocket();
+          reconnectWebSocket(); // Initial connection attempt
+        }).catch((error) => {
+          console.error("Error with getUserMedia", error);
+        });
+      }
     };
-
     document.body.appendChild(script);
 
+    // Cleanup on component unmount
     return () => {
-      socket?.close();
+      if (socket) {
+        socket.close();
+      }
     };
-  }, [mediaRecorder, history, audioManager]);
+  }, [mediaRecorder]);
 
   useEffect(() => {
-    if (mediaRecorder?.state !== "inactive") {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
       if (isRecording) {
-        mediaRecorder?.resume();
+        mediaRecorder.resume();
       } else {
-        mediaRecorder?.pause();
+        mediaRecorder.pause();
       }
     }
   }, [isRecording, mediaRecorder]);
+
+  // Helper function to convert ArrayBuffer to Base64
+  function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
+    let binary = '';
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const len = uint8Array.length;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return btoa(binary); // Convert binary string to base64
+  }
 
   return (
     <>
