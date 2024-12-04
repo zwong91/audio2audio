@@ -9,11 +9,14 @@ class EdgeTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
         self.voice = voice
 
-    async def text_to_speech(self, text: str, rate: str = '50%', pitch: str = '-50Hz', volume: int = 70) -> Tuple[bytes, str, str]:
+    async def text_to_speech(self, text: str, rate: int = 50, pitch: int = -50, volume: int = 70) -> Tuple[bytes, str, str]:
         start_time = time.time()
         
         """使用 edge_tts 库将文本转语音"""
         audio_file = BytesIO()
+
+        rate_str = f"{rate:+d}%"
+        pitch_str = f"{pitch:+d}Hz"
 
         # 初始化 Communicate 对象，设置语音参数
         communicate = edge_tts.Communicate(text=text, voice=self.voice, rate=rate, pitch=pitch, volume=volume)
