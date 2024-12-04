@@ -29,13 +29,15 @@ class EdgeTTS(TTSInterface):
                 pitch=pitch_str,
                 volume=volume_str
             )
-            await communicate.write_to_fp(audio_buffer)
-
-            # 重置 BytesIO 文件指针，以便后续读取
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    audio_buffer.write(chunk["data"])
+            
             audio_buffer.seek(0)
+            audio_data = audio_buffer.getvalue()
 
             end_time = time.time()
-            print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
+            #print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
 
             # 生成一个虚拟的文件名，用于标识音频流
             virtual_filename = f"audio_{uuid4().hex[:8]}.mp3"
