@@ -23,6 +23,9 @@ export default function Home() {
     const script = document.createElement("script");
     script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
     script.onload = () => {
+      const RecordRTC = (window as any).RecordRTC;
+      const StereoAudioRecorder = (window as any).StereoAudioRecorder;
+
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           const socket = new WebSocket("wss://gtp.aleopool.cc/stream");
