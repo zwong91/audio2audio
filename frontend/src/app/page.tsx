@@ -196,7 +196,7 @@ export default function Home() {
               const binaryString = atob(audioBase64);
               const bytes = new Uint8Array(binaryString.length);
               bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
-              const audioBlob = new Blob([bytes], { type: "audio/wav" });
+              const audioBlob = new Blob([bytes], { type: "audio/mp3" });
 
               // 播放新音频
               audioManager.playNewAudio(audioBlob);
