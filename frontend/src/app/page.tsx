@@ -12,7 +12,7 @@ export default function Home() {
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
 
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const audioContext = new AudioContext();
   let audioBufferQueue: AudioBuffer[] = [];
   let isPlaying = false;
 
@@ -29,6 +29,8 @@ export default function Home() {
 
     playNewAudio: async (audioBlob: Blob) => {
       audioManager.stopCurrentAudio();
+
+      //await new Promise(resolve => setTimeout(resolve, 100));
 
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
