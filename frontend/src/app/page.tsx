@@ -108,6 +108,7 @@ export default function Home() {
     if (audioBufferQueue.length === 0) {
       isPlaying = false;
       setIsPlayingAudio(false); // Set the state to false when all audio has been played
+      setIsRecording(true); // Ensure the state switches from 'Speaking'
       return;
     }
 
