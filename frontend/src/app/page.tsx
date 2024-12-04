@@ -40,7 +40,7 @@ export default function Home() {
               timeSlice: 500,
               desiredSampRate: 16000,
               numberOfAudioChannels: 1,
-              ondataavailable: (blob) => {
+              ondataavailable: (blob: Blob) => {
                 if (blob.size > 0) {
                   const reader = new FileReader();
                   reader.onloadend = () => {
