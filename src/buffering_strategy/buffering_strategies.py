@@ -146,7 +146,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     await websocket.send_json(res)       
                 except Exception as e:
                     logger.error(f"Error sending WebSocket message: {e}")
-            self.client.history = []
+
             self.client.scratch_buffer.clear()
             self.client.increment_file_counter()
 
