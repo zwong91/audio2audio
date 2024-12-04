@@ -73,7 +73,8 @@ export default function Home() {
     playNewAudio,
     processQueue,
     addToQueue: (audioBlob: Blob) => {
-      setAudioQueue(prevQueue => [...prevQueue, audioBlob]);
+      // 直接替换队列内容，保持最大长度为1
+      setAudioQueue([audioBlob]);
       if (!isProcessingQueue) {
         processQueue();
       }
