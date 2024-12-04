@@ -12,6 +12,10 @@ export default function Home() {
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
 
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  let audioBufferQueue: AudioBuffer[] = [];
+  let isPlaying = false;
+
   const audioManager = {
     stopCurrentAudio: () => {
       if (currentAudioElement) {
@@ -25,9 +29,6 @@ export default function Home() {
 
     playNewAudio: async (audioBlob: Blob) => {
       audioManager.stopCurrentAudio();
-
-      // 加入0.2秒的暂停
-      //await new Promise(resolve => setTimeout(resolve, 200));
 
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
@@ -61,6 +62,32 @@ export default function Home() {
       }
     }
   };
+
+  function bufferAudio(data: ArrayBuffer) {
+    audioContext.decodeAudioData(data, (buffer) => {
+      audioBufferQueue.push(buffer);
+      if (!isPlaying) {
+        playAudioBufferQueue();
+      }
+    });
+  }
+
+  function playAudioBufferQueue() {
+    if (audioBufferQueue.length === 0) {
+      isPlaying = false;
+      return;
+    }
+
+    isPlaying = true;
+    const buffer = audioBufferQueue.shift();
+    if (buffer) {
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.onended = playAudioBufferQueue;
+      source.start();
+    }
+  }
 
   type HistoryItem = [string, string]; // [用户输入, AI响应]
   type History = HistoryItem[];
@@ -172,14 +199,9 @@ export default function Home() {
                 
                 const receivedHistory = jsonData["history"];
                 if (Array.isArray(receivedHistory)) {
-                  const formattedHistory: History = receivedHistory
-                    .filter((item): item is [string, string] => {
-                      return Array.isArray(item) && 
-                             item.length === 2 && 
-                             typeof item[0] === 'string' && 
-                             typeof item[1] === 'string';
-                    });
-                  
+                  const formattedHistory = receivedHistory.filter((item) => 
+                    Array.isArray(item) && item.length === 2 && typeof item[0] === 'string' && typeof item[1] === 'string'
+                  );
                   setHistory(formattedHistory);
                 }
                 if (!audioBase64) {
@@ -187,13 +209,10 @@ export default function Home() {
                   return;
                 }
 
-              const binaryString = atob(audioBase64);
-              const bytes = new Uint8Array(binaryString.length);
-              bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
-              const audioBlob = new Blob([bytes], { type: "audio/mp3" });
-
-              audioManager.playNewAudio(audioBlob);
-            
+                const binaryString = atob(audioBase64);
+                const bytes = new Uint8Array(binaryString.length);
+                bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
+                bufferAudio(bytes.buffer);
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
               }
