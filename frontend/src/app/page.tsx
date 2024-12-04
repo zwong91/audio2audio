@@ -8,6 +8,7 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [history, setHistory] = useState<any[]>([]); // Store the history
 
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
@@ -88,7 +89,7 @@ export default function Home() {
 
                         // Prepare the data to be sent
                         const dataToSend = [
-                          [], // Empty array, could be used for other data
+                          history, // Include the stored history
                           "xiaoxiao", // The user identifier or other identifier
                           base64data // The base64 encoded audio data
                         ];
@@ -119,7 +120,11 @@ export default function Home() {
               try {
                 const jsonData = JSON.parse(event.data);
                 const audioBase64 = jsonData["stream"];
-            
+                
+                const receivedHistory = jsonData["history"]; // Extract the history
+                if (receivedHistory) {
+                  setHistory(receivedHistory); // Update the history state
+                }
                 if (!audioBase64) {
                   console.error("No audio stream data received");
                   return;
