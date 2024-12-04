@@ -8,6 +8,7 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [history, setHistory] = useState<any[]>([]); // Store the history
 
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
@@ -56,6 +57,7 @@ export default function Home() {
     script.onload = () => {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
+      let currentAudioElement: HTMLAudioElement | null = null; // Track the current playing audio element
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
@@ -87,7 +89,7 @@ export default function Home() {
 
                         // Prepare the data to be sent
                         const dataToSend = [
-                          [], // Empty array, could be used for other data
+                          history, // Include the stored history
                           "xiaoxiao", // The user identifier or other identifier
                           base64data // The base64 encoded audio data
                         ];
@@ -114,16 +116,20 @@ export default function Home() {
             websocket.onmessage = (event) => {
               setIsRecording(false); // Stop recording when receiving message
               setIsPlayingAudio(true); // Start playing audio
-
+            
               try {
                 const jsonData = JSON.parse(event.data);
                 const audioBase64 = jsonData["stream"];
-
+                
+                const receivedHistory = jsonData["history"]; // Extract the history
+                if (receivedHistory) {
+                  setHistory(receivedHistory); // Update the history state
+                }
                 if (!audioBase64) {
                   console.error("No audio stream data received");
                   return;
                 }
-
+            
                 // Convert Base64 to Audio Blob
                 const binaryString = atob(audioBase64);
                 const len = binaryString.length;
@@ -131,24 +137,31 @@ export default function Home() {
                 for (let i = 0; i < len; i++) {
                   bytes[i] = binaryString.charCodeAt(i);
                 }
-
+            
                 const blob = new Blob([bytes], { type: "audio/mp3" });
-
-                // Play the received audio
+            
+                // Stop the current audio if it's playing
+                if (currentAudioElement && !currentAudioElement.paused) {
+                  currentAudioElement.pause();  // Stop the audio
+                  currentAudioElement.currentTime = 0;  // Reset the playback position to the beginning
+                }
+            
+                // Create a new audio element and play the received audio
                 const audioUrl = URL.createObjectURL(blob);
-                const audioElement = new Audio(audioUrl);
-
+                currentAudioElement = new Audio(audioUrl);  // Assign the current audio element
+            
                 // Listen for when the audio finishes playing
-                audioElement.onended = () => {
+                currentAudioElement.onended = () => {
                   setIsPlayingAudio(false); // Finished playing, stop audio playback state
                   setIsRecording(true); // Resume recording after playback
                   URL.revokeObjectURL(audioUrl); // Clean up URL
                 };
-
-                audioElement.play().catch((error) => {
+            
+                // Play the audio
+                currentAudioElement.play().catch((error) => {
                   console.error("Error playing audio:", error);
                 });
-
+            
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
               }
