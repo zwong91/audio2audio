@@ -66,7 +66,6 @@ class Server:
         self.app.get("/asset/{filename}")(self.get_asset_file)
 
         # Add WebSocket route for audio transcription
-        self.app.websocket("/transcribe")(self.websocket_endpoint)
         self.app.websocket("/stream")(self.websocket_endpoint)
 
     async def startup(self):
@@ -93,11 +92,6 @@ class Server:
                 message = json.loads(payload)
                 bytes = base64.b64decode(message[2])
                 client.append_audio_data(bytes, message[0], message[1])
-                # if isinstance(payload, str):
-                #     await self.handle_text_message(client, payload)
-                # else:
-                #     logging.warning(f"Unexpected message type from {client.client_id}")
-
                 # 异步处理音频
                 await self._process_audio(client, websocket)
 
