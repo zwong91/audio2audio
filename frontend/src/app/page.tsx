@@ -8,9 +8,15 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      setMediaRecorder(new MediaRecorder(stream));
-    });
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        setMediaRecorder(new MediaRecorder(stream));
+      }).catch((error) => {
+        console.error("Error accessing media devices.", error);
+      });
+    } else {
+      console.error("Media devices API not supported.");
+    }
   }, []); // Setup mediaRecorder initially
 
   useEffect(() => {
