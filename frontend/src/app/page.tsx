@@ -8,13 +8,62 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [history, setHistory] = useState<any[]>([ // Store the history
+
+  // 在组件顶部声明状态
+  const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
+  const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
+
+  // 音频管理函数
+  const audioManager = {
+    stopCurrentAudio: () => {
+      if (currentAudioElement) {
+        currentAudioElement.pause();
+        currentAudioElement.currentTime = 0;
+        URL.revokeObjectURL(currentAudioElement.src);
+        setCurrentAudioElement(null);
+        setIsPlayingAudio(false);
+      }
+    },
+
+    playNewAudio: async (audioBlob: Blob) => {
+      // 停止当前播放
+      audioManager.stopCurrentAudio();
+
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      setCurrentAudioElement(audio);
+      setIsPlayingAudio(true);
+      
+      // 设置结束事件
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        setCurrentAudioElement(null);
+        setIsPlayingAudio(false);
+        setIsRecording(true);
+      };
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error("播放音频失败:", error);
+        audioManager.stopCurrentAudio();
+      }
+    }
+  };
+
+
+  // 首先定义 history 的类型
+  type HistoryItem = [string, string]; // [用户输入, AI响应]
+  type History = HistoryItem[];
+
+  // 在组件中使用
+  const [history, setHistory] = useState<History>([
     ['今天打老虎吗?', '没妞啊'],
-    ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
+    ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', 
+    '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
   ]);
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
-
-  let lastMessageTime = 0;
 
   useEffect(() => {
     // Ensure screen stays awake
@@ -126,45 +175,26 @@ export default function Home() {
                 const audioBase64 = jsonData["stream"];
                 
                 const receivedHistory = jsonData["history"]; // Extract the history
-                if (receivedHistory) {
-                  setHistory(receivedHistory); // Update the history state
+                if (Array.isArray(receivedHistory)) {
+                  // 确保收到的历史记录是二维数组结构
+                  const formattedHistory = receivedHistory.map(item => 
+                    Array.isArray(item) ? item : [item[0], item[1]]
+                  );
+                  setHistory(formattedHistory);
                 }
                 if (!audioBase64) {
                   console.error("No audio stream data received");
                   return;
                 }
 
-                // Stop the current audio if it's playing
-                if (currentAudioElement && !currentAudioElement.paused) {
-                  currentAudioElement.pause();  // Stop the audio
-                  currentAudioElement.currentTime = 0;  // Reset the playback position to the beginning
-                }
-            
-                // Convert Base64 to Audio Blob
-                const binaryString = atob(audioBase64);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                  bytes[i] = binaryString.charCodeAt(i);
-                }
-            
-                const blob = new Blob([bytes], { type: "audio/wav" });
-            
-                // Create a new audio element and play the received audio
-                const audioUrl = URL.createObjectURL(blob);
-                currentAudioElement = new Audio(audioUrl);  // Assign the current audio element
-            
-                // Listen for when the audio finishes playing
-                currentAudioElement.onended = () => {
-                  setIsPlayingAudio(false); // Finished playing, stop audio playback state
-                  setIsRecording(true); // Resume recording after playback
-                  URL.revokeObjectURL(audioUrl); // Clean up URL
-                };
-            
-                // Play the audio
-                currentAudioElement.play().catch((error) => {
-                  console.error("Error playing audio:", error);
-                });
+              // 转换音频数据
+              const binaryString = atob(audioBase64);
+              const bytes = new Uint8Array(binaryString.length);
+              bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
+              const audioBlob = new Blob([bytes], { type: "audio/wav" });
+
+              // 播放新音频
+              audioManager.playNewAudio(audioBlob);
             
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
