@@ -6,7 +6,7 @@ from io import BytesIO
 from .tts_interface import TTSInterface
 
 class EdgeTTS(TTSInterface):
-    def __init__(self, voice: str = 'zh-TW-HsiaoChenNeural'):
+    def __init__(self, voice: str = 'zh-HK-HiuMaanNeural'):
         self.voice = voice
 
     async def text_to_speech(self, text: str, rate: int = 0, pitch: int = 30, volume: int = 90) -> Tuple[bytes, str, str]:
