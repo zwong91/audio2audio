@@ -67,6 +67,7 @@ class Server:
 
         # Add WebSocket route for audio transcription
         self.app.websocket("/transcribe")(self.websocket_endpoint)
+        self.app.websocket("/stream")(self.websocket_endpoint)
 
     async def startup(self):
         """Called on startup to set up additional services."""
