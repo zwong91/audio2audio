@@ -62,39 +62,41 @@ export default function Home() {
             recorder.startRecording();
           };
 
+          socket.onmessage = (event) => {
+            setIsRecording(false);
+            const received = event.data;
+            // 解析接收到的 JSON 数据
+            const jsonData = JSON.parse(received);
+            const history = jsonData["history"];
+            const audio = jsonData["audio"];
+            const text = jsonData["text"];
+            
+            const audioBase64 = jsonData["stream"];
+            const binaryString = atob(audioBase64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            const audioArrayBuffer = bytes.buffer;
+      
+            const blob = new Blob([audioArrayBuffer], { type: "audio/mpeg" });
+            const audioUrl = URL.createObjectURL(blob);
 
-      socket.onmessage = (event) => {
-        setIsRecording(false);
-        const received = event.data;
-        // 解析接收到的 JSON 数据
-        const jsonData = JSON.parse(received);
-        const history = jsonData["history"];
-        const audio = jsonData["audio"];
-        const text = jsonData["text"];
-        
-        const audioBase64 = jsonData["stream"];
-        const binaryString = atob(audioBase64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const audioArrayBuffer = bytes.buffer;
-  
-        const blob = new Blob([audioArrayBuffer], { type: "audio/mpeg" });
-        const audioUrl = URL.createObjectURL(blob);
+            const audioElement = new Audio(audioUrl);
+            audioElement.onended = () => setIsRecording(true);
+            audioElement.play();
+          };
 
-        const audioElement = new Audio(audioUrl);
-        audioElement.onended = () => setIsRecording(true);
-        audioElement.play();
-      };
-
-      return () => {
-        socket.close(); // Clean up the socket connection on component unmount
-      };
-    }
+          return () => {
+            socket.close(); // Clean up the socket connection on component unmount
+          };
+        });
+      }
+    };
+    document.body.appendChild(script);
   }, [mediaRecorder]);
 
   useEffect(() => {
