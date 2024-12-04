@@ -15,9 +15,8 @@ class EdgeTTS(TTSInterface):
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         audio_bytes = BytesIO()
         async for chunk in communicate.stream():
-            if isinstance(chunk, dict):
-                chunk = chunk.get('audio', b'')
-            audio_bytes.write(chunk)
+            if chunk["type"] == "audio":
+                audio_bytes.write(chunk["data"]
         audio_bytes.seek(0)
 
         end_time = time.time()
