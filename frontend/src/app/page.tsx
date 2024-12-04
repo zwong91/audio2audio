@@ -8,12 +8,10 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
-
-  // 在组件顶部声明状态
   const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
 
-  // 音频管理函数
   const audioManager = {
     stopCurrentAudio: () => {
       if (currentAudioElement) {
@@ -26,21 +24,30 @@ export default function Home() {
     },
 
     playNewAudio: async (audioBlob: Blob) => {
-      // 停止当前播放
       audioManager.stopCurrentAudio();
 
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       
+      audio.onloadedmetadata = () => {
+        setAudioDuration(audio.duration); // Set the audio duration
+      };
+
       setCurrentAudioElement(audio);
       setIsPlayingAudio(true);
-      
-      // 设置结束事件
+
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         setCurrentAudioElement(null);
         setIsPlayingAudio(false);
         setIsRecording(true);
+
+        if (audioQueue.length > 0) {
+          const nextAudioBlob = audioQueue.shift();
+          if (nextAudioBlob) {
+            audioManager.playNewAudio(nextAudioBlob);
+          }
+        }
       };
 
       try {
@@ -52,22 +59,13 @@ export default function Home() {
     }
   };
 
-
-  // 定义类型
   type HistoryItem = [string, string]; // [用户输入, AI响应]
   type History = HistoryItem[];
 
-  // 在组件中使用
-  // const [history, setHistory] = useState<History>([
-  //   ['今天打老虎吗?', '没妞啊'],
-  //   ['好久不见你还记得咱们大学那会儿吗你听到的是开项目 t t 那可是风华正茂的岁月啊还记得咱俩爬那个山顶看日初吗当时许多愿望我到现在还记得 😔', 
-  //   '当然记得，那个时候真开心！一起爬山的事真的很怀念，你还记得许的愿望吗？']
-  // ]);
   const [history, setHistory] = useState<History>([]);
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
   useEffect(() => {
-    // Ensure screen stays awake
     let wakeLock: WakeLockSentinel | null = null;
 
     async function requestWakeLock() {
@@ -81,7 +79,6 @@ export default function Home() {
 
     requestWakeLock();
 
-    // Clean up the wake lock on unmount
     return () => {
       if (wakeLock) {
         wakeLock.release().then(() => {
@@ -91,7 +88,7 @@ export default function Home() {
         });
       }
     };
-  }, []); // Only run on mount and unmount
+  }, []);
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -103,7 +100,7 @@ export default function Home() {
     } else {
       console.error("Media devices API not supported.");
     }
-  }, []); // Setup mediaRecorder initially
+  }, []);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -111,15 +108,13 @@ export default function Home() {
     script.onload = () => {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
-      let currentAudioElement: HTMLAudioElement | null = null; // Track the current playing audio element
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           let websocket: WebSocket | null = null;
 
-          // WebSocket reconnect logic
           const reconnectWebSocket = () => {
-            if (websocket) websocket.close(); // Close existing WebSocket if it exists
+            if (websocket) websocket.close();
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
 
@@ -138,18 +133,15 @@ export default function Home() {
                     const reader = new FileReader();
                     reader.onloadend = () => {
                       if (reader.result) {
-                        // Convert ArrayBuffer to Base64
                         const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
 
-                        // Prepare the data to be sent
                         const dataToSend = [
-                          history, // Include the stored history
-                          "xiaoxiao", // The user identifier or other identifier
-                          base64data // The base64 encoded audio data
+                          history,
+                          "xiaoxiao",
+                          base64data
                         ];
                         const jsonData = JSON.stringify(dataToSend);
 
-                        // Safe check to ensure websocket is not null
                         if (websocket) {
                           websocket.send(jsonData);
                         } else {
@@ -159,7 +151,7 @@ export default function Home() {
                         console.error("FileReader result is null");
                       }
                     };
-                    reader.readAsArrayBuffer(blob); // Read as ArrayBuffer
+                    reader.readAsArrayBuffer(blob);
                   }
                 }
               });
@@ -168,16 +160,15 @@ export default function Home() {
             };
 
             websocket.onmessage = (event) => {
-              setIsRecording(false); // Stop recording when receiving message
-              setIsPlayingAudio(true); // Start playing audio
+              setIsRecording(false);
+              setIsPlayingAudio(true);
             
               try {
                 const jsonData = JSON.parse(event.data);
                 const audioBase64 = jsonData["stream"];
                 
-                const receivedHistory = jsonData["history"]; // Extract the history
+                const receivedHistory = jsonData["history"];
                 if (Array.isArray(receivedHistory)) {
-                  // 验证并格式化历史记录
                   const formattedHistory: History = receivedHistory
                     .filter((item): item is [string, string] => {
                       return Array.isArray(item) && 
@@ -193,13 +184,11 @@ export default function Home() {
                   return;
                 }
 
-              // 转换音频数据
               const binaryString = atob(audioBase64);
               const bytes = new Uint8Array(binaryString.length);
               bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
               const audioBlob = new Blob([bytes], { type: "audio/mp3" });
 
-              // 播放新音频
               audioManager.playNewAudio(audioBlob);
             
               } catch (error) {
@@ -209,7 +198,7 @@ export default function Home() {
 
             websocket.onclose = () => {
               console.log("WebSocket connection closed, attempting to reconnect...");
-              setTimeout(reconnectWebSocket, 5000); // Retry after 5 seconds
+              setTimeout(reconnectWebSocket, 5000);
             };
 
             websocket.onerror = (error) => {
@@ -218,7 +207,7 @@ export default function Home() {
             };
           };
 
-          reconnectWebSocket(); // Initial connection attempt
+          reconnectWebSocket();
         }).catch((error) => {
           console.error("Error with getUserMedia", error);
         });
@@ -226,7 +215,6 @@ export default function Home() {
     };
     document.body.appendChild(script);
 
-    // Cleanup on component unmount
     return () => {
       if (socket) {
         socket.close();
@@ -244,7 +232,6 @@ export default function Home() {
     }
   }, [isRecording, mediaRecorder]);
 
-  // Helper function to convert ArrayBuffer to Base64
   function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
     let binary = '';
     const uint8Array = new Uint8Array(arrayBuffer);
@@ -252,7 +239,7 @@ export default function Home() {
     for (let i = 0; i < len; i++) {
       binary += String.fromCharCode(uint8Array[i]);
     }
-    return btoa(binary); // Convert binary string to base64
+    return btoa(binary);
   }
 
   return (
@@ -268,6 +255,8 @@ export default function Home() {
         <div
           className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate : ""}`}
         ></div>
+        <br />
+        <div>当前音频时长: {audioDuration.toFixed(2)} 秒</div>
       </div>
     </>
   );
