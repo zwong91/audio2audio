@@ -3,12 +3,8 @@ import json
 import os
 import time
 import base64
+import logging
 from .buffering_strategy_interface import BufferingStrategyInterface
-
-from src.utils.logger import TimingLogger, timer_decorator
-
-logger = TimingLogger(__name__)
-
 
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
@@ -141,11 +137,11 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     "text": tts_text,
                     "transcription": transcription["text"]
                 }
-                logger.debug(f"res: {res}")
+                logging.debug(f"res: {res}")
                 try:
                     await websocket.send_json(res)       
                 except Exception as e:
-                    logger.error(f"Error sending WebSocket message: {e}")
+                    logging.error(f"Error sending WebSocket message: {e}")
             self.client.history = []
             self.client.scratch_buffer.clear()
             self.client.increment_file_counter()
