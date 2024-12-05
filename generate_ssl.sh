@@ -4,8 +4,8 @@
 if ! command -v certbot &> /dev/null
 then
     echo "certbot 未安装，正在安装..."
-    sudo apt update
-    sudo apt install -y certbot
+    apt update
+    apt install -y certbot
 else
     echo "certbot 已安装"
 fi
