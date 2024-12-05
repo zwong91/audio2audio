@@ -121,7 +121,6 @@ class Server:
             )
         except RuntimeError as e:
             logging.error(f"Processing error for {client.client_id}: {e}")
-            client.clear_buffer()
 
     async def handle_text_message(self, client, message):
         """Handles incoming JSON text messages for config updates."""
