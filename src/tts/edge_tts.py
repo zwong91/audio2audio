@@ -25,9 +25,9 @@ class EdgeTTS(TTSInterface):
             communicate = edge_tts.Communicate(
                 text=text,
                 voice=self.voice,
-                rate=rate_str,
-                pitch=pitch_str,
-                volume=volume_str
+                # rate=rate_str,
+                # pitch=pitch_str,
+                # volume=volume_str
             )
             async for chunk in communicate.stream():
                 if chunk["type"] == "audio":
@@ -35,7 +35,7 @@ class EdgeTTS(TTSInterface):
             
             audio_buffer.seek(0)
 
-            audio_data = audio_buffer.getvalue()
+            audio_data = audio_buffer.read()
             print(f"音频数据大小: {len(audio_data)} 字节")
             end_time = time.time()
             print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
