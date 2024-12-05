@@ -6,6 +6,11 @@ import base64
 import logging
 from .buffering_strategy_interface import BufferingStrategyInterface
 
+# 导入 WebRTC VAD
+from src.vad.vad_webrtc import WebRTCVAD
+# 创建WebRTCVAD 实例
+webrtc_vad = WebRTCVAD()
+
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
     A buffering strategy that processes audio at the end of each chunk with
@@ -56,7 +61,30 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             )
 
         self.processing_flag = False
-        self.buffer_lock = asyncio.Lock()
+
+    async def buffer_and_detect_speech(self) -> Optional[bool]:
+        """
+        缓冲音频数据并使用 VAD 检测语音结束。
+        """
+    
+        # 设置音频帧长度为 360 个采样点
+        frame_size = 360 * 2  # 360 个采样点，每个采样点 2 个字节
+    
+        # 初始化变量
+        idx = 0
+        while idx + frame_size <= len(self.client.buffer):
+            chunk = self.client.buffer[idx: idx + frame_size]
+            idx += frame_size
+            # 使用 WebRTCVAD 进行语音活动检测
+            vad_result = webrtc_vad.voice_activity_detection(chunk)
+            #print("vad result: {}", vad_result)
+            if vad_result == "1":
+                # 语音活动检测到，继续累积数据
+                continue
+            elif vad_result == "X":
+                return true
+        # 语音尚未结束，继续等待
+        return None
 
     def process_audio(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
@@ -71,6 +99,11 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             vad_pipeline: The voice activity detection pipeline.
             asr_pipeline: The automatic speech recognition pipeline.
         """
+        speech_res = await self.buffer_and_detect_speech()
+        if speech_res is None:
+            # 语音尚未结束，继续等待
+            logging.debug(f"vad status listening")
+            return
         chunk_length_in_bytes = (
             self.chunk_length_seconds
             * self.client.sampling_rate
@@ -107,45 +140,44 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             llm_pipeline: The language model pipeline.
             tts_pipeline: The text-to-speech pipeline.
         """
-        async with self.buffer_lock:
-            start = time.time()
-            vad_results = await vad_pipeline.detect_activity(self.client)
-    
-            if len(vad_results) == 0:
-                self.client.scratch_buffer.clear()
-                self.client.buffer.clear()
-                self.processing_flag = False
-                return
-    
-            last_segment_should_end_before = (
-                len(self.client.scratch_buffer)
-                / (self.client.sampling_rate * self.client.samples_width)
-            ) - self.chunk_offset_seconds
-            if vad_results[-1]["end"] < last_segment_should_end_before:
-                transcription = await asr_pipeline.transcribe(self.client)
-                #TODO: repeated deealing with the same data
-                if transcription["text"] != "":
-                    tts_text, updated_history = await llm_pipeline.generate(
-                        self.client.history, transcription["text"]
-                    )
-                    speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
-                    encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
-                    end = time.time()
-                    res = {
-                        "processing_time": end - start,
-                        "history": updated_history,
-                        "audio": speech_file,
-                        "stream": encoded_speech,
-                        "text": tts_text,
-                        "transcription": transcription["text"]
-                    }
-                    logging.debug(f"res: {res}")
-                    try:
-                        await websocket.send_json(res)       
-                    except Exception as e:
-                        logging.error(f"Error sending WebSocket message: {e}")
-    
-                self.client.scratch_buffer.clear()
-                self.client.increment_file_counter()
-    
+        start = time.time()
+        vad_results = await vad_pipeline.detect_activity(self.client)
+
+        if len(vad_results) == 0:
+            self.client.scratch_buffer.clear()
+            self.client.buffer.clear()
             self.processing_flag = False
+            return
+
+        last_segment_should_end_before = (
+            len(self.client.scratch_buffer)
+            / (self.client.sampling_rate * self.client.samples_width)
+        ) - self.chunk_offset_seconds
+        if vad_results[-1]["end"] < last_segment_should_end_before:
+            transcription = await asr_pipeline.transcribe(self.client)
+            #TODO: repeated deealing with the same data
+            if transcription["text"] != "":
+                tts_text, updated_history = await llm_pipeline.generate(
+                    self.client.history, transcription["text"]
+                )
+                speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
+                encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
+                end = time.time()
+                res = {
+                    "processing_time": end - start,
+                    "history": updated_history,
+                    "audio": speech_file,
+                    "stream": encoded_speech,
+                    "text": tts_text,
+                    "transcription": transcription["text"]
+                }
+                logging.debug(f"res: {res}")
+                try:
+                    await websocket.send_json(res)       
+                except Exception as e:
+                    logging.error(f"Error sending WebSocket message: {e}")
+
+            self.client.scratch_buffer.clear()
+            self.client.increment_file_counter()
+
+        self.processing_flag = False
