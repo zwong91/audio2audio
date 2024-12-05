@@ -56,6 +56,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             )
 
         self.processing_flag = False
+        self.buffer_lock = asyncio.Lock()
 
     def process_audio(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
@@ -106,45 +107,45 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             llm_pipeline: The language model pipeline.
             tts_pipeline: The text-to-speech pipeline.
         """
-        start = time.time()
-        vad_results = await vad_pipeline.detect_activity(self.client)
-
-        if len(vad_results) == 0:
-            self.client.scratch_buffer.clear()
-            self.client.buffer.clear()
+        async with self.buffer_lock:
+            start = time.time()
+            vad_results = await vad_pipeline.detect_activity(self.client)
+    
+            if len(vad_results) == 0:
+                self.client.scratch_buffer.clear()
+                self.client.buffer.clear()
+                self.processing_flag = False
+                return
+    
+            last_segment_should_end_before = (
+                len(self.client.scratch_buffer)
+                / (self.client.sampling_rate * self.client.samples_width)
+            ) - self.chunk_offset_seconds
+            if vad_results[-1]["end"] < last_segment_should_end_before:
+                transcription = await asr_pipeline.transcribe(self.client)
+                #TODO: repeated deealing with the same data
+                if transcription["text"] != "":
+                    tts_text, updated_history = await llm_pipeline.generate(
+                        self.client.history, transcription["text"]
+                    )
+                    speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
+                    encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
+                    end = time.time()
+                    res = {
+                        "processing_time": end - start,
+                        "history": updated_history,
+                        "audio": speech_file,
+                        "stream": encoded_speech,
+                        "text": tts_text,
+                        "transcription": transcription["text"]
+                    }
+                    logging.debug(f"res: {res}")
+                    try:
+                        await websocket.send_json(res)       
+                    except Exception as e:
+                        logging.error(f"Error sending WebSocket message: {e}")
+    
+                self.client.scratch_buffer.clear()
+                self.client.increment_file_counter()
+    
             self.processing_flag = False
-            return
-
-        last_segment_should_end_before = (
-            len(self.client.scratch_buffer)
-            / (self.client.sampling_rate * self.client.samples_width)
-        ) - self.chunk_offset_seconds
-        if vad_results[-1]["end"] < last_segment_should_end_before:
-            transcription = await asr_pipeline.transcribe(self.client)
-            #TODO: repeated deealing with the same data
-            if transcription["text"] != "":
-                tts_text, updated_history = await llm_pipeline.generate(
-                    self.client.history, transcription["text"]
-                )
-                speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
-                encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
-                end = time.time()
-                res = {
-                    "processing_time": end - start,
-                    "history": updated_history,
-                    "audio": speech_file,
-                    "stream": encoded_speech,
-                    "text": tts_text,
-                    "transcription": transcription["text"]
-                }
-                logging.debug(f"res: {res}")
-                try:
-                    await websocket.send_json(res)       
-                except Exception as e:
-                    logging.error(f"Error sending WebSocket message: {e}")
-
-            self.client.scratch_buffer.clear()
-            self.client.increment_file_counter()
-
-        self.client.scratch_buffer.clear()
-        self.processing_flag = False
