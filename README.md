@@ -100,5 +100,5 @@ python3 -m src.main --certfile cf.pem --keyfile cf.key --vad-type pyannote --vad
 ***test***
 ```
 export PYANNOTE_AUTH_TOKEN=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
-ASR_TYPE=faster_whisper python -m unittest test.server.test_server
+ASR_TYPE=sensevoice python -m unittest test.server.test_server
 ```
