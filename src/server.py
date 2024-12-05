@@ -103,8 +103,8 @@ class Server:
                 message = json.loads(payload)
                 bytes = base64.b64decode(message[2])
                 client.append_audio_data(bytes, message[0], message[1])
-                # this is synchronous, any async operation is in BufferingStrategy
-                self._process_audio(client, websocket)
+                # 异步处理音频
+                await self._process_audio(client, websocket)
 
             except WebSocketDisconnect as e:
                 logging.error(f"Connection with {client.client_id} closed: {e}")
@@ -113,7 +113,7 @@ class Server:
                 logging.error(f"Error handling audio for {client.client_id}: {e}")
                 break
 
-    def _process_audio(self, client, websocket):
+    async def _process_audio(self, client, websocket):
         try:
             # 异步执行音频处理
             client.process_audio(
