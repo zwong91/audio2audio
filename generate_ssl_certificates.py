@@ -37,7 +37,7 @@ def generate_ssl_certificates():
     email = os.environ.get('SSL_EMAIL', 'none@syntithenai.com')
     print(domain)
     cert_path = '/etc/letsencrypt/live/' + domain
-    webroot_path = '/var/www/html'
+    http_port = os.environ.get('SSL_HTTP_PORT', '19999')
     if not is_public_domain(domain):
         print('GEN LOCALHOST SSL KEY')
         os.system(' '.join(['mkdir', '-p', cert_path]))
@@ -74,8 +74,9 @@ def generate_ssl_certificates():
             cmd = [
                 'certbot',
                 'certonly',
-                '--webroot',
-                '-w', webroot_path,
+                '-a',
+                'standalone',
+                '--http-01-port', http_port,
                 '--agree-tos',
                 '-d',
                 domain,
