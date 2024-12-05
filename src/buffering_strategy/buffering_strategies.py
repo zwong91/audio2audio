@@ -9,9 +9,9 @@ from .buffering_strategy_interface import BufferingStrategyInterface
 from typing import Optional
 
 # 导入 WebRTC VAD
-from src.vad.webrtc_vad import WebRTCVAD
+from src.vad.webrtc_vad import WebrtcVAD
 # 创建WebRTCVAD 实例
-webrtc_vad = WebRTCVAD()
+webrtc_vad = WebrtcVAD()
 
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
@@ -68,7 +68,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
         """
         缓冲音频数据并使用 VAD 检测语音结束。
         """
-    
         # 设置音频帧长度为 360 个采样点
         frame_size = 360 * 2  # 360 个采样点，每个采样点 2 个字节
     
@@ -101,11 +100,11 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             vad_pipeline: The voice activity detection pipeline.
             asr_pipeline: The automatic speech recognition pipeline.
         """
-        #speech_res = self.buffer_and_detect_speech()
-        #if speech_res is None:
-        #    # 语音尚未结束，继续等待
-        #    logging.debug(f"vad status listening")
-        #    return
+        is_speech = self.buffer_and_detect_speech()
+        if is_speech is None:
+            # 语音尚未结束，继续等待
+            logging.debug(f"vad status listening")
+            return
         chunk_length_in_bytes = (
             self.chunk_length_seconds
             * self.client.sampling_rate
