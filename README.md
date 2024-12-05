@@ -56,3 +56,9 @@ pip install -e .[all,dev,notebooks]  # Select the relevant extras
 ``` sh
 python3 -m src.main --certfile cf.pem --keyfile cf.key --vad-type pyannote --vad-args '{"auth_token": "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"}'
 ```
+
+***test***
+```
+export PYANNOTE_AUTH_TOKEN=<VAD_TOKEN_HERE>
+ASR_TYPE=faster_whisper python -m unittest test.server.test_server
+```

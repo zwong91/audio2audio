@@ -45,9 +45,19 @@ class Server:
         self.keyfile = keyfile
         self.connected_clients = {}
 
-        # Initialize FastAPI app
-        self.app = FastAPI()
-        # 配置 CORS 中间件
+        self.app = FastAPI(
+            title="Audio AI Server",
+            description='',
+            version='0.0.1',
+            contact={
+                "url": ''
+            },
+            license_info={
+                "name": "",
+                "url": ''
+            }
+        )
+
         self.app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -55,22 +65,23 @@ class Server:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        # Add HTTP routes (like rendering HTML)
+
         self.templates = Jinja2Templates(directory="templates")
 
-        # Add route to serve static files from the 'assets' directory
         self.app.add_event_handler("startup", self.startup)
+        self.app.add_event_handler("shutdown", self.shutdown)
         #self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
-        # Define additional HTTP routes
         self.app.get("/asset/{filename}")(self.get_asset_file)
 
-        # Add WebSocket route for audio transcription
         self.app.websocket("/stream")(self.websocket_endpoint)
 
     async def startup(self):
         """Called on startup to set up additional services."""
         logging.info(f"Starting server at {self.host}:{self.port}")
+
+    async def shutdown():
+        logging.info(f"shutdown server ...")
 
     async def websocket_endpoint(self, websocket: WebSocket):
         await websocket.accept()

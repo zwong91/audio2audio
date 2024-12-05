@@ -231,11 +231,11 @@ export default function Home() {
                 const jsonData = JSON.parse(event.data);
                 const audioBase64 = jsonData["stream"];
                 
-                const receivedHistory = jsonData["history"];
+                const receivedHistory: Array<{ user: string, ai: string }> = jsonData["history"];
+
                 if (Array.isArray(receivedHistory)) {
-                  const formattedHistory = receivedHistory.filter((item) => 
-                    Array.isArray(item) && item.length === 2 && typeof item[0] === 'string' && typeof item[1] === 'string'
-                  );
+                  // 将 List[Dict[str, str]] 转换为 HistoryItem[]
+                  const formattedHistory: History = receivedHistory.map(item => [item.user, item.ai]);
                   setHistory(formattedHistory);
                 }
                 if (!audioBase64) {
