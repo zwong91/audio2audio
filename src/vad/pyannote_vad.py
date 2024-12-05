@@ -41,7 +41,7 @@ class PyannoteVAD(VADInterface):
                 "onset": 0.5,
                 "offset": 0.5,
                 "min_duration_on": 0.3,
-                "min_duration_off": 0.7,
+                "min_duration_off": 1,
             },
         )
         self.model = Model.from_pretrained(
