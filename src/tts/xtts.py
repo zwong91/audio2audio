@@ -9,6 +9,9 @@ from typing import Tuple
 import edge_tts
 from .tts_interface import TTSInterface
 
+import numpy as np
+from scipy.io.wavfile import write
+
 sys.path.insert(1, "../vc")
 
 from src.xtts.TTS.api import TTS
@@ -78,12 +81,21 @@ class XTTSv2(TTSInterface):
         )
         wav = await tts_task
 
-        # 将生成的音频文件读入内存缓冲区
-        audio_buffer = BytesIO()
-        audio_buffer.write(b''.join(wav))
-        audio_buffer.seek(0)
-        audio_data = audio_buffer.read()
+        # 创建 BytesIO 对象
+        wav_io = io.BytesIO()
 
+        # 如果返回的是 NumPy 数组，则写入 WAV 文件格式
+        if isinstance(wav, np.ndarray):
+            write(wav_io, 16000, wav)
+        # 如果返回的是字节流，直接写入
+        elif isinstance(wav, (bytes, bytearray)):
+            wav_io.write(wav)
+        else:
+            raise TypeError(f"Unsupported WAV data type: {type(wav)}")
+        
+        # 将游标移到开始位置
+        wav_io.seek(0)
+        audio_data = wav_io.read()
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
 
