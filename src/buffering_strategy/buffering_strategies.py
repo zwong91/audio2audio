@@ -7,7 +7,7 @@ import logging
 from .buffering_strategy_interface import BufferingStrategyInterface
 
 # 导入 WebRTC VAD
-from src.vad.vad_webrtc import WebRTCVAD
+from src.vad.webrtc_vad import WebRTCVAD
 # 创建WebRTCVAD 实例
 webrtc_vad = WebRTCVAD()
 
