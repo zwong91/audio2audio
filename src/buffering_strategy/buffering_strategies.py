@@ -6,6 +6,8 @@ import base64
 import logging
 from .buffering_strategy_interface import BufferingStrategyInterface
 
+from typing import Optional
+
 # 导入 WebRTC VAD
 from src.vad.webrtc_vad import WebRTCVAD
 # 创建WebRTCVAD 实例
