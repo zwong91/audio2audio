@@ -122,7 +122,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
         if vad_results[-1]["end"] < last_segment_should_end_before:
             transcription = await asr_pipeline.transcribe(self.client)
             #TODO: repeated deealing with the same data
-            self.client.scratch_buffer.clear()
             if transcription["text"] != "":
                 tts_text, updated_history = await llm_pipeline.generate(
                     self.client.history, transcription["text"]
@@ -144,6 +143,8 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 except Exception as e:
                     logging.error(f"Error sending WebSocket message: {e}")
 
+            self.client.scratch_buffer.clear()
             self.client.increment_file_counter()
 
+        self.client.scratch_buffer.clear()
         self.processing_flag = False
