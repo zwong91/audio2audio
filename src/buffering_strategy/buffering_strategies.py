@@ -62,7 +62,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
 
         self.processing_flag = False
 
-    async def buffer_and_detect_speech(self) -> Optional[bool]:
+    def buffer_and_detect_speech(self) -> Optional[bool]:
         """
         缓冲音频数据并使用 VAD 检测语音结束。
         """
@@ -99,7 +99,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             vad_pipeline: The voice activity detection pipeline.
             asr_pipeline: The automatic speech recognition pipeline.
         """
-        speech_res = await self.buffer_and_detect_speech()
+        speech_res = self.buffer_and_detect_speech()
         if speech_res is None:
             # 语音尚未结束，继续等待
             logging.debug(f"vad status listening")
