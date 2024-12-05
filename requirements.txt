@@ -15,7 +15,6 @@ webrtcvad
 python-dotenv
 edge-tts
 pydub
-TTS
 speechbrain==1.0.0
 pyannote.audio
 asyncio==3.4.3
