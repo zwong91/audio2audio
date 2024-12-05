@@ -80,7 +80,7 @@ class XTTSv2(TTSInterface):
 
         # 将生成的音频文件读入内存缓冲区
         audio_buffer = BytesIO()
-        audio_buffer.write(wav)
+        audio_buffer.write(b''.join(wav))
         audio_buffer.seek(0)
         audio_data = audio_buffer.read()
 
