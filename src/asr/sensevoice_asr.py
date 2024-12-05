@@ -2,6 +2,7 @@ import os
 import torch
 
 from funasr import AutoModel
+from funasr.utils.postprocess_utils import rich_transcription_postprocess
 
 from src.utils.audio_utils import save_audio_to_file
 
@@ -38,6 +39,8 @@ class SenseVoiceASR(ASRInterface):
 
         os.remove(file_path)
 
+        text = rich_transcription_postprocess(to_return.strip())
+        print(f"Transcription: {text}")
         to_return = {
             "language": "UNSUPPORTED_BY_HUGGINGFACE_SENSEVOICE",
             "language_probability": None,
