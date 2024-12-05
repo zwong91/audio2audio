@@ -79,7 +79,7 @@ class XTTSv2(TTSInterface):
                 language="en"
             )
         )
-        wav = await tts_task
+        wav_data = await tts_task
 
         # 创建 BytesIO 对象
         wav_io = BytesIO()
