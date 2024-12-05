@@ -73,9 +73,9 @@ sudo docker build -t rt-audio .
 After getting your VAD token (see next sections) run:
 
 ```bash
-sudo docker volume create huggingface_models
+sudo docker volume create huggingface
 
-sudo docker run --gpus all -p 8765:8765 -v huggingface_models:/root/.cache/huggingface  -e PYANNOTE_AUTH_TOKEN='VAD_TOKEN_HERE' rt-audio
+sudo docker run --gpus all -p 8765:8765 -v huggingface:/root/.cache/huggingface  -e PYANNOTE_AUTH_TOKEN='VAD_TOKEN_HERE' rt-audio
 ```
 
 The "volume" stuff will allow you not to re-download the huggingface models each
