@@ -101,11 +101,11 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             vad_pipeline: The voice activity detection pipeline.
             asr_pipeline: The automatic speech recognition pipeline.
         """
-        speech_res = self.buffer_and_detect_speech()
-        if speech_res is None:
-            # 语音尚未结束，继续等待
-            logging.debug(f"vad status listening")
-            return
+        #speech_res = self.buffer_and_detect_speech()
+        #if speech_res is None:
+        #    # 语音尚未结束，继续等待
+        #    logging.debug(f"vad status listening")
+        #    return
         chunk_length_in_bytes = (
             self.chunk_length_seconds
             * self.client.sampling_rate
