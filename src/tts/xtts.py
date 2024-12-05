@@ -82,7 +82,7 @@ class XTTSv2(TTSInterface):
         wav = await tts_task
 
         # 创建 BytesIO 对象
-        wav_io = io.BytesIO()
+        wav_io = BytesIO()
 
         # 如果返回的是 NumPy 数组，则写入 WAV 文件格式
         if isinstance(wav, np.ndarray):
