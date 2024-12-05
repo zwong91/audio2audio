@@ -84,14 +84,16 @@ class XTTSv2(TTSInterface):
         # 创建 BytesIO 对象
         wav_io = BytesIO()
 
+        # wav_data[0] 是音频数据，wav_data[1] 是采样率
+        wav_audio = wav_data[0]
+        sample_rate = wav_data[1] if len(wav_data) > 1 else 16000  # 默认采样率16000
+
         # 如果返回的是 NumPy 数组，则写入 WAV 文件格式
-        if isinstance(wav, np.ndarray):
-            write(wav_io, 16000, wav)
+        if isinstance(wav_audio, np.ndarray):
+            write(wav_io, sample_rate, wav_audio)
         # 如果返回的是字节流，直接写入
-        elif isinstance(wav, (bytes, bytearray)):
-            wav_io.write(wav)
-        else:
-            raise TypeError(f"Unsupported WAV data type: {type(wav)}")
+        elif isinstance(wav_audio, (bytes, bytearray)):
+            wav_io.write(wav_audio)
         
         # 将游标移到开始位置
         wav_io.seek(0)
