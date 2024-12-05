@@ -77,7 +77,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
         )
         if len(self.client.buffer) > chunk_length_in_bytes:
             if self.processing_flag:
-                self.client.buffer.clear()
                 raise RuntimeError(
                     "Error in realtime processing: tried processing a new "
                     "chunk while the previous one was still being processed"
