@@ -1,7 +1,7 @@
 import requests
 import json
 
-from loguru import logger
+import logging as logger
 
 req_host = 'http://23.249.20.24:5001'
 req_url = '/enty_api/workflows-run/'
