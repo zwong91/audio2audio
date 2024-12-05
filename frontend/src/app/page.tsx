@@ -189,7 +189,7 @@ export default function Home() {
                 type: 'audio',
                 recorderType: StereoAudioRecorder,
                 mimeType: 'audio/wav',
-                timeSlice: 600,
+                timeSlice: 1500,
                 desiredSampRate: 16000,
                 numberOfAudioChannels: 1,
                 ondataavailable: (blob: Blob) => {
