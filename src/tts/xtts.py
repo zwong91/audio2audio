@@ -70,23 +70,21 @@ class XTTSv2(TTSInterface):
         # 生成音频文件
         tts_task = asyncio.create_task(
             asyncio.to_thread(
-                self.tts.voice_conversion_to_file,
-                source_wav=temp_file,
-                target_wav=target_wav,
-                file_path=speech_file_path
+                self.tts.tts,
+                text=text,
+                speaker_wav=target_wav,
+                language="en"
             )
         )
-        await tts_task
+        wav = await tts_task
 
         # 将生成的音频文件读入内存缓冲区
         audio_buffer = BytesIO()
-        with open(speech_file_path, 'rb') as f:
-            audio_buffer.write(f.read())
-
+        audio_buffer.write(wav)
         audio_buffer.seek(0)
         audio_data = audio_buffer.read()
 
         end_time = time.time()
-        print(f"XTTS1 text_to_speech time: {end_time - start_time:.4f} seconds")
+        print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
 
         return audio_data, text, os.path.basename(speech_file_path)
