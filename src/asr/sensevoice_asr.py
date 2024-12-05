@@ -40,11 +40,10 @@ class SenseVoiceASR(ASRInterface):
         os.remove(file_path)
 
         text = rich_transcription_postprocess(to_return.strip())
-        print(f"Transcription: {text}")
         to_return = {
             "language": "UNSUPPORTED_BY_HUGGINGFACE_SENSEVOICE",
             "language_probability": None,
-            "text": to_return.strip(),
+            "text": text,
             "words": "UNSUPPORTED_BY_HUGGINGFACE_SENSEVOICE",
         }
         return to_return
