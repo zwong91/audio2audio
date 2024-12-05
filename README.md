@@ -45,6 +45,46 @@ pip install -e .[all,dev,notebooks]  # Select the relevant extras
 
 ```
 
+## Running with Docker
+
+This will not guide you in detail on how to use CUDA in docker, see for
+example [here](https://medium.com/@kevinsjy997/configure-docker-to-use-local-gpu-for-training-ml-models-70980168ec9b).
+
+Still, these are the commands for Linux:
+
+```bash
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+&& curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+sudo nvidia-ctk runtime configure --runtime=docker
+
+sudo systemctl restart docker
+```
+
+You can build the container image with:
+
+```bash
+sudo docker build -t rt-audio .
+```
+
+After getting your VAD token (see next sections) run:
+
+```bash
+sudo docker volume create huggingface_models
+
+sudo docker run --gpus all -p 8765:8765 -v huggingface_models:/root/.cache/huggingface  -e PYANNOTE_AUTH_TOKEN='VAD_TOKEN_HERE' rt-audio
+```
+
+The "volume" stuff will allow you not to re-download the huggingface models each
+time you re-run the container. If you don't need this, just use:
+
+```bash
+sudo docker run --gpus all -p 19999:19999 -e PYANNOTE_AUTH_TOKEN='VAD_TOKEN_HERE' rt-audio
+```
+
 ## Basic Usage
 
 **prepare**
@@ -59,6 +99,6 @@ python3 -m src.main --certfile cf.pem --keyfile cf.key --vad-type pyannote --vad
 
 ***test***
 ```
-export PYANNOTE_AUTH_TOKEN=<VAD_TOKEN_HERE>
+export PYANNOTE_AUTH_TOKEN=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
 ASR_TYPE=faster_whisper python -m unittest test.server.test_server
 ```

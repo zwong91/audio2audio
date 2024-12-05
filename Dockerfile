@@ -39,4 +39,4 @@ ENTRYPOINT ["python3", "-m", "src.main"]
 
 # python -m gunicorn --bind 0.0.0.0:444  --workers 1 --reload --timeout 0 --keyfile /etc/letsencrypt/live/${SSL_DOMAIN_NAME}/privkey.pem --certfile /etc/letsencrypt/live/${SSL_DOMAIN_NAME}/cert.pem src.main -k uvicorn.workers.UvicornWorker
 # Provide a default command (can be overridden at runtime)
-CMD ["--host", "0.0.0.0", "--port", "19999", "--certfile", "cf.pem", "--keyfile", "cf.key", "--vad-type", "pyannote", "--vad-args", "'{"auth_token": "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"}'"]
+CMD ["--host", "0.0.0.0", "--port", "19999"]
