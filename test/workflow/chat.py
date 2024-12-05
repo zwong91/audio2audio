@@ -1,7 +1,7 @@
 import requests
 import json
 
-import logging as logger
+import logging
 
 req_host = 'http://23.249.20.24:5001'
 req_url = '/enty_api/workflows-run/'
@@ -26,21 +26,21 @@ def chat_ai(chat_phone, chat_text):
         url = req_host + req_url + workflow_id
         response = requests.post(url, headers=headers, json=data)
 
-        # logger.info(f"chat api, url: {url}, headers: {headers}, data: {data}, response: {response.text} ...")
+        # logging.info(f"chat api, url: {url}, headers: {headers}, data: {data}, response: {response.text} ...")
         if response.status_code != 200:
-            logger.error(f"request failed, code != 200 , reason: {response.text} ...")
+            logging.error(f"request failed, code != 200 , reason: {response.text} ...")
             return
 
         result_json = json.loads(response.text)
         return result_json['data']['outputs']['out_chat_one_v1']
     except Exception as e:
-        logger.error(f"request failed, reason: {e} ...")
+        logging.error(f"request failed, reason: {e} ...")
 
 
 if __name__ == '__main__':
-    logger.info('')
+    logging.info('')
 
     phone = '13766058975'
     text = '你好?!'
     answer = chat_ai(phone, text)
-    logger.info(f"ai 聊天, 问: {text}, 答: {answer}")
+    logging.info(f"ai 聊天, 问: {text}, 答: {answer}")
