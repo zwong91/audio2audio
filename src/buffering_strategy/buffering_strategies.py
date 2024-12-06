@@ -150,8 +150,8 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     logging.debug(f"res: {res}")
                     try:
                         await websocket.send_json(res)
-                        # 异步等待 5 秒，防止音频重叠
-                        await asyncio.sleep(5)
+                        # 异步等待 1 秒，防止音频重叠
+                        #await asyncio.sleep(1)
                     except Exception as e:
                         logging.error(f"Error sending WebSocket message: {e}")
 
