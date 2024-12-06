@@ -8,11 +8,6 @@ from .buffering_strategy_interface import BufferingStrategyInterface
 
 from typing import Optional
 
-# 导入 WebRTC VAD
-from src.vad.webrtc_vad import WebrtcVAD
-# 创建WebRTCVAD 实例
-webrtc_vad = WebrtcVAD()
-
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
     A buffering strategy that processes audio at the end of each chunk with
@@ -64,30 +59,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
 
         self.processing_flag = False
 
-    def buffer_and_detect_speech(self) -> Optional[bool]:
-        """
-        缓冲音频数据并使用 VAD 检测语音结束。
-        """
-        # 设置音频帧长度为 480 个采样点
-        frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
-    
-        # 初始化变量
-        idx = 0
-        while idx + frame_size <= len(self.client.buffer):
-            chunk = self.client.buffer[idx: idx + frame_size]
-            idx += frame_size
-            # 使用 WebRTCVAD 进行语音活动检测
-            vad_result = webrtc_vad.voice_activity_detection(chunk)
-            #print("vad result: {}", vad_result)
-            if vad_result == "1":
-                # 语音活动检测到，继续累积数据
-                continue
-            elif vad_result == "X":
-                return true
-        # 语音尚未结束，继续等待
-        return None
-
-    def process_audio(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
+    async def process_audio(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
         Process audio chunks by checking their length and scheduling
         asynchronous processing.
@@ -100,11 +72,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             vad_pipeline: The voice activity detection pipeline.
             asr_pipeline: The automatic speech recognition pipeline.
         """
-        is_speech = self.buffer_and_detect_speech()
-        if is_speech is None:
-            # 语音尚未结束，继续等待
-            print(f"vad status listening")
-            return
         chunk_length_in_bytes = (
             self.chunk_length_seconds
             * self.client.sampling_rate
@@ -121,9 +88,10 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             self.client.buffer.clear()
             self.processing_flag = True
             # schedule the processing in a separate task
-            asyncio.create_task(
+            t = asyncio.create_task(
                 self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
             )
+            await t
 
     async def process_audio_async(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
