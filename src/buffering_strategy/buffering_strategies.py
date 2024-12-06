@@ -89,83 +89,83 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
             )
 
-async def process_audio_async(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
-    """
-    Asynchronously process audio for activity detection and transcription.
+    async def process_audio_async(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
+        """
+        Asynchronously process audio for activity detection and transcription.
 
-    This method performs heavy processing, including voice activity
-    detection and transcription of the audio data. It sends the
-    transcription results through the WebSocket connection.
+        This method performs heavy processing, including voice activity
+        detection and transcription of the audio data. It sends the
+        transcription results through the WebSocket connection.
 
-    Args:
-        websocket (Websocket): The WebSocket connection for sending
-                               transcriptions.
-        vad_pipeline: The voice activity detection pipeline.
-        asr_pipeline: The automatic speech recognition pipeline.
-        llm_pipeline: The language model pipeline.
-        tts_pipeline: The text-to-speech pipeline.
-    """
-    # If the flag indicates processing is already happening, return early
-    async with self._lock:
-        if self.processing_flag:
-            print("跳过当前chunk处理: 上一个chunk正在处理中")
-            return
-        self.processing_flag = True
-
-    try:
-        start = time.time()
-
-        self.client.scratch_buffer += self.client.buffer
-        self.client.buffer.clear()
-        # Perform voice activity detection
-        vad_results = await vad_pipeline.detect_activity(self.client)
-
-        # No activity detected, clear buffers and exit
-        if len(vad_results) == 0:
-            self.client.scratch_buffer.clear()
-            self.client.buffer.clear()
-            return
-
-        # Check if the last segment should end before the threshold
-        last_segment_should_end_before = (
-            len(self.client.scratch_buffer) /
-            (self.client.sampling_rate * self.client.samples_width)
-        ) - self.chunk_offset_seconds
-        if vad_results[-1]["end"] < last_segment_should_end_before:
-            # Perform transcription if there is activity
-            transcription = await asr_pipeline.transcribe(self.client)
-            if transcription["text"] != "":
-                # Generate response from LLM pipeline
-                tts_text, updated_history = await llm_pipeline.generate(
-                    self.client.history, transcription["text"]
-                )
-                # Perform text-to-speech conversion
-                speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
-                encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
-
-                end = time.time()
-                res = {
-                    "processing_time": end - start,
-                    "history": updated_history,
-                    "audio": speech_file,
-                    "stream": encoded_speech,
-                    "text": tts_text,
-                    "transcription": transcription["text"]
-                }
-                logging.debug(f"res: {res}")
-
-                # Send result through WebSocket
-                try:
-                    await websocket.send_json(res)
-                except Exception as e:
-                    logging.error(f"Error sending WebSocket message: {e}")
-
-            # Clear buffers and increment file counter
-            self.client.scratch_buffer.clear()
-            self.client.increment_file_counter()
-
-    finally:
-        # Ensure processing flag is reset after processing
+        Args:
+            websocket (Websocket): The WebSocket connection for sending
+                                transcriptions.
+            vad_pipeline: The voice activity detection pipeline.
+            asr_pipeline: The automatic speech recognition pipeline.
+            llm_pipeline: The language model pipeline.
+            tts_pipeline: The text-to-speech pipeline.
+        """
+        # If the flag indicates processing is already happening, return early
         async with self._lock:
-            self.processing_flag = False
+            if self.processing_flag:
+                print("跳过当前chunk处理: 上一个chunk正在处理中")
+                return
+            self.processing_flag = True
+
+        try:
+            start = time.time()
+
+            self.client.scratch_buffer += self.client.buffer
+            self.client.buffer.clear()
+            # Perform voice activity detection
+            vad_results = await vad_pipeline.detect_activity(self.client)
+
+            # No activity detected, clear buffers and exit
+            if len(vad_results) == 0:
+                self.client.scratch_buffer.clear()
+                self.client.buffer.clear()
+                return
+
+            # Check if the last segment should end before the threshold
+            last_segment_should_end_before = (
+                len(self.client.scratch_buffer) /
+                (self.client.sampling_rate * self.client.samples_width)
+            ) - self.chunk_offset_seconds
+            if vad_results[-1]["end"] < last_segment_should_end_before:
+                # Perform transcription if there is activity
+                transcription = await asr_pipeline.transcribe(self.client)
+                if transcription["text"] != "":
+                    # Generate response from LLM pipeline
+                    tts_text, updated_history = await llm_pipeline.generate(
+                        self.client.history, transcription["text"]
+                    )
+                    # Perform text-to-speech conversion
+                    speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text)
+                    encoded_speech = base64.b64encode(speech_audio).decode('utf-8')
+
+                    end = time.time()
+                    res = {
+                        "processing_time": end - start,
+                        "history": updated_history,
+                        "audio": speech_file,
+                        "stream": encoded_speech,
+                        "text": tts_text,
+                        "transcription": transcription["text"]
+                    }
+                    logging.debug(f"res: {res}")
+
+                    # Send result through WebSocket
+                    try:
+                        await websocket.send_json(res)
+                    except Exception as e:
+                        logging.error(f"Error sending WebSocket message: {e}")
+
+                # Clear buffers and increment file counter
+                self.client.scratch_buffer.clear()
+                self.client.increment_file_counter()
+
+        finally:
+            # Ensure processing flag is reset after processing
+            async with self._lock:
+                self.processing_flag = False
 
