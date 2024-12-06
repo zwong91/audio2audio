@@ -68,8 +68,8 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
         """
         缓冲音频数据并使用 VAD 检测语音结束。
         """
-        # 设置音频帧长度为 360 个采样点
-        frame_size = 360 * 2  # 360 个采样点，每个采样点 2 个字节
+        # 设置音频帧长度为 480 个采样点
+        frame_size = 480 * 2  # 480 个采样点，每个采样点 2 个字节
     
         # 初始化变量
         idx = 0

@@ -25,7 +25,7 @@ class WebrtcVAD():
         """
         idle_time = 0.5
         self.sample_rate = 16000
-        self.frame_size = 360
+        self.frame_size = 480
         self.bytes_per_sample = 2
         self.idle_cut = (self.sample_rate * idle_time) / self.frame_size  # chunk audio if no voice for idle_time seconds
         self.last_voice_activity = 0
