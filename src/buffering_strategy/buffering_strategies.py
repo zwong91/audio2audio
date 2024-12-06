@@ -103,7 +103,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
         is_speech = self.buffer_and_detect_speech()
         if is_speech is None:
             # 语音尚未结束，继续等待
-            logging.debug(f"vad status listening")
+            print(f"vad status listening")
             return
         chunk_length_in_bytes = (
             self.chunk_length_seconds
