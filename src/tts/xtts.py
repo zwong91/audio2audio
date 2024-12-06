@@ -22,13 +22,16 @@ class XTTS(TTSInterface):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts = TTS(model_name="voice_conversion_models/multilingual/vctk/freevc24", progress_bar=False).to(device)
 
-    async def text_to_speech(self, text: str) -> Tuple[bytes, str, str]:
+    async def text_to_speech(self, text: str, rate: int = 0, pitch: int = 20, volume: int = 110) -> Tuple[bytes, str, str]:
         audio_buffer = BytesIO()
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
         
         temp_file = f"/tmp/audio_{uuid4().hex[:8]}.mp3"
-        communicate = edge_tts.Communicate(text=text, voice=self.voice)
+        rate_str = f"{rate:+d}%"
+        pitch_str = f"{pitch:+d}Hz"
+        volume_str = f"{volume:+d}%"
+        communicate = edge_tts.Communicate(text=text, voice=self.voice, pitch=pitch_str, volume=volume_str)
         await communicate.save(temp_file)
 
         # 使用 os.path 确保路径正确拼接
