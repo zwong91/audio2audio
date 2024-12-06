@@ -116,7 +116,7 @@ class Server:
     async def _process_audio(self, client, websocket):
         try:
             # 异步执行音频处理
-            async client.process_audio(
+            client.process_audio(
                 websocket, self.vad_pipeline, self.asr_pipeline, self.llm_pipeline, self.tts_pipeline
             )
         except RuntimeError as e:
