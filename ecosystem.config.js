@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "rt-audio-edge",
       script: "./start_app_edge.sh",
-      cwd: "/home/ubuntu/front/rt-audio",
+      cwd: "/root/rt-audio",
       interpreter: "/bin/bash",
       env: {
         CONDA_DEFAULT_ENV: "rt",
@@ -13,7 +13,17 @@ module.exports = {
     {
       name: "rt-audio-vc",
       script: "./start_app_vc.sh",
-      cwd: "/home/ubuntu/front/rt-audio",
+      cwd: "/root/rt-audio",
+      interpreter: "/bin/bash",
+      env: {
+        CONDA_DEFAULT_ENV: "rt",
+        OPENAI_API_KEY: "sk-xxxx"
+      },
+    },
+    {
+      name: "rt-audio-vc-gpu",
+      script: "./start_app_vc_gpu.sh",
+      cwd: "/root/rt-audio",
       interpreter: "/bin/bash",
       env: {
         CONDA_DEFAULT_ENV: "rt",
