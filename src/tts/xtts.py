@@ -48,11 +48,8 @@ class XTTS(TTSInterface):
             print(f"Received chunk {i} of audio length {chunk.shape[-1]}")
             wav_chuncks.append(chunk)
         wav = torch.cat(wav_chuncks, dim=0)
-        audio_buffer.seek(0)
-        audio_data = audio_buffer.read()
         # 创建 BytesIO 对象
         wav_io = BytesIO()
-        # wav_data[0] 是音频数据，wav_data[1] 是采样率
         wav_audio = wav.squeeze().unsqueeze(0).cpu()
         sample_rate = 24000  # 默认采样率24k
         write(wav_io, sample_rate, wav_audio) 
