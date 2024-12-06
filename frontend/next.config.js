@@ -6,7 +6,7 @@ module.exports = {
   devServer: {
     https: {
       key: fs.readFileSync(path.join(__dirname, 'cf.key')),
-      cert: fs.readFileSync(path.join(__dirname, 'cf.pem')),
+      cert: fs.readFileSync(path.join(__dirname, 'cf.pem1')),
     },
   },
 };
