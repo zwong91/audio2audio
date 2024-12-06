@@ -52,7 +52,7 @@ class OpenAILLM(LLMInterface):
     def __init__(self, model: str = "gpt-4o-mini"):
         self.model = model
         openai.api_key = OPENAI_API_KEY
-        openai.base_url = "https://xyz-api.jongun2038.win/v1"
+        openai.base_url = "https://xyz-api.jongun2038.win/v1/"
 
     async def generate(self, history: List, query: str, max_tokens: int = 32) -> Tuple[str, List[Dict[str, str]]]:
         start_time = time.time()
