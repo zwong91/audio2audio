@@ -132,8 +132,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             if vad_results[-1]["end"] < last_segment_should_end_before:
                 transcription = await asr_pipeline.transcribe(self.client)
                 #TODO: repeated deealing with the same data
-                self.client.scratch_buffer.clear()
-                self.client.increment_file_counter()
                 if transcription["text"] != "":
                     tts_text, updated_history = await llm_pipeline.generate(
                         self.client.history, transcription["text"]
@@ -143,7 +141,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     end = time.time()
                     res = {
                         "processing_time": end - start,
-                        "history": updated_history,
                         "audio": speech_file,
                         "stream": encoded_speech,
                         "text": tts_text,
@@ -152,10 +149,13 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     logging.debug(f"res: {res}")
                     try:
                         await websocket.send_json(res)
-                        # 异步等待 1 秒，防止音频重叠
+                        #TODO: 异步等待 1 秒，防止音频重叠
                         #await asyncio.sleep(1)
                     except Exception as e:
                         logging.error(f"Error sending WebSocket message: {e}")
+                    self.client.history = updated_history
+                    self.client.scratch_buffer.clear()
+                    self.client.increment_file_counter()
 
         finally:
             async with self._lock:
