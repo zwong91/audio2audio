@@ -41,6 +41,7 @@ if __name__ == '__main__':
     logging.info('')
 
     phone = '13766058975'
-    text = '你好?!'
+    text = '今天几号?!'
     answer = chat_ai(phone, text)
+    print(answer)
     logging.info(f"ai 聊天, 问: {text}, 答: {answer}")
