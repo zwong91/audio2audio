@@ -230,8 +230,7 @@ export default function Home() {
               setIsPlayingAudio(true);
             
               try {
-                const jsonData = JSON.parse(event.data);
-                const audio = jsonData["stream"];
+                const audio = event.data;
                 bufferAudio(audio.arrayBuffer);
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
