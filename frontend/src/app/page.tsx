@@ -230,18 +230,8 @@ export default function Home() {
               setIsPlayingAudio(true);      
               try {
                 // 如果 event.data 是 ArrayBuffer，直接处理
-                if (event.data instanceof ArrayBuffer) {
                   const audio = event.data; // 直接是 ArrayBuffer 类型
                   bufferAudio(audio);
-                } else if (event.data instanceof Blob) {
-                  // 如果 event.data 是 Blob，先将其转为 ArrayBuffer
-                  const reader = new FileReader();
-                  reader.onloadend = function() {
-                    const audio = reader.result; // 结果是 ArrayBuffer
-                    bufferAudio(audio);
-                  };
-                  reader.readAsArrayBuffer(event.data);
-                }
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
               }
