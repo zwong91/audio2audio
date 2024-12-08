@@ -138,14 +138,9 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     )
                     speech_audio, text, speech_file = await tts_pipeline.text_to_speech(tts_text) 
                     end = time.time()
-                    res = {
-                        "processing_time": end - start,
-                        "stream": speech_audio,
-                        "text": tts_text,
-                    }
-                    logging.debug(f"res: {res}")
+                    logging.debug(f"processing_time: {end - start}, text: {tts_text}")
                     try:
-                        await websocket.send_json(res)
+                        await websocket.send_bytes(speech_audio)
                         #TODO: 异步等待 1 秒，防止音频重叠
                         #await asyncio.sleep(1)
                     except Exception as e:
