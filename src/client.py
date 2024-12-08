@@ -61,12 +61,9 @@ class Client:
             )
         )
 
-    def append_audio_data(self, audio_data, history, speaker):
+    def append_audio_data(self, audio_data):
         self.buffer.extend(audio_data)
         self.total_samples += len(audio_data) / self.samples_width
-        
-        self.history = history
-        self.speaker = speaker
 
     def clear_buffer(self):
         self.buffer.clear()
