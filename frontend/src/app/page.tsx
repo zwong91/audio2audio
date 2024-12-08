@@ -128,7 +128,7 @@ export default function Home() {
   type History = HistoryItem[];
 
   const [history, setHistory] = useState<History>([]);
-  const SOCKET_URL = "ws://192.168.31.41:29999/stream-vc";
+  const SOCKET_URL = "ws://gtp.aleopool.cc/stream";
 
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
@@ -231,23 +231,8 @@ export default function Home() {
             
               try {
                 const jsonData = JSON.parse(event.data);
-                const audioBase64 = jsonData["stream"];
-                
-                const receivedHistory: Array<{ user: string, ai: string }> = jsonData["history"];
-
-                if (Array.isArray(receivedHistory)) {
-                  // 将 List[Dict[str, str]] 转换为 HistoryItem[]
-                  const formattedHistory: History = receivedHistory.map(item => [item.user, item.ai]);
-                  setHistory(formattedHistory);
-                }
-                if (!audioBase64) {
-                  console.error("No audio stream data received");
-                  return;
-                }
-
-                const binaryString = atob(audioBase64);
-                const bytes = new Uint8Array(binaryString.length);
-                bytes.set(Uint8Array.from(binaryString, c => c.charCodeAt(0)));
+                const audio = jsonData["stream"];
+                const bytes = new Uint8Array(audio);
                 bufferAudio(bytes.buffer);
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
