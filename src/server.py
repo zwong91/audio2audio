@@ -103,7 +103,7 @@ class Server:
                 payload = await websocket.receive_text()
                 message = json.loads(payload)
                 bytes = base64.b64decode(message[2])
-                client.append_audio_data(bytes, message[0], message[1])
+                client.append_audio_data(bytes)
                 # 异步处理音频
                 self._process_audio(client, websocket)
 
