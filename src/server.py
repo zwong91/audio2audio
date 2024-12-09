@@ -17,6 +17,12 @@ import torchaudio
 
 from src.client import Client
 
+from pydantic import BaseModel
+
+class TTSRequest(BaseModel):
+    tts_text: str
+    language: str
+
 class TTSManager:
     def __init__(self, tts_pipeline):
         self.task_queue = asyncio.Queue()  # 用于存储任务
@@ -236,8 +242,8 @@ class Server:
             }
         )
 
-    async def generate_tts(self, tts_text: str, language: str):
-        task_id = await self.tts_manager.gen_tts(tts_text, language)
+    async def generate_tts(self, request: TTSRequest):
+        task_id = await self.tts_manager.gen_tts(request.tts_text, request.language)
         return {"task_id": task_id}
 
     async def get_task_result(self, task_id: str):
