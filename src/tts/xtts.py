@@ -18,6 +18,9 @@ from src.xtts.TTS.api import TTS
 from src.xtts.TTS.tts.configs.xtts_config import XttsConfig    
 from src.xtts.TTS.tts.models.xtts import Xtts
 
+from src.xtts.TTS.utils.generic_utils import get_user_data_dir
+from src.xtts.TTS.utils.manage import ModelManager
+
 class XTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
         self.voice = voice
@@ -73,6 +76,20 @@ class XTTS_v2(TTSInterface):
         self.model = Xtts.init_from_config(config)
         self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2")#, use_deepspeed=True)
         self.model.to(device)
+        
+        # model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
+        # logging.info("⏳Downloading model")
+        # ModelManager().download_model(model_name)
+        # model_path = os.path.join(
+        #     get_user_data_dir("tts"), model_name.replace("/", "--")
+        # )
+
+        # config = XttsConfig()
+        # config.load_json(os.path.join(model_path, "config.json"))
+        # self.model = Xtts.init_from_config(config)
+        # self.model.load_checkpoint(config, checkpoint_dir=model_path, eval=True)
+        # self.model.to(device)
+        
 
         print("Computing speaker latents...")
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=[target_wav])
