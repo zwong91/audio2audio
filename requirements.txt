@@ -20,3 +20,4 @@ pyannote.audio
 asyncio==3.4.3
 sentence-transformers==2.7.0
 transformers==4.40.2
+deepspeed

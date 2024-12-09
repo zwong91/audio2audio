@@ -23,9 +23,9 @@ class XTTS(TTSInterface):
         target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
         print("Loading model...")    
         config = XttsConfig()   
-        config.load_json("tts_models/multilingual/multi-dataset/xtts_v2/config.json") 
+        config.load_json("config.json") 
         model = Xtts.init_from_config(config)
-        model.load_checkpoint(config, checkpoint_dir="tts_models/multilingual/multi-dataset/xtts_v2", use_deepspeed=True)
+        model.load_checkpoint(config, checkpoint_dir="XTTS_v2", use_deepspeed=True)
         model.cuda()
         self.model = model
         print("Computing speaker latents...")
