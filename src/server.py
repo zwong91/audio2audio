@@ -70,29 +70,31 @@ class TTSManager:
 
         task = self.processing_tasks[task_id]
 
-        # 如果任务已完成，返回文件路径和媒体类型
-        if task['status'] == 'completed':
-            # 你可以加入一些额外的文件信息，比如文件大小、创建时间等
-            return JSONResponse(content={
-                "status": "completed",
-                "file_path": task['file_path'],
-                "media_type": task['media_type'],
-                "message": "Task completed successfully."
-            }, status_code=200)
-        
-        # 如果任务失败，返回错误信息
-        elif task['status'] == 'failed':
-            return JSONResponse(content={
-                "status": "failed",
-                "error": task['error'],
-                "message": "Task failed during processing."
-            }, status_code=500)
+        # Ensure task is a dictionary before accessing
+        if isinstance(task, dict):
+            # 如果任务已完成，返回文件路径和媒体类型
+            if task.get('status') == 'completed':
+                return JSONResponse(content={
+                    "status": "completed",
+                    "file_path": task['file_path'],
+                    "media_type": task['media_type'],
+                    "message": "Task completed successfully."
+                }, status_code=200)
+            
+            # 如果任务失败，返回错误信息
+            elif task.get('status') == 'failed':
+                return JSONResponse(content={
+                    "status": "failed",
+                    "error": task.get('error'),
+                    "message": "Task failed during processing."
+                }, status_code=500)
 
         # 如果任务状态不明，返回未知状态
         return JSONResponse(content={
             "status": "unknown",
             "message": "Task status is unknown."
         }, status_code=400)
+
 
 
 class Server:
