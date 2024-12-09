@@ -13,6 +13,7 @@ from scipy.io.wavfile import write
 
 sys.path.insert(1, "../vc")
 
+import edge_tts
 from src.xtts.TTS.api import TTS
 from src.xtts.TTS.tts.configs.xtts_config import XttsConfig    
 from src.xtts.TTS.tts.models.xtts import Xtts
