@@ -78,7 +78,7 @@ class XTTS_v2(TTSInterface):
         self.gpt_cond_latent = gpt_cond_latent
         self.speaker_embedding = speaker_embedding
 
-    async def text_to_speech(self, text: str, language: "zh-cn") -> Tuple[bytes, str]: 
+    async def text_to_speech(self, text: str, language: str) -> Tuple[bytes, str]: 
         start_time = time.time()  # Define start_time
         chunks = self.model.inference_stream(
             text,
