@@ -78,8 +78,10 @@ class XTTS_v2(TTSInterface):
         self.gpt_cond_latent = gpt_cond_latent
         self.speaker_embedding = speaker_embedding
 
-    async def text_to_speech(self, text: str) -> Tuple[bytes, str, str]:
-        audio_buffer = BytesIO()
+    async def text_to_speech(self, text: str) -> Tuple[bytes, str]:
+        # 创建 BytesIO 对象来存储音频流
+        wav_io = BytesIO()
+        
         chunks = self.model.inference_stream(
             text,
             "zh-cn",
@@ -94,10 +96,12 @@ class XTTS_v2(TTSInterface):
         # 创建 BytesIO 对象
         wav_io = BytesIO()
         wav_audio = wav.squeeze().unsqueeze(0).cpu().numpy()
+        chunk = np.int16(np.clip(wav_audio * 32767, -32768, 32767)) 
+        print(f"{wav_audio}")
         sample_rate = 24000  # 默认采样率24k
         write(wav_io, sample_rate, wav_audio)
         wav_io.seek(0)
         audio_data = wav_io.read()
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
-        return audio_data, text, os.path.basename(speech_file_path)
+        return audio_data, text
