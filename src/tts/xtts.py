@@ -64,27 +64,54 @@ class XTTS(TTSInterface):
 
 class XTTS_v2(TTSInterface):
     def __init__(self, voice: str = 'liuyifei'):
+        device = "cuda"
         # 使用 os.path 确保路径正确拼接
         target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
         print("Loading model...")
         config = XttsConfig()
         config.load_json("XTTS-v2/config.json")
-        model = Xtts.init_from_config(config)
-        model.load_checkpoint(config, checkpoint_dir="XTTS-v2")#, use_deepspeed=True)
-        model.cuda()
-        self.model = model
+        self.model = Xtts.init_from_config(config)
+        self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2")#, use_deepspeed=True)
+        self.model.to(device)
+
         print("Computing speaker latents...")
-        gpt_cond_latent, speaker_embedding = model.get_conditioning_latents(audio_path=[target_wav])
+        gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=[target_wav])
         self.gpt_cond_latent = gpt_cond_latent
         self.speaker_embedding = speaker_embedding
 
+    def wav_postprocess(self, wav):
+        """Post process the output waveform"""
+        if isinstance(wav, list):
+            wav = torch.cat(wav, dim=0)
+        wav = wav.clone().detach().cpu().numpy()
+        wav = np.clip(wav, -1, 1)
+        wav = (wav * 32767).astype(np.int16)
+        return wav
+
     async def text_to_speech(self, text: str, language: str) -> Tuple[bytes, str]: 
-        start_time = time.time()  # Define start_time
+        start_time = time.time()
         chunks = self.model.inference_stream(
             text,
             language,
             self.gpt_cond_latent,
-            self.speaker_embedding
+            self.speaker_embedding,
+            stream_chunk_size=1024,
+        )
+
+        for i, chunk in enumerate(chunks):
+            print(type(chunk))
+            processed_chunk = self.wav_postprocess(chunk)
+            processed_bytes = processed_chunk.tobytes()
+            yield processed_bytes
+    
+    async def text_to_speech_(self, text: str, language: str) -> Tuple[bytes, str]: 
+        start_time = time.time()
+        chunks = self.model.inference_stream(
+            text,
+            language,
+            self.gpt_cond_latent,
+            self.speaker_embedding,
+            stream_chunk_size=1024,
         )
         wav_chunks = []
         for i, chunk in enumerate(chunks):
