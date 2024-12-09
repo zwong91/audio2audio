@@ -9,7 +9,7 @@ class EdgeTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
         self.voice = voice
 
-    async def text_to_speech(self, text: str, language: str) -> Tuple[bytes, str]:
+    async def text_to_speech(self, text: str, language: str, gen_file: bool) -> Tuple[bytes, str, str]:
         start_time = time.time()
 
         """使用 edge_tts 库将文本转语音"""
@@ -24,6 +24,7 @@ class EdgeTTS(TTSInterface):
         rate_str = f"{rate:+d}%"
         pitch_str = f"{pitch:+d}Hz"
         volume_str = f"{volume:+d}%"
+        output_path = None
         try:
             # 初始化 Communicate 对象，设置语音、语速、音调和音量参数
             communicate = edge_tts.Communicate(
@@ -44,6 +45,6 @@ class EdgeTTS(TTSInterface):
             end_time = time.time()
             print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")     
             # 返回音频数据的字节流、原始文本和生成的虚拟文件名
-            return audio_data, text
+            return audio_data, text, output_path
         finally:
             audio_buffer.close()

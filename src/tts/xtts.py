@@ -59,7 +59,7 @@ class XTTS_v2(TTSInterface):
         wav = (wav * 32767).astype(np.int16)
         return wav
 
-    async def text_to_speech(self, text: str, language: str) -> Tuple[bytes, str]: 
+    async def text_to_speech(self, text: str, language: str, gen_file: bool) -> Tuple[bytes, str, str]: 
         start_time = time.time()
         chunks = self.model.inference_stream(
             text,
@@ -74,9 +74,11 @@ class XTTS_v2(TTSInterface):
         wav = torch.cat(wav_chunks, dim=0)
         wav_audio = wav.squeeze().unsqueeze(0).cpu()
 
+        output_path = None
         # Saving to a file on disk
-        #file_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
-        #torchaudio.save(file_path, wav_audio, 22050, format="wav")
+        if gen_file:
+            output_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
+            torchaudio.save(output_path, wav_audio, 22050, format="wav")
 
         # Saving to a temporary file or directly converting to a byte array
         with torch.no_grad():
@@ -88,4 +90,4 @@ class XTTS_v2(TTSInterface):
 
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
-        return audio_data, text
+        return audio_data, text, output_path

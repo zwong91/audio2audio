@@ -36,16 +36,7 @@ class TTSManager:
         处理队列中的每个 TTS 任务。
         """
         try:
-            speech_audio, _ = await self.tts_pipeline.text_to_speech(text, language)
-            speech_audio_tensor = torch.frombuffer(speech_audio, dtype=torch.float32)
-            filename = f"audio_{task_id}.wav"
-            file_path = os.path.join('/tmp', filename)
-
-            if not os.path.exists(os.path.dirname(file_path)):
-                os.makedirs(os.path.dirname(file_path))
-
-            # 将音频数据保存到文件
-            torchaudio.save(file_path, speech_audio_tensor, 22050, format="wav")  # 假设采样率为 22050 Hz
+            _, _, audio_path = await self.tts_pipeline.text_to_speech(text, language, True)
 
             # 获取文件扩展名并判断 MIME 类型
             ext = os.path.splitext(filename)[1].lower()
@@ -57,7 +48,7 @@ class TTSManager:
             media_type = mime_types.get(ext, 'application/octet-stream')
 
             # 将生成的文件返回给调用者
-            self.processing_tasks[task_id] = {'status': 'completed', 'file_path': filename, 'media_type': media_type}
+            self.processing_tasks[task_id] = {'status': 'completed', 'file_path': os.path.basename(audio_path), 'media_type': media_type}
         except Exception as e:
             # 任务失败时记录
             self.processing_tasks[task_id] = {'status': 'failed', 'error': str(e)}
