@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
 
+import torch
 import asyncio
 
 # 初始化模型
@@ -32,9 +33,44 @@ class OpenAILLM(LLMInterface):
         self.model = model
         openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://xyz-api.jongun2038.win/v1/"
+        
+        minilm_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # Load initial content from vault.txt
+        vault_content = []
+        if os.path.exists("vault.txt"):
+            with open("vault.txt", "r", encoding="utf-8") as vault_file:
+                vault_content = vault_file.readlines()
+        vault_embeddings = minilm_model.encode(vault_content) if vault_content else []
+        vault_embeddings_tensor = torch.tensor(vault_embeddings)
+
+
+    def get_relevant_context(user_input, vault_embeddings, vault_content, minilm_model, top_k=3):
+        """
+        Retrieves the top-k most relevant context from the vault based on the user input.
+        """
+        if vault_embeddings.nelement() == 0: # Check if the tensor has any elements
+            return []
+        # Encode the user input
+        input_embedding = minilm_model.encode([user_input])
+        # Compute cosine similarity between the input and vault embeddings
+        cos_scores = util.cos_sim(input_embedding, vault_embeddings)[0]
+        # Adjust top_k if it's greater than the number of available scores
+        top_k = min(top_k, len(cos_scores))
+        # Sort the scores and get the top-k indices
+        top_indices = torch.topk(cos_scores, k=top_k)[1].tolist()
+        # Get the corresponding context from the vault
+        relevant_context = [vault_content[idx].strip() for idx in top_indices]
+        return relevant_context
 
     async def generate(self, history: List[Dict[str, str]], query: str, max_tokens: int = 32) -> Tuple[str, List[Dict[str, str]]]:
         start_time = time.time()
+        with open("vault.txt", "a", encoding="utf-8") as vault_file:
+            print("Wrote to info.")
+            vault_file.write(vault_input + "\n")
+        vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
+        vault_embeddings = model.encode(vault_content)
+        vault_embeddings_tensor = torch.tensor(vault_embeddings)
+
         """根据对话历史生成回复"""
         if history is None:
             history = []

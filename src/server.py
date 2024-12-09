@@ -13,7 +13,83 @@ from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+import torchaudio
+
 from src.client import Client
+
+class TTSManager:
+    def __init__(self, tts_pipeline):
+        self.task_queue = asyncio.Queue()  # 用于存储任务
+        self.processing_tasks = {}  # 用于跟踪任务状态
+        self.tts_pipeline = tts_pipeline
+        self.lock = asyncio.Lock()  # 用于保护并发
+
+    async def _process_task(self, task_id, text, language):
+        """
+        处理队列中的每个 TTS 任务。
+        """
+        try:
+            speech_audio, _ = await self.tts_pipeline.text_to_speech(text, language)
+
+            filename = f"audio_{task_id}.wav"
+            file_path = os.path.join('/tmp', filename)
+
+            if not os.path.exists(os.path.dirname(file_path)):
+                os.makedirs(os.path.dirname(file_path))
+
+            # 将音频数据保存到文件
+            torchaudio.save(file_path, speech_audio, 22050, format="wav")  # 假设采样率为 22050 Hz
+
+            # 获取文件扩展名并判断 MIME 类型
+            ext = os.path.splitext(filename)[1].lower()
+            mime_types = {
+                '.mp3': 'audio/mpeg',
+                '.wav': 'audio/wav',
+                '.webm': 'audio/webm'
+            }
+            media_type = mime_types.get(ext, 'application/octet-stream')
+
+            # 将生成的文件返回给调用者
+            self.processing_tasks[task_id] = {'status': 'completed', 'file_path': filename, 'media_type': media_type}
+        except Exception as e:
+            # 任务失败时记录
+            self.processing_tasks[task_id] = {'status': 'failed', 'error': str(e)}
+
+    async def gen_tts(self, text: str, language: str):
+        """
+        启动一个新的任务，返回任务 ID
+        """
+        task_id = uuid4().hex[:8]  # 生成任务 ID
+        await self.task_queue.put((task_id, text, language))  # 将任务放入队列
+        return task_id
+
+    async def start_processing(self):
+        """
+        启动一个异步任务处理队列
+        """
+        while True:
+            task_id, text, language = await self.task_queue.get()  # 从队列获取任务
+            await self._process_task(task_id, text, language)  # 处理任务
+            self.task_queue.task_done()  # 标记任务已完成
+
+    async def get_task_result(self, task_id: str):
+        """
+        获取任务的处理结果
+        """
+        # 如果任务未处理完成，返回正在处理中
+        if task_id not in self.processing_tasks:
+            return {"status": "pending"}
+        
+        task = self.processing_tasks[task_id]
+
+        # 如果任务已完成，返回文件路径和媒体类型
+        if task['status'] == 'completed':
+            return {"status": "completed", "file_path": task['file_path'], "media_type": task['media_type']}
+        elif task['status'] == 'failed':
+            return {"status": "failed", "error": task['error']}
+
+        return {"status": "unknown"}
+
 class Server:
     """
     WebSocket server for real-time audio transcription with VAD and ASR pipelines.
@@ -66,6 +142,11 @@ class Server:
             allow_headers=["*"],
         )
 
+        # 初始化 TTSManager
+        self.tts_manager = TTSManager(tts_pipeline)
+        # 启动任务处理的后台任务
+        asyncio.create_task(self.tts_manager.start_processing())
+
         self.templates = Jinja2Templates(directory="templates")
 
         self.app.add_event_handler("startup", self.startup)
@@ -73,6 +154,8 @@ class Server:
         #self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
         self.app.get("/asset/{filename}")(self.get_asset_file)
+        self.app.post("/generate_tts")(self.generate_tts)
+        self.app.get("/get_task_result/{task_id}")(self.get_task_result)
 
         self.app.websocket("/stream")(self.websocket_endpoint)
         self.app.websocket("/stream-vc")(self.websocket_endpoint)
@@ -153,6 +236,16 @@ class Server:
                 'Content-Disposition': 'inline'
             }
         )
+        
+    async def generate_tts(self, tts_text: str, language: str):
+        task_id = await self.tts_manager.gen_tts(tts_text, language)
+        return {"task_id": task_id}
+
+    async def get_task_result(self, task_id: str):
+        result = await self.tts_manager.get_task_result(task_id)
+        if result['status'] == 'completed':
+            return FileResponse(path=result['file_path'], media_type=result['media_type'], headers={'Content-Disposition': 'inline'})
+        return result
 
     def create_uvicorn_server(self, ssl_context=None):
         """Creates and returns a Uvicorn server instance."""
