@@ -65,7 +65,7 @@ class TTSManager:
         """
         启动一个新的任务，返回任务 ID
         """
-        task_id = uuid4().hex[:8]  # 生成任务 ID
+        task_id = uuid().hex[:8]  # 生成任务 ID
         await self.task_queue.put((task_id, text, language))  # 将任务放入队列
         return task_id
 
