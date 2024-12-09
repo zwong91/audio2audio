@@ -36,7 +36,7 @@ class TTSManager:
         处理队列中的每个 TTS 任务。
         """
         try:
-            _, _, filename = await self.tts_pipeline.text_to_speech(text, language, True)
+            _, _, audio_path = await self.tts_pipeline.text_to_speech(text, language, True)
             # 将生成的文件返回给调用者
             self.processing_tasks[task_id] = {'status': 'completed', 'file_path': os.path.basename(audio_path), 'media_type': 'audio/wav'}
         except Exception as e:
