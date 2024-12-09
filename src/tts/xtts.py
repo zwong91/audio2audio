@@ -44,7 +44,6 @@ class XTTS_v2(TTSInterface):
         # self.model = Xtts.init_from_config(config)
         # self.model.load_checkpoint(config, checkpoint_dir=model_path, eval=True)
         # self.model.to(device)
-        
 
         print("Computing speaker latents...")
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=[target_wav])
@@ -70,7 +69,7 @@ class XTTS_v2(TTSInterface):
             stream_chunk_size=1024,
         )
 
-        for i, chunk in enumerate(chunks):
+        async for chunk in chunks:
             print(type(chunk))
             processed_chunk = self.wav_postprocess(chunk)
             processed_bytes = processed_chunk.tobytes()
