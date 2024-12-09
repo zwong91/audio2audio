@@ -19,5 +19,5 @@ speechbrain==1.0.0
 pyannote.audio
 asyncio==3.4.3
 sentence-transformers==2.7.0
-transformers==4.33.0
+transformers==4.36.0
 deepspeed

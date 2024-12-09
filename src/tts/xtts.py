@@ -88,9 +88,7 @@ class XTTS_v2(TTSInterface):
         )
         wav_chuncks = []
         for i, chunk in enumerate(chunks):
-            if i == 0:
-                print(f"Time to first chunck: {time.time() - t0}")
-            print(f"Received chunk {i} of audio length {chunk.shape[-1]}")
+            #print(f"Received chunk {i} of audio length {chunk.shape[-1]}")
             wav_chuncks.append(chunk)
         wav = torch.cat(wav_chuncks, dim=0)
         # 创建 BytesIO 对象
