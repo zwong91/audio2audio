@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+import torch
 import torchaudio
 
 from src.client import Client
@@ -36,7 +37,7 @@ class TTSManager:
         """
         try:
             speech_audio, _ = await self.tts_pipeline.text_to_speech(text, language)
-
+            speech_audio_tensor = torch.frombuffer(speech_audio, dtype=torch.float32)
             filename = f"audio_{task_id}.wav"
             file_path = os.path.join('/tmp', filename)
 
@@ -44,7 +45,7 @@ class TTSManager:
                 os.makedirs(os.path.dirname(file_path))
 
             # 将音频数据保存到文件
-            torchaudio.save(file_path, speech_audio, 22050, format="wav")  # 假设采样率为 22050 Hz
+            torchaudio.save(file_path, speech_audio_tensor, 22050, format="wav")  # 假设采样率为 22050 Hz
 
             # 获取文件扩展名并判断 MIME 类型
             ext = os.path.splitext(filename)[1].lower()
