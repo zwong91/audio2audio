@@ -68,7 +68,7 @@ class XTTS_v2(TTSInterface):
         target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
         print("Loading model...")
         config = XttsConfig()
-        config.load_json("./config.json")
+        config.load_json("XTTS-v2/config.json")
         model = Xtts.init_from_config(config)
         model.load_checkpoint(config, checkpoint_dir="XTTS-v2", use_deepspeed=True)
         model.cuda()
