@@ -34,14 +34,14 @@ class OpenAILLM(LLMInterface):
         openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://xyz-api.jongun2038.win/v1/"
         
-        minilm_model = SentenceTransformer("all-MiniLM-L6-v2")
-        # Load initial content from vault.txt
-        vault_content = []
-        if os.path.exists("vault.txt"):
-            with open("vault.txt", "r", encoding="utf-8") as vault_file:
-                vault_content = vault_file.readlines()
-        vault_embeddings = minilm_model.encode(vault_content) if vault_content else []
-        vault_embeddings_tensor = torch.tensor(vault_embeddings)
+        # minilm_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # # Load initial content from vault.txt
+        # vault_content = []
+        # if os.path.exists("vault.txt"):
+        #     with open("vault.txt", "r", encoding="utf-8") as vault_file:
+        #         vault_content = vault_file.readlines()
+        # vault_embeddings = minilm_model.encode(vault_content) if vault_content else []
+        # vault_embeddings_tensor = torch.tensor(vault_embeddings)
 
 
     def get_relevant_context(user_input, vault_embeddings, vault_content, minilm_model, top_k=3):
@@ -64,12 +64,12 @@ class OpenAILLM(LLMInterface):
 
     async def generate(self, history: List[Dict[str, str]], query: str, max_tokens: int = 32) -> Tuple[str, List[Dict[str, str]]]:
         start_time = time.time()
-        with open("vault.txt", "a", encoding="utf-8") as vault_file:
-            print("Wrote to info.")
-            vault_file.write(vault_input + "\n")
-        vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
-        vault_embeddings = model.encode(vault_content)
-        vault_embeddings_tensor = torch.tensor(vault_embeddings)
+        # with open("vault.txt", "a", encoding="utf-8") as vault_file:
+        #     print("Wrote to info.")
+        #     vault_file.write(vault_input + "\n")
+        # vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
+        # vault_embeddings = model.encode(vault_content)
+        # vault_embeddings_tensor = torch.tensor(vault_embeddings)
 
         """根据对话历史生成回复"""
         if history is None:
