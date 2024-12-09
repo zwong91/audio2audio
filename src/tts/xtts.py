@@ -70,7 +70,7 @@ class XTTS_v2(TTSInterface):
         )
 
         async for chunk in chunks:
-            print(type(chunk))
+            print(f"Processing chunk of type {type(chunk)}")
             processed_chunk = self.wav_postprocess(chunk)
             processed_bytes = processed_chunk.tobytes()
             yield processed_bytes
