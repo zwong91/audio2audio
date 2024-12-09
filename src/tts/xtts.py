@@ -10,7 +10,6 @@ from typing import Tuple
 from .tts_interface import TTSInterface
 
 import numpy as np
-from scipy.io.wavfile import write
 
 sys.path.insert(1, "../vc")
 
@@ -79,11 +78,11 @@ class XTTS_v2(TTSInterface):
         self.gpt_cond_latent = gpt_cond_latent
         self.speaker_embedding = speaker_embedding
 
-    async def text_to_speech(self, text: str) -> Tuple[bytes, str]: 
+    async def text_to_speech(self, text: str, language: "zh-cn") -> Tuple[bytes, str]: 
         start_time = time.time()  # Define start_time
         chunks = self.model.inference_stream(
             text,
-            "zh-cn",
+            language,
             self.gpt_cond_latent,
             self.speaker_embedding
         )
