@@ -58,8 +58,7 @@ async def test_websocket():
                         response = await websocket.recv()  # 接收消息
                         #print(f"Received message: {response}")
                         # 解码接收到的消息
-                        decoded_response = json.loads(response)
-                        print(f"Decoded message: {decoded_response}")
+                        print(f"Decoded message: {response}")
                         # 记录结束时间
                         end_time = time.time()
                         elapsed_time = end_time - start_time

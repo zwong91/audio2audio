@@ -24,7 +24,7 @@ class XTTS(TTSInterface):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts = TTS(model_name="voice_conversion_models/multilingual/vctk/freevc24", progress_bar=False).to(device)
 
-    async def text_to_speech(self, text: str, rate: int = 0, pitch: int = 20, volume: int = 110) -> Tuple[bytes, str, str]:
+    async def text_to_speech(self, text: str, rate: int = 0, pitch: int = 20, volume: int = 110) -> Tuple[bytes, str]:
         audio_buffer = BytesIO()
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
