@@ -36,19 +36,9 @@ class TTSManager:
         处理队列中的每个 TTS 任务。
         """
         try:
-            _, _, audio_path = await self.tts_pipeline.text_to_speech(text, language, True)
-
-            # 获取文件扩展名并判断 MIME 类型
-            ext = os.path.splitext(filename)[1].lower()
-            mime_types = {
-                '.mp3': 'audio/mpeg',
-                '.wav': 'audio/wav',
-                '.webm': 'audio/webm'
-            }
-            media_type = mime_types.get(ext, 'application/octet-stream')
-
+            _, _, filename = await self.tts_pipeline.text_to_speech(text, language, True)
             # 将生成的文件返回给调用者
-            self.processing_tasks[task_id] = {'status': 'completed', 'file_path': os.path.basename(audio_path), 'media_type': media_type}
+            self.processing_tasks[task_id] = {'status': 'completed', 'file_path': os.path.basename(audio_path), 'media_type': 'audio/wav'}
         except Exception as e:
             # 任务失败时记录
             self.processing_tasks[task_id] = {'status': 'failed', 'error': str(e)}
