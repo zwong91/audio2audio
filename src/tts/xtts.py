@@ -59,7 +59,7 @@ class XTTS_v2(TTSInterface):
         wav = (wav * 32767).astype(np.int16)
         return wav
     
-    async def text_to_speech_(self, text: str, language: str) -> Tuple[bytes, str]: 
+    async def text_to_speech(self, text: str, language: str) -> Tuple[bytes, str]: 
         start_time = time.time()
         chunks = self.model.inference_stream(
             text,
