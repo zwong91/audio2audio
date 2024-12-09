@@ -94,7 +94,6 @@ class XTTS_v2(TTSInterface):
         # 创建 BytesIO 对象
         wav_io = BytesIO()
         wav_audio = wav.squeeze().unsqueeze(0).cpu().numpy()
-        wav_audio = np.int16(wav_audio * 32767)
         sample_rate = 24000  # 默认采样率24k
         write(wav_io, sample_rate, wav_audio)
         wav_io.seek(0)
