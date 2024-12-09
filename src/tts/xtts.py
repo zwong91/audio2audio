@@ -93,8 +93,8 @@ class XTTS_v2(TTSInterface):
         wav_audio = wav.squeeze().unsqueeze(0).cpu()
 
         # Saving to a file on disk
-        file_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
-        torchaudio.save(file_path, wav_audio, 22050, format="wav")
+        #file_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
+        #torchaudio.save(file_path, wav_audio, 22050, format="wav")
 
         # Saving to a temporary file or directly converting to a byte array
         with torch.no_grad():
