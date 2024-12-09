@@ -41,7 +41,7 @@ class SenseVoiceASR(ASRInterface):
 
         text = rich_transcription_postprocess(to_return.strip())
         to_return = {
-            "language": "UNSUPPORTED_BY_HUGGINGFACE_SENSEVOICE",
+            "language": "zh-cn",
             "language_probability": None,
             "text": text,
             "words": "UNSUPPORTED_BY_HUGGINGFACE_SENSEVOICE",

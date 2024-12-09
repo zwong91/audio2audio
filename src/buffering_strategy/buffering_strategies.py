@@ -136,7 +136,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     tts_text, updated_history = await llm_pipeline.generate(
                         self.client.history, transcription["text"]
                     )
-                    speech_audio, text = await tts_pipeline.text_to_speech(tts_text) 
+                    speech_audio, text = await tts_pipeline.text_to_speech(tts_text, transcription["language"]) 
                     end = time.time()
                     logging.debug(f"processing_time: {end - start}, text: {tts_text}")
                     try:
