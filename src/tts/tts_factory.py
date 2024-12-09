@@ -5,8 +5,6 @@ class TTSFactory:
     def create_tts_pipeline(asr_type, **kwargs):
         if asr_type == "edge":
             return EdgeTTS(**kwargs)
-        elif asr_type == "xtts":
-            return XTTS(**kwargs)
         elif asr_type == "xtts-v2":
             return XTTS_v2(**kwargs)
         else:
