@@ -26,7 +26,6 @@ class XTTS(TTSInterface):
         config.load_json("XTTS-v2/config.json") 
         model = Xtts.init_from_config(config)
         model.load_checkpoint(config, checkpoint_dir="XTTS-v2", use_deepspeed=True)
-        model.cuda()
         self.model = model
         print("Computing speaker latents...")
         gpt_cond_latent, speaker_embedding = model.get_conditioning_latents(audio_path=[target_wav])
@@ -40,7 +39,7 @@ class XTTS(TTSInterface):
             "zh-cn",  
             self.gpt_cond_latent,    
             self.speaker_embedding
-        )   
+        )
         wav_chuncks = []
         for i, chunk in enumerate(chunks):
             if i == 0:
