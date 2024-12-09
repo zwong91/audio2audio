@@ -48,7 +48,7 @@ bnnumerizer
 bnunicodenormalizer
 #deps for tortoise
 einops>=0.6.0
-transformers>=4.46.3
+transformers>=4.36.0
 #deps for bark
 encodec>=0.1.1
 # deps for XTTS
