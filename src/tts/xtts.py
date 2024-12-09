@@ -1,4 +1,5 @@
 import torch
+import torchaudio
 import asyncio
 import os
 from io import BytesIO
@@ -90,7 +91,7 @@ class XTTS_v2(TTSInterface):
         for i, chunk in enumerate(chunks):
             wav_chunks.append(chunk)
         wav = torch.cat(wav_chunks, dim=0)
-        wav_audio = wav.squeeze().unsqueeze(0)
+        wav_audio = wav.squeeze().unsqueeze(0).cpu()
 
         # Saving to a file on disk
         file_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
