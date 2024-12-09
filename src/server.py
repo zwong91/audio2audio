@@ -249,8 +249,6 @@ class Server:
 
     async def get_task_result(self, task_id: str):
         result = await self.tts_manager.get_task_result(task_id)
-        if result['status'] == 'completed':
-            return FileResponse(path=result['file_path'], media_type=result['media_type'], headers={'Content-Disposition': 'inline'})
         return result
 
     def create_uvicorn_server(self, ssl_context=None):
