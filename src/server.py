@@ -222,7 +222,7 @@ class Server:
             logging.error(f"Failed to decode config message: {e}")
 
     async def get_asset_file(self, filename: str):
-        file_path = os.path.join('/tmp', filename)
+        file_path = os.path.join('/asset', filename)
         if not os.path.exists(file_path):
             return {"error": "File not found"}
 
