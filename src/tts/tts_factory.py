@@ -1,5 +1,5 @@
 from .edge_tts import EdgeTTS
-from .xtts import XTTS, XTTS_v2
+from .xtts import XTTS_v2
 class TTSFactory:
     @staticmethod
     def create_tts_pipeline(asr_type, **kwargs):
