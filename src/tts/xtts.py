@@ -91,12 +91,16 @@ class XTTS_v2(TTSInterface):
             wav_chunks.append(chunk)
         wav = torch.cat(wav_chunks, dim=0)
         wav_audio = wav.squeeze().unsqueeze(0)
-        
+
+        # Saving to a file on disk
+        file_path = f"./{output_filename}"
+        torchaudio.save(file_path, wav_audio, 22050, format="wav")
+
         # Saving to a temporary file or directly converting to a byte array
         with torch.no_grad():
             # Use torchaudio to save the tensor to a buffer (or file)
             # Using a buffer to save the audio data as bytes
-            buffer = io.BytesIO()
+            buffer = BytesIO()
             torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
             audio_data = buffer.getvalue()
 
