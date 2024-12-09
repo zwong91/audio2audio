@@ -7,7 +7,7 @@ import base64
 import uvicorn
 import os
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 class TTSRequest(BaseModel):
     tts_text: str
-    language: str
+    vc_uid: str
 
 class TTSManager:
     def __init__(self, tts_pipeline):
@@ -31,24 +31,24 @@ class TTSManager:
         self.tts_pipeline = tts_pipeline
         self.lock = asyncio.Lock()  # 用于保护并发
 
-    async def _process_task(self, task_id, text, language):
+    async def _process_task(self, task_id, text, vc_uid):
         """
         处理队列中的每个 TTS 任务。
         """
         try:
-            _, _, audio_path = await self.tts_pipeline.text_to_speech(text, language, True)
+            _, _, audio_path = await self.tts_pipeline.text_to_speech(text, vc_uid, True)
             # 将生成的文件返回给调用者
             self.processing_tasks[task_id] = {'status': 'completed', 'file_path': audio_path, 'media_type': 'audio/wav'}
         except Exception as e:
             # 任务失败时记录
             self.processing_tasks[task_id] = {'status': 'failed', 'error': str(e)}
 
-    async def gen_tts(self, text: str, language: str):
+    async def gen_tts(self, text: str, vc_uid: str):
         """
         启动一个新的任务，返回任务 ID
         """
         task_id = uuid.uuid4().hex[:8]  # 生成任务 ID
-        await self.task_queue.put((task_id, text, language))  # 将任务放入队列
+        await self.task_queue.put((task_id, text, vc_uid))  # 将任务放入队列
         return task_id
 
     async def start_processing(self):
@@ -56,8 +56,8 @@ class TTSManager:
         启动一个异步任务处理队列
         """
         while True:
-            task_id, text, language = await self.task_queue.get()  # 从队列获取任务
-            await self._process_task(task_id, text, language)  # 处理任务
+            task_id, text, vc_uid = await self.task_queue.get()  # 从队列获取任务
+            await self._process_task(task_id, text, vc_uid)  # 处理任务
             self.task_queue.task_done()  # 标记任务已完成
 
     async def get_task_result(self, task_id: str):
@@ -158,6 +158,7 @@ class Server:
         #self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
         self.app.get("/asset/{filename}")(self.get_asset_file)
+        self.app.post("/generate_accent")(self.upload_mp3_files)
         self.app.post("/generate_tts")(self.generate_tts)
         self.app.get("/get_task_result/{task_id}")(self.get_task_result)
 
@@ -242,9 +243,30 @@ class Server:
                 'Content-Disposition': 'inline'
             }
         )
+    """
+    curl -X 'POST' \
+    'http://127.0.0.1:19999/generate_accent/' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: multipart/form-data' \
+    -F 'files=@path_to_file1.mp3' \
+    -F 'files=@path_to_file2.mp3'
+    """
+    async def upload_mp3_files(files: List[UploadFile] = File(...)):
+        file_paths = []
+        # 为每个文件生成一个8位 UUID 前缀
+        file_uuid = uuid.uuid4().hex[:8]
+        for file in files:
+            # Save each file to disk
+            file_location = os.path.join("vc", f"{file_uuid}_{file.filename}")
+            file_paths.append(file_location)
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+        # After saving, you can process the files, send them to TTS, etc.
+        return {"vc_uid": file_uuid}
 
     async def generate_tts(self, request: TTSRequest):
-        task_id = await self.tts_manager.gen_tts(request.tts_text, request.language)
+        task_id = await self.tts_manager.gen_tts(request.tts_text, request.vc_uid)
         return {"task_id": task_id}
 
     async def get_task_result(self, task_id: str):

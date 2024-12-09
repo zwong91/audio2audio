@@ -11,6 +11,9 @@ from .tts_interface import TTSInterface
 
 import numpy as np
 
+from langdetect import detect
+import glob
+
 sys.path.insert(1, "../vc")
 
 from src.xtts.TTS.api import TTS
@@ -59,8 +62,26 @@ class XTTS_v2(TTSInterface):
         wav = (wav * 32767).astype(np.int16)
         return wav
 
-    async def text_to_speech(self, text: str, language: str, gen_file: bool) -> Tuple[bytes, str, str]: 
+    async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str, str]: 
         start_time = time.time()
+        language = detect(text)
+
+        # 构造目标路径，获取匹配的 .wav 文件
+        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "vc_uid*.wav")
+        target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
+
+        if not target_wav_files:
+            raise FileNotFoundError(f"No WAV files found matching pattern: {target_wav_pattern}")
+
+        print("Computing speaker latents...")
+
+        # 调用模型函数，传递匹配的文件列表
+        gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=target_wav_files)
+
+        # 将返回的结果保存到实例变量中
+        self.gpt_cond_latent = gpt_cond_latent
+        self.speaker_embedding = speaker_embedding
+
         chunks = self.model.inference_stream(
             text,
             language,
