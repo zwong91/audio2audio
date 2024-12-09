@@ -77,7 +77,7 @@ class XTTS_v2(TTSInterface):
         output_path = None
         # Saving to a file on disk
         if gen_file:
-            output_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
+            output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
             torchaudio.save(output_path, wav_audio, 22050, format="wav")
 
         # Saving to a temporary file or directly converting to a byte array
