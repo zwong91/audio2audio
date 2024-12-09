@@ -33,7 +33,7 @@ class XTTS(TTSInterface):
         self.gpt_cond_latent = gpt_cond_latent
         self.speaker_embedding = speaker_embedding
 
-    async def text_to_speech(self, text: str) -> Tuple[bytes, str, str]:
+    async def text_to_speech(self, text: str) -> Tuple[bytes, str]:
         audio_buffer = BytesIO()
         chunks = self.model.inference_stream(
             text,
@@ -57,4 +57,4 @@ class XTTS(TTSInterface):
         audio_data = wav_io.read()
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
-        return audio_data, text, os.path.basename(speech_file_path)
+        return audio_data, text
