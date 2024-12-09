@@ -251,13 +251,13 @@ class Server:
     -F 'files=@path_to_file1.mp3' \
     -F 'files=@path_to_file2.mp3'
     """
-    async def upload_mp3_files(files: List[UploadFile] = File(...)):
+    async def upload_mp3_files(vc_name: str, files: List[UploadFile] = File(...)):
         file_paths = []
         # 为每个文件生成一个8位 UUID 前缀
         file_uuid = uuid.uuid4().hex[:8]
         for file in files:
             # Save each file to disk
-            file_location = os.path.join("vc", f"{file_uuid}_{file.filename}")
+            file_location = os.path.join("vc", f"{file_uuid}_{vc_name}_{file.filename}")
             file_paths.append(file_location)
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
