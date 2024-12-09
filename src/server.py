@@ -144,9 +144,6 @@ class Server:
 
         # 初始化 TTSManager
         self.tts_manager = TTSManager(tts_pipeline)
-        # 启动任务处理的后台任务
-        asyncio.create_task(self.tts_manager.start_processing())
-
         self.templates = Jinja2Templates(directory="templates")
 
         self.app.add_event_handler("startup", self.startup)
@@ -163,6 +160,8 @@ class Server:
     async def startup(self):
         """Called on startup to set up additional services."""
         logging.info(f"Starting server at {self.host}:{self.port}")
+        # 启动任务处理的后台任务
+        asyncio.create_task(self.tts_manager.start_processing())
 
     async def shutdown():
         logging.info(f"shutdown server ...")
