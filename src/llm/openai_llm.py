@@ -36,14 +36,14 @@ class OpenAILLM(LLMInterface):
         openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://xyz-api.jongun2038.win/v1/"
         
-        self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        # Load initial content from vault.txt
-        self.vault_content = []
-        if os.path.exists("vault.txt"):
-            with open("vault.txt", "r", encoding="utf-8") as vault_file:
-                vault_content = vault_file.readlines()
-        self.vault_embeddings = self.embedding_model.encode(vault_content) if vault_content else []
-        self.vault_embeddings_tensor = torch.tensor(self.vault_embeddings)
+        # self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # # Load initial content from vault.txt
+        # self.vault_content = []
+        # if os.path.exists("vault.txt"):
+        #     with open("vault.txt", "r", encoding="utf-8") as vault_file:
+        #         vault_content = vault_file.readlines()
+        # self.vault_embeddings = self.embedding_model.encode(vault_content) if vault_content else []
+        # self.vault_embeddings_tensor = torch.tensor(self.vault_embeddings)
 
     
     def get_relevant_context(self, user_input, top_k=3):
@@ -76,10 +76,10 @@ class OpenAILLM(LLMInterface):
         # vault_embeddings_tensor = torch.tensor(vault_embeddings)
 
         # Get relevant context from the vault
-        relevant_context = self.get_relevant_context(vault_input)
-        query = vault_input
-        if relevant_context:
-            query = "\n".join(relevant_context) + "\n\n" + vault_input
+        # relevant_context = self.get_relevant_context(vault_input)
+        # query = vault_input
+        # if relevant_context:
+        #     query = "\n".join(relevant_context) + "\n\n" + vault_input
 
         """根据对话历史生成回复"""
         if history is None:
