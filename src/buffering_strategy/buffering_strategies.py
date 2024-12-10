@@ -2,13 +2,8 @@ import asyncio
 import json
 import os
 import time
-import base64
 import logging
 from .buffering_strategy_interface import BufferingStrategyInterface
-
-from typing import Optional
-from pydub import AudioSegment
-from io import BytesIO
 
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
@@ -82,13 +77,10 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
         )
         if len(self.client.buffer) > chunk_length_in_bytes:
             if self.processing_flag:
-                raise RuntimeError(
-                    "Error in realtime processing: tried processing a new "
-                    "chunk while the previous one was still being processed"
-                )
-
+                return
             self.client.scratch_buffer += self.client.buffer
             self.client.buffer.clear()
+            self.processing_flag = True
             # schedule the processing in a separate task
             asyncio.create_task(
                 self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
@@ -111,51 +103,41 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             llm_pipeline: The language model pipeline.
             tts_pipeline: The text-to-speech pipeline.
         """
-        async with self._lock:
-            if self.processing_flag:
-                print("跳过当前chunk处理: 上一个chunk正在处理中")
-                return
+        start = time.time()
+        vad_results = await vad_pipeline.detect_activity(self.client)
 
-            self.processing_flag = True
+        if len(vad_results) == 0:
+            self.client.scratch_buffer.clear()
+            self.client.buffer.clear()
+            self.processing_flag = False
+            return
 
-        try:
-            start = time.time()
-            vad_results = await vad_pipeline.detect_activity(self.client)
+        last_segment_should_end_before = (
+            len(self.client.scratch_buffer)
+            / (self.client.sampling_rate * self.client.samples_width)
+        ) - self.chunk_offset_seconds
+        if vad_results[-1]["end"] < last_segment_should_end_before:
+            transcription = await asr_pipeline.transcribe(self.client)
+            #TODO: repeated deealing with the same data
+            if transcription["text"] != "":
+                tts_text, updated_history = await llm_pipeline.generate(
+                    self.client.history, transcription["text"]
+                )
+                speech_audio, text, *_ = await tts_pipeline.text_to_speech(tts_text, "liuyifei", False) 
+                end = time.time()
+                logging.debug(f"processing_time: {end - start}, text: {tts_text}")
+                
+                # # 使用 pydub 获取音频的时长（以毫秒为单位）
+                # audio = AudioSegment.from_file(BytesIO(speech_audio), format="wav")
+                # duration_ms = len(audio)  # 获取音频时长，单位是毫秒
+                # logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
 
-            if len(vad_results) == 0:
+                try:
+                    await websocket.send_bytes(speech_audio)
+                except Exception as e:
+                    logging.error(f"Error sending WebSocket message: {e}")
+                self.client.history = updated_history
                 self.client.scratch_buffer.clear()
-                self.client.buffer.clear()
-                self.processing_flag = False
-                return
+                self.client.increment_file_counter()             
 
-            last_segment_should_end_before = (
-                len(self.client.scratch_buffer)
-                / (self.client.sampling_rate * self.client.samples_width)
-            ) - self.chunk_offset_seconds
-            if vad_results[-1]["end"] < last_segment_should_end_before:
-                transcription = await asr_pipeline.transcribe(self.client)
-                #TODO: repeated deealing with the same data
-                if transcription["text"] != "":
-                    tts_text, updated_history = await llm_pipeline.generate(
-                        self.client.history, transcription["text"]
-                    )
-                    speech_audio, text, *_ = await tts_pipeline.text_to_speech(tts_text, "liuyifei", False) 
-                    end = time.time()
-                    logging.debug(f"processing_time: {end - start}, text: {tts_text}")
-                    
-                    # # 使用 pydub 获取音频的时长（以毫秒为单位）
-                    # audio = AudioSegment.from_file(BytesIO(speech_audio), format="wav")
-                    # duration_ms = len(audio)  # 获取音频时长，单位是毫秒
-                    # logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
-    
-                    try:
-                        await websocket.send_bytes(speech_audio)
-                    except Exception as e:
-                        logging.error(f"Error sending WebSocket message: {e}")
-                    self.client.history = updated_history
-                    self.client.scratch_buffer.clear()
-                    self.client.increment_file_counter()             
-
-        finally:
-            async with self._lock:
-                self.processing_flag = False
+        self.processing_flag = False
