@@ -160,7 +160,7 @@ class Server:
         #self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
         self.app.get("/asset/{filename}")(self.get_asset_file)
-        self.app.post("/generate_accent{vc_name}")(self.upload_mp3_files)
+        self.app.post("/generate_accent/{vc_name}")(self.upload_mp3_files)
         self.app.post("/generate_tts")(self.generate_tts)
         self.app.get("/get_task_result/{task_id}")(self.get_task_result)
 
