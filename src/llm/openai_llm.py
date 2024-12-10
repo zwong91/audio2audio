@@ -46,7 +46,7 @@ class OpenAILLM(LLMInterface):
         self.vault_embeddings_tensor = torch.tensor(self.vault_embeddings)
 
     
-    def get_relevant_context(self, user_input, vault_embeddings, vault_content, top_k=3):
+    def get_relevant_context(self, user_input, top_k=3):
         """
         Retrieves the top-k most relevant context from the vault based on the user input.
         Local RAG embedding search
@@ -56,26 +56,26 @@ class OpenAILLM(LLMInterface):
         # Encode the user input
         input_embedding = self.embedding_model.encode([user_input])
         # Compute cosine similarity between the input and vault embeddings
-        cos_scores = util.cos_sim(input_embedding, vault_embeddings)[0]
+        cos_scores = util.cos_sim(input_embedding, self.vault_embeddings)[0]
         # Adjust top_k if it's greater than the number of available scores
         top_k = min(top_k, len(cos_scores))
         # Sort the scores and get the top-k indices
         top_indices = torch.topk(cos_scores, k=top_k)[1].tolist()
         # Get the corresponding context from the vault
-        relevant_context = [vault_content[idx].strip() for idx in top_indices]
+        relevant_context = [self.vault_content[idx].strip() for idx in top_indices]
         return relevant_context
 
     async def generate(self, history: List[Dict[str, str]], vault_input: str, max_tokens: int = 32) -> Tuple[str, List[Dict[str, str]]]:
         start_time = time.time()
-        with open("vault.txt", "a", encoding="utf-8") as vault_file:
-            print("Wrote to info.")
-            vault_file.write(vault_input + "\n")
-        vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
-        vault_embeddings = self.embedding_model.encode(vault_content)
-        vault_embeddings_tensor = torch.tensor(vault_embeddings)
+        # with open("vault.txt", "a", encoding="utf-8") as vault_file:
+        #     print("Wrote to info.")
+        #     vault_file.write(vault_input + "\n")
+        # vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
+        # vault_embeddings = self.embedding_model.encode(vault_content)
+        # vault_embeddings_tensor = torch.tensor(vault_embeddings)
 
         # Get relevant context from the vault
-        relevant_context = self.get_relevant_context(vault_input, vault_embeddings, vault_content)
+        relevant_context = self.get_relevant_context(vault_input)
         query = vault_input
         if relevant_context:
             query = "\n".join(relevant_context) + "\n\n" + user_input
