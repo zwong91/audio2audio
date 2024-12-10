@@ -10,7 +10,7 @@ load_dotenv(override=True)
 import torch
 import asyncio
 
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
 
 # 初始化模型
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
