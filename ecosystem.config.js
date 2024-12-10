@@ -11,8 +11,8 @@ module.exports = {
       },
     },
     {
-      name: "rt-audio-vc",
-      script: "./start_app_vc.sh",
+      name: "rt-audio-vc-gpu2",
+      script: "./start_app_vc_gpu2.sh",
       cwd: "/root/rt-audio",
       interpreter: "/bin/bash",
       env: {
