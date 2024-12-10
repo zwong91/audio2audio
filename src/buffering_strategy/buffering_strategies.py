@@ -7,6 +7,7 @@ import logging
 from .buffering_strategy_interface import BufferingStrategyInterface
 
 from typing import Optional
+from pydub import AudioSegment
 
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
@@ -139,10 +140,16 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     speech_audio, text, *_ = await tts_pipeline.text_to_speech(tts_text, "liuyifei", False) 
                     end = time.time()
                     logging.debug(f"processing_time: {end - start}, text: {tts_text}")
+                    
+                    # 使用 pydub 获取音频的时长（以毫秒为单位）
+                    audio = AudioSegment.from_file(speech_audio)
+                    duration_ms = len(audio)  # 获取音频时长，单位是毫秒
+                    logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
+    
                     try:
                         await websocket.send_bytes(speech_audio)
                         #TODO: 异步等待 1 秒，防止音频重叠
-                        #await asyncio.sleep(1)
+                        await asyncio.sleep(duration_ms / 1000)  # 转换为秒
                     except Exception as e:
                         logging.error(f"Error sending WebSocket message: {e}")
                     self.client.history = updated_history
