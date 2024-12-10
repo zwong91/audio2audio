@@ -246,7 +246,7 @@ class Server:
             }
         )
 
-    async def upload_mp3_files(vc_name: str, files: List[UploadFile] = File(...)):
+    async def upload_mp3_files(self, vc_name: str, files: List[UploadFile] = File(...)):
         file_paths = []
         # 为每个文件生成一个8位 UUID 前缀
         file_uuid = uuid.uuid4().hex[:8]
