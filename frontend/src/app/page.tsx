@@ -191,7 +191,7 @@ export default function Home() {
                 type: 'audio',
                 recorderType: StereoAudioRecorder,
                 mimeType: 'audio/wav',
-                timeSlice: 250,
+                timeSlice: 500,
                 desiredSampRate: 16000,
                 numberOfAudioChannels: 1,
                 ondataavailable: (blob: Blob) => {
@@ -202,7 +202,7 @@ export default function Home() {
                         const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
 
                         const dataToSend = [
-                          history,
+                          [],
                           "xiaoxiao",
                           base64data
                         ];
