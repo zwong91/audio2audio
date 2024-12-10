@@ -51,7 +51,7 @@ class OpenAILLM(LLMInterface):
         Retrieves the top-k most relevant context from the vault based on the user input.
         Local RAG embedding search
         """
-        if self.vault_embeddings.nelement() == 0: # Check if the tensor has any elements
+        if len(self.vault_embeddings) == 0: # Check if the tensor has any elements
             return []
         # Encode the user input
         input_embedding = self.embedding_model.encode([user_input])
