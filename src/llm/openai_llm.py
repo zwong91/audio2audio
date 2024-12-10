@@ -43,12 +43,13 @@ class OpenAILLM(LLMInterface):
             with open("vault.txt", "r", encoding="utf-8") as vault_file:
                 vault_content = vault_file.readlines()
         self.vault_embeddings = self.embedding_model.encode(vault_content) if vault_content else []
-        self.vault_embeddings_tensor = torch.tensor(vault_embeddings)
+        self.vault_embeddings_tensor = torch.tensor(self.vault_embeddings)
 
-
+    
     def get_relevant_context(self, user_input, vault_embeddings, vault_content, top_k=3):
         """
         Retrieves the top-k most relevant context from the vault based on the user input.
+        Local RAG embedding search
         """
         if vault_embeddings.nelement() == 0: # Check if the tensor has any elements
             return []
