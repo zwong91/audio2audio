@@ -67,7 +67,7 @@ class XTTS_v2(TTSInterface):
         language = detect(text)
 
         # 构造目标路径，获取匹配的 .wav 文件
-        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "{vc_uid}*.wav")
+        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
 
         if not target_wav_files:
