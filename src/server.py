@@ -21,6 +21,7 @@ from src.client import Client
 
 from pydantic import BaseModel
 from typing import List
+import shutil
 
 class TTSRequest(BaseModel):
     tts_text: str
