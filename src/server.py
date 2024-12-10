@@ -164,6 +164,7 @@ class Server:
         self.app.post("/generate_accent/{vc_name}")(self.upload_mp3_files)
         self.app.post("/generate_tts")(self.generate_tts)
         self.app.get("/get_task_result/{task_id}")(self.get_task_result)
+        self.app.get("/health")(self.health)
 
         self.app.websocket("/stream")(self.websocket_endpoint)
         self.app.websocket("/stream-vc")(self.websocket_endpoint)
@@ -268,6 +269,9 @@ class Server:
     async def get_task_result(self, task_id: str):
         result = await self.tts_manager.get_task_result(task_id)
         return result
+
+    async def health(self):
+        return {"status": "ojbk"}
 
     def create_uvicorn_server(self, ssl_context=None):
         """Creates and returns a Uvicorn server instance."""
