@@ -140,4 +140,6 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 self.client.scratch_buffer.clear()
                 self.client.increment_file_counter()             
 
+        # 临时处理音频重叠
+        await asyncio.sleep(3)
         self.processing_flag = False
