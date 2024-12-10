@@ -71,7 +71,8 @@ class XTTS_v2(TTSInterface):
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
 
         if not target_wav_files:
-            raise FileNotFoundError(f"No WAV files found matching pattern: {target_wav_pattern}")
+            target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
+            print(f"No WAV files found matching pattern, use default: {target_wav_pattern}")
 
         print("Computing speaker latents...")
 
