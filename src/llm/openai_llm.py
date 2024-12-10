@@ -77,7 +77,7 @@ class OpenAILLM(LLMInterface):
 
         # Get relevant context from the vault
         # relevant_context = self.get_relevant_context(vault_input)
-        # query = vault_input
+        query = vault_input
         # if relevant_context:
         #     query = "\n".join(relevant_context) + "\n\n" + vault_input
 
