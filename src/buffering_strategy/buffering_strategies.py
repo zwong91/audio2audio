@@ -59,7 +59,9 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 "error_if_not_realtime", False
             )
 
+        self.processing_interval = kwargs.get("processing_interval", 3.0)  # 默认3秒
         self.processing_flag = False
+        self.last_processing_time = time.time()  # 记录初始时间
         self._lock = asyncio.Lock()
 
     def process_audio(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
@@ -89,6 +91,15 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
 
             self.client.scratch_buffer += self.client.buffer
             self.client.buffer.clear()
+            # 在处理音频前检查间隔时间
+            if time.time() - self.last_processing_time >= self.processing_interval:
+                # 如果间隔满足要求，异步处理音频
+                asyncio.create_task(
+                    self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
+                )
+            else:
+                logging.debug("Skipping processing: not enough time has passed since last processing.")
+
             # schedule the processing in a separate task
             asyncio.create_task(
                 self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
@@ -142,20 +153,20 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     end = time.time()
                     logging.debug(f"processing_time: {end - start}, text: {tts_text}")
                     
-                    # 使用 pydub 获取音频的时长（以毫秒为单位）
-                    audio = AudioSegment.from_file(BytesIO(speech_audio), format="wav")
-                    duration_ms = len(audio)  # 获取音频时长，单位是毫秒
-                    logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
+                    # # 使用 pydub 获取音频的时长（以毫秒为单位）
+                    # audio = AudioSegment.from_file(BytesIO(speech_audio), format="wav")
+                    # duration_ms = len(audio)  # 获取音频时长，单位是毫秒
+                    # logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
     
                     try:
                         await websocket.send_bytes(speech_audio)
-                        #TODO: 异步等待 x 秒，防止音频重叠
-                        await asyncio.sleep(duration_ms / 1000)  # 转换为秒
                     except Exception as e:
                         logging.error(f"Error sending WebSocket message: {e}")
                     self.client.history = updated_history
                     self.client.scratch_buffer.clear()
                     self.client.increment_file_counter()
+                    # 更新上次处理的时间
+                    self.last_processing_time = time.time()
 
         finally:
             async with self._lock:
