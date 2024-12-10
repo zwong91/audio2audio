@@ -13,12 +13,14 @@ from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
+
 import torch
 import torchaudio
 
 from src.client import Client
 
 from pydantic import BaseModel
+from typing import List
 
 class TTSRequest(BaseModel):
     tts_text: str
@@ -243,14 +245,7 @@ class Server:
                 'Content-Disposition': 'inline'
             }
         )
-    """
-    curl -X 'POST' \
-    'http://127.0.0.1:19999/generate_accent/' \
-    -H 'accept: application/json' \
-    -H 'Content-Type: multipart/form-data' \
-    -F 'files=@path_to_file1.mp3' \
-    -F 'files=@path_to_file2.mp3'
-    """
+
     async def upload_mp3_files(vc_name: str, files: List[UploadFile] = File(...)):
         file_paths = []
         # 为每个文件生成一个8位 UUID 前缀
