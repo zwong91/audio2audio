@@ -8,6 +8,7 @@ from .buffering_strategy_interface import BufferingStrategyInterface
 
 from typing import Optional
 from pydub import AudioSegment
+from io import BytesIO
 
 class SilenceAtEndOfChunk(BufferingStrategyInterface):
     """
@@ -142,7 +143,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                     logging.debug(f"processing_time: {end - start}, text: {tts_text}")
                     
                     # 使用 pydub 获取音频的时长（以毫秒为单位）
-                    audio = AudioSegment.from_file(speech_audio)
+                    audio = AudioSegment.from_file(BytesIO(speech_audio), format="wav")
                     duration_ms = len(audio)  # 获取音频时长，单位是毫秒
                     logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
     
