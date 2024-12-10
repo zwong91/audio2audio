@@ -78,7 +78,7 @@ class OpenAILLM(LLMInterface):
         relevant_context = self.get_relevant_context(vault_input)
         query = vault_input
         if relevant_context:
-            query = "\n".join(relevant_context) + "\n\n" + user_input
+            query = "\n".join(relevant_context) + "\n\n" + vault_input
 
         """根据对话历史生成回复"""
         if history is None:
