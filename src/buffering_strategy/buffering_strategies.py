@@ -148,7 +148,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
     
                     try:
                         await websocket.send_bytes(speech_audio)
-                        #TODO: 异步等待 1 秒，防止音频重叠
+                        #TODO: 异步等待 x 秒，防止音频重叠
                         await asyncio.sleep(duration_ms / 1000)  # 转换为秒
                     except Exception as e:
                         logging.error(f"Error sending WebSocket message: {e}")
