@@ -160,7 +160,7 @@ class Server:
         #self.app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
         self.app.get("/asset/{filename}")(self.get_asset_file)
-        self.app.post("/generate_accent")(self.upload_mp3_files)
+        self.app.post("/generate_accent{vc_name}")(self.upload_mp3_files)
         self.app.post("/generate_tts")(self.generate_tts)
         self.app.get("/get_task_result/{task_id}")(self.get_task_result)
 
@@ -258,7 +258,7 @@ class Server:
                 shutil.copyfileobj(file.file, buffer)
 
         # After saving, you can process the files, send them to TTS, etc.
-        return {"vc_uid": file_uuid}
+        return {"vc_uid": file_uuid, "file_paths": file_paths}
 
     async def generate_tts(self, request: TTSRequest):
         task_id = await self.tts_manager.gen_tts(request.tts_text, request.vc_uid)

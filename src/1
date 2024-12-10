@@ -1,0 +1,6 @@
+    curl -X 'POST' \
+    'http://127.0.0.1:19999/generate_accent/' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: multipart/form-data' \
+    -F 'files=@path_to_file1.mp3' \
+    -F 'files=@path_to_file2.mp3'
