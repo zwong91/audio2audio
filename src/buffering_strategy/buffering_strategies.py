@@ -93,17 +93,13 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             self.client.buffer.clear()
             # 在处理音频前检查间隔时间
             if time.time() - self.last_processing_time >= self.processing_interval:
-                # 如果间隔满足要求，异步处理音频
+                # schedule the processing in a separate task
                 asyncio.create_task(
                     self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
                 )
             else:
                 logging.debug("Skipping processing: not enough time has passed since last processing.")
 
-            # schedule the processing in a separate task
-            asyncio.create_task(
-                self.process_audio_async(websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline)
-            )
 
     async def process_audio_async(self, websocket, vad_pipeline, asr_pipeline, llm_pipeline, tts_pipeline):
         """
