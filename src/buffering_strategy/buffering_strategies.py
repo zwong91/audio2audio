@@ -140,4 +140,5 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 self.client.scratch_buffer.clear()
                 self.client.increment_file_counter()
 
+        self.client.scratch_buffer.clear()
         self.processing_flag = False
