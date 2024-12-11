@@ -78,6 +78,7 @@ class XTTS_v2(TTSInterface):
 
         # 调用模型函数，传递匹配的文件列表
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=target_wav_files)
+        print("Target WAV files:", target_wav_files)
 
         # 将返回的结果保存到实例变量中
         self.gpt_cond_latent = gpt_cond_latent
