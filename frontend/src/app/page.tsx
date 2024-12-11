@@ -109,23 +109,34 @@ export default function Home() {
   
 
   function playAudioBufferQueue() {
+    // 检查队列是否为空
     if (audioBufferQueue.length === 0) {
-      isPlaying = false;
-      setIsPlayingAudio(false); // Set the state to false when all audio has been played
-      setIsRecording(true); // Ensure the state switches from 'Speaking'
+      setIsPlayingAudio(false); // 设置播放状态为 false
+      setIsRecording(true); // 设置为监听状态
       return;
     }
-
-    isPlaying = true;
+  
     const buffer = audioBufferQueue.shift();
     if (buffer && audioContext) {
       const source = audioContext.createBufferSource();
       source.buffer = buffer;
+  
+      // 连接到音频输出
       source.connect(audioContext.destination);
-      source.onended = playAudioBufferQueue;
+  
+      // 音频播放完后继续播放下一个音频块
+      source.onended = () => {
+        playAudioBufferQueue(); // 递归调用播放下一个音频块
+      };
+  
+      // 播放音频
       source.start();
+  
+      // 更新状态，表示正在播放音频
+      setIsPlayingAudio(true);
     }
   }
+  
 
   type HistoryItem = [string, string]; // [用户输入, AI响应]
   type History = HistoryItem[];
