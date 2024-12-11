@@ -47,4 +47,4 @@ class EdgeTTS(TTSInterface):
         end_time = time.time()
         print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
         # 返回音频数据的字节流、原始文本和生成的虚拟文件名
-        return audio_data, text, output_path
+        return audio_data, output_path
