@@ -9,45 +9,36 @@ export default function Home() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
-  const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
   const [connectionStatus, setConnectionStatus] = useState<string>("Connecting..."); // State to track connection status
 
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
-  let isPlaying = false;
 
+  // Check if AudioContext is available in the browser
   if (typeof window !== "undefined" && window.AudioContext) {
     audioContext = new AudioContext();
   }
 
   const audioManager = {
     stopCurrentAudio: () => {
-      if (currentAudioElement) {
-        currentAudioElement.pause();
-        currentAudioElement.currentTime = 0;
-        URL.revokeObjectURL(currentAudioElement.src);
-        setCurrentAudioElement(null);
+      if (isPlayingAudio) {
         setIsPlayingAudio(false);
       }
     },
 
     playNewAudio: async (audioBlob: Blob) => {
-      audioManager.stopCurrentAudio();
-
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
       audio.onloadedmetadata = () => {
         setAudioDuration(audio.duration); // Set the audio duration
       };
 
-      setCurrentAudioElement(audio);
+      // Play the audio
       setIsPlayingAudio(true);
 
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
-        setCurrentAudioElement(null);
         setIsPlayingAudio(false);
         setIsRecording(true);
 
@@ -56,10 +47,10 @@ export default function Home() {
           if (audioQueue.length > 0) {
             const nextAudioBlob = audioQueue.shift();
             if (nextAudioBlob) {
-              audioManager.playNewAudio(nextAudioBlob); // 播放队列中的下一个音频
+              audioManager.playNewAudio(nextAudioBlob); // Play next audio in the queue
             }
           }
-        }, 200); // 延迟 0.5 秒再进行操作
+        }, 200); // 延迟 0.2 秒再进行操作
       };
 
       try {
@@ -71,72 +62,49 @@ export default function Home() {
     }
   };
 
+  // Buffer audio and add it to the queue
   function bufferAudio(data: ArrayBuffer) {
     if (audioContext) {
       audioContext.decodeAudioData(data, (buffer) => {
-        splitAndQueueAudioBuffer(buffer);
-        if (!isPlaying) {
+        // Buffer the audio chunk and push it to the queue
+        audioBufferQueue.push(buffer);
+
+        // If we are not already playing, start playing the audio
+        if (!isPlayingAudio) {
           playAudioBufferQueue();
         }
       });
     }
   }
 
-  function splitAndQueueAudioBuffer(buffer: AudioBuffer) {
-    const chunkDuration = 1; // Duration of each chunk in seconds
-    const numberOfChunks = Math.ceil(buffer.duration / chunkDuration);
-  
-    for (let i = 0; i < numberOfChunks; i++) {
-      const chunkStart = i * chunkDuration;
-      const chunkEnd = Math.min(chunkStart + chunkDuration, buffer.duration);
-  
-      const chunkLength = Math.floor((chunkEnd - chunkStart) * buffer.sampleRate);
-  
-      const chunkBuffer = audioContext!.createBuffer(
-        buffer.numberOfChannels,
-        chunkLength,  // Correct length in samples
-        buffer.sampleRate
-      );
-  
-      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        const channelData = buffer.getChannelData(channel).subarray(chunkStart * buffer.sampleRate, chunkEnd * buffer.sampleRate);
-        chunkBuffer.copyToChannel(channelData, channel);
-      }
-  
-      audioBufferQueue.push(chunkBuffer);
-    }
-  }
-  
-
+  // Play the buffered audio chunks from the queue
   function playAudioBufferQueue() {
-    // 检查队列是否为空
     if (audioBufferQueue.length === 0) {
-      setIsPlayingAudio(false); // 设置播放状态为 false
-      setIsRecording(true); // 设置为监听状态
+      setIsPlayingAudio(false); // Stop playback if queue is empty
+      setIsRecording(true); // Start recording again
       return;
     }
-  
-    const buffer = audioBufferQueue.shift();
+
+    const buffer = audioBufferQueue.shift(); // Get the next audio buffer
     if (buffer && audioContext) {
       const source = audioContext.createBufferSource();
       source.buffer = buffer;
-  
-      // 连接到音频输出
+
+      // Connect the source to the audio context's output
       source.connect(audioContext.destination);
-  
-      // 音频播放完后继续播放下一个音频块
+
+      // When this audio ends, play the next one
       source.onended = () => {
-        playAudioBufferQueue(); // 递归调用播放下一个音频块
+        playAudioBufferQueue(); // Continue playing the next buffer
       };
-  
-      // 播放音频
+
+      // Start playing the audio
       source.start();
-  
-      // 更新状态，表示正在播放音频
+
+      // Update the state to reflect the playing status
       setIsPlayingAudio(true);
     }
   }
-  
 
   type HistoryItem = [string, string]; // [用户输入, AI响应]
   type History = HistoryItem[];
@@ -144,9 +112,11 @@ export default function Home() {
   const [history, setHistory] = useState<History>([]);
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
+  // Initialize WebSocket and media devices
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
 
+    // Request screen wake lock to prevent the screen from going to sleep
     async function requestWakeLock() {
       try {
         wakeLock = await navigator.wakeLock.request("screen");
@@ -169,6 +139,7 @@ export default function Home() {
     };
   }, []);
 
+  // Access the microphone and start recording
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
@@ -181,6 +152,7 @@ export default function Home() {
     }
   }, []);
 
+  // Handle WebSocket connection and messaging
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
@@ -242,27 +214,26 @@ export default function Home() {
             websocket.onmessage = (event) => {
               setIsRecording(false);
               setIsPlayingAudio(true);
-            
+
               try {
                 let audioData: ArrayBuffer;
-            
+
                 // 如果 event.data 是 ArrayBuffer，直接处理
                 if (event.data instanceof ArrayBuffer) {
-                  audioData = event.data; // 直接是 ArrayBuffer 类型
+                  audioData = event.data;
                 } else if (event.data instanceof Blob) {
                   // 如果是 Blob 类型，使用 FileReader 将其转换为 ArrayBuffer
                   const reader = new FileReader();
                   reader.onloadend = () => {
                     audioData = reader.result as ArrayBuffer;
-                    bufferAudio(audioData);
+                    bufferAudio(audioData); // Buffer the audio
                   };
                   reader.readAsArrayBuffer(event.data);
-                  return; // 需要提前退出，等 FileReader 读取完成后再继续处理
+                  return;
                 } else {
                   throw new Error("Received unexpected data type from WebSocket");
                 }
-            
-                // 调用 bufferAudio 处理音频数据
+
                 bufferAudio(audioData);
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
@@ -296,6 +267,7 @@ export default function Home() {
     };
   }, [mediaRecorder]);
 
+  // Handle media recorder pause/resume
   useEffect(() => {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       if (isRecording) {
