@@ -51,7 +51,7 @@ export default function Home() {
         setIsPlayingAudio(false);
         setIsRecording(true);
 
-        // 延迟 0.5 秒再进行操作
+        // 延迟 0.2 秒再进行操作
         setTimeout(() => {
           if (audioQueue.length > 0) {
             const nextAudioBlob = audioQueue.shift();
@@ -59,7 +59,7 @@ export default function Home() {
               audioManager.playNewAudio(nextAudioBlob); // 播放队列中的下一个音频
             }
           }
-        }, 500); // 延迟 0.5 秒再进行操作
+        }, 200); // 延迟 0.5 秒再进行操作
       };
 
       try {
