@@ -76,7 +76,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             * self.client.samples_width
         )
         if len(self.client.buffer) > chunk_length_in_bytes:
-            if self.processing_flag or self.client.scratch_buffer:
+            if self.processing_flag:
                 print("Warning in realtime processing: tried processing a new chunk while the previous one was still being processed")
                 return
             self.client.scratch_buffer += self.client.buffer
