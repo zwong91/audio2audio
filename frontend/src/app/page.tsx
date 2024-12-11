@@ -30,7 +30,8 @@ export default function Home() {
     playNewAudio: async (audioBlob: Blob) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      // Ensure the duration is set after the audio metadata is loaded
+      
+      // When the metadata of the audio is loaded, set its duration
       audio.onloadedmetadata = () => {
         setAudioDuration(audio.duration); // Set the audio duration after loading metadata
       };
