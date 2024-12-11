@@ -44,7 +44,7 @@ export default function Home() {
         setIsPlayingAudio(false);
         setIsRecording(true);
 
-        // 延迟 0.2 秒再进行操作
+        // 延迟 0.1 秒再进行操作
         setTimeout(() => {
           if (audioQueue.length > 0) {
             const nextAudioBlob = audioQueue.shift();
@@ -52,7 +52,7 @@ export default function Home() {
               audioManager.playNewAudio(nextAudioBlob); // Play next audio in the queue
             }
           }
-        }, 200); // 延迟 0.2 秒再进行操作
+        }, 100); // 延迟 0.1 秒再进行操作
       };
 
       try {
