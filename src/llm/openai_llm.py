@@ -42,7 +42,7 @@ class OpenAILLM(LLMInterface):
         vault_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio")), "vault.txt")
         if os.path.exists(vault_path):
             with open(vault_path, "r", encoding="utf-8") as vault_file:
-                vault_content = vault_file.readlines()
+                self.vault_content = vault_file.readlines()
         self.vault_embeddings = self.embedding_model.encode(vault_content, convert_to_tensor=True) if vault_content else []
         print(f"Length of vault_content: {len(self.vault_content)}")
     
