@@ -80,15 +80,11 @@ class XTTS_v2(TTSInterface):
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=target_wav_files)
         print("Target WAV files:", target_wav_files)
 
-        # 将返回的结果保存到实例变量中
-        self.gpt_cond_latent = gpt_cond_latent
-        self.speaker_embedding = speaker_embedding
-
         chunks = self.model.inference_stream(
             text,
             language,
-            self.gpt_cond_latent,
-            self.speaker_embedding,
+            gpt_cond_latent,
+            speaker_embedding,
             stream_chunk_size=1024,
         )
         wav_chunks = []
