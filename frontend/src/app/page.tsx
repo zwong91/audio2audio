@@ -85,28 +85,28 @@ export default function Home() {
   function splitAndQueueAudioBuffer(buffer: AudioBuffer) {
     const chunkDuration = 1; // Duration of each chunk in seconds
     const numberOfChunks = Math.ceil(buffer.duration / chunkDuration);
-
+  
     for (let i = 0; i < numberOfChunks; i++) {
       const chunkStart = i * chunkDuration;
       const chunkEnd = Math.min(chunkStart + chunkDuration, buffer.duration);
-      const chunkLength = chunkEnd - chunkStart;
-
+  
+      const chunkLength = Math.floor((chunkEnd - chunkStart) * buffer.sampleRate);
+  
       const chunkBuffer = audioContext!.createBuffer(
         buffer.numberOfChannels,
-        chunkLength * buffer.sampleRate,
+        chunkLength,  // Correct length in samples
         buffer.sampleRate
       );
-
+  
       for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        chunkBuffer.copyToChannel(
-          buffer.getChannelData(channel).subarray(chunkStart * buffer.sampleRate, chunkEnd * buffer.sampleRate),
-          channel
-        );
+        const channelData = buffer.getChannelData(channel).subarray(chunkStart * buffer.sampleRate, chunkEnd * buffer.sampleRate);
+        chunkBuffer.copyToChannel(channelData, channel);
       }
-
+  
       audioBufferQueue.push(chunkBuffer);
     }
   }
+  
 
   function playAudioBufferQueue() {
     if (audioBufferQueue.length === 0) {
