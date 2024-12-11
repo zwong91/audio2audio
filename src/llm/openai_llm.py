@@ -43,7 +43,7 @@ class OpenAILLM(LLMInterface):
         if os.path.exists(vault_path):
             with open(vault_path, "r", encoding="utf-8") as vault_file:
                 self.vault_content = vault_file.readlines()
-        self.vault_embeddings = self.embedding_model.encode(vault_content, convert_to_tensor=True) if vault_content else []
+        self.vault_embeddings = self.embedding_model.encode(self.vault_content, convert_to_tensor=True) if self.vault_content else []
         print(f"Length of vault_content: {len(self.vault_content)}")
     
     def get_relevant_context(self, user_input, vault_embeddings, top_k=3):
