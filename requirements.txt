@@ -21,6 +21,6 @@ pyannote.audio
 asyncio==3.4.3
 sentence-transformers==2.7.0
 transformers==4.36.0
-deepspeed
+deepspeed==0.10.3
 langdetect
 sentence-transformers
