@@ -39,11 +39,12 @@ class OpenAILLM(LLMInterface):
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
         # Load initial content from vault.txt
         self.vault_content = []
-        if os.path.exists("vault.txt"):
-            with open("vault.txt", "r", encoding="utf-8") as vault_file:
+        vault_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio")), "vault.txt")
+        if os.path.exists(vault_path):
+            with open(vault_path, "r", encoding="utf-8") as vault_file:
                 vault_content = vault_file.readlines()
         self.vault_embeddings = self.embedding_model.encode(vault_content, convert_to_tensor=True) if vault_content else []
-
+        print(f"Length of vault_content: {len(self.vault_content)}")
     
     def get_relevant_context(self, user_input, vault_embeddings, top_k=3):
         """
@@ -62,9 +63,9 @@ class OpenAILLM(LLMInterface):
         top_indices = torch.topk(cos_scores, k=top_k)[1].tolist()
         print(f"Length of vault_content: {len(self.vault_content)}")
         print(f"Top indices: {top_indices}")
-        # # Get the corresponding context from the vault
-        # relevant_context = [self.vault_content[idx].strip() for idx in top_indices]
-        # return relevant_context
+        # Get the corresponding context from the vault
+        relevant_context = [self.vault_content[idx].strip() for idx in top_indices]
+        return relevant_context
 
     async def generate(self, history: List[Dict[str, str]], vault_input: str, max_tokens: int = 32) -> Tuple[str, List[Dict[str, str]]]:
         start_time = time.time()
