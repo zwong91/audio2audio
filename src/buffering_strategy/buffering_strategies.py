@@ -123,7 +123,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 tts_text, updated_history = await llm_pipeline.generate(
                     self.client.history, transcription["text"]
                 )
-                tts_generator, *_ = await tts_pipeline.text_to_speech(tts_text, "liuyifei", False)
+                tts_generator, *_ = tts_pipeline.text_to_speech(tts_text, "liuyifei", False)
                 for audio_data, _ in tts_generator:
                     await websocket.send_bytes(audio_data)
                 end = time.time()
