@@ -62,7 +62,7 @@ class XTTS_v2(TTSInterface):
         wav = (wav * 32767).astype(np.int16)
         return wav
 
-    def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]: 
+    async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]: 
         start_time = time.time()
         language = detect(text)
 
