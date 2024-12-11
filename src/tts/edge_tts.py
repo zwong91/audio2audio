@@ -13,6 +13,7 @@ class EdgeTTS(TTSInterface):
             
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]:
         start_time = time.time()
+        audio_buffer = BytesIO()
         language = detect(text)
         """使用 edge_tts 库将文本转语音"""
         rate: int = 0
@@ -36,4 +37,14 @@ class EdgeTTS(TTSInterface):
 
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
-                yield chunk["data"], output_path
+                #yield chunk["data"], output_path
+                audio_buffer.write(chunk["data"])
+                
+        audio_buffer.seek(0)
+
+        audio_data = audio_buffer.read()
+        print(f"音频数据大小: {len(audio_data)} 字节")
+        end_time = time.time()
+        print(f"EdgeTTS text_to_speech time: {end_time - start_time:.4f} seconds")
+        # 返回音频数据的字节流、原始文本和生成的虚拟文件名
+        return audio_data, text, output_path
