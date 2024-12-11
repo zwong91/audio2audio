@@ -59,7 +59,7 @@ export default function Home() {
               audioManager.playNewAudio(nextAudioBlob); // 播放队列中的下一个音频
             }
           }
-        }, 500); // 延迟 0.2 秒再进行操作
+        }, 500); // 延迟 0.5 秒再进行操作
       };
 
       try {
