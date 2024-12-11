@@ -51,12 +51,15 @@ export default function Home() {
         setIsPlayingAudio(false);
         setIsRecording(true);
 
-        if (audioQueue.length > 0) {
-          const nextAudioBlob = audioQueue.shift();
-          if (nextAudioBlob) {
-            audioManager.playNewAudio(nextAudioBlob);
+        // 延迟 0.2 秒再进行操作
+        setTimeout(() => {
+          if (audioQueue.length > 0) {
+            const nextAudioBlob = audioQueue.shift();
+            if (nextAudioBlob) {
+              audioManager.playNewAudio(nextAudioBlob); // 播放队列中的下一个音频
+            }
           }
-        }
+        }, 200); // 延迟 0.2 秒再进行操作
       };
 
       try {
