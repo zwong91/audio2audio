@@ -16,7 +16,7 @@ class EdgeTTS(TTSInterface):
         audio_buffer = BytesIO()
         language = detect(text)
         """使用 edge_tts 库将文本转语音"""
-        rate: int = 0
+        rate: int = 20
         pitch: int = 20
         volume: int = 110
 
