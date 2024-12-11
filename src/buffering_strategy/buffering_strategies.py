@@ -75,8 +75,8 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             * self.client.sampling_rate
             * self.client.samples_width
         )
-        if len(self.client.buffer) > chunk_length_in_bytes and not self.client.scratch_buffer:
-            if self.processing_flag:
+        if len(self.client.buffer) > chunk_length_in_bytes:
+            if self.processing_flag or self.client.scratch_buffer:
                 return
             self.client.scratch_buffer += self.client.buffer
             self.client.buffer.clear()
