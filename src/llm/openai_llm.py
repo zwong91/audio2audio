@@ -60,6 +60,8 @@ class OpenAILLM(LLMInterface):
         top_k = min(top_k, len(cos_scores))
         # Sort the scores and get the top-k indices
         top_indices = torch.topk(cos_scores, k=top_k)[1].tolist()
+        print("Length of vault_content:", len(self.vault_content))
+        print("Top indices:", top_indices)
         # Get the corresponding context from the vault
         relevant_context = [self.vault_content[idx].strip() for idx in top_indices]
         return relevant_context
