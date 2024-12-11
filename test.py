@@ -21,6 +21,7 @@ async def upload_audio():
             response = await client.get(file_url, follow_redirects=True)  # Corrected here
             if response.status_code == 200:
                 # 使用文件内容创建文件元组，并添加到 files 列表
+                print(f"{response.content}")
                 files.append(
                     ('files', (f'audio_{idx}.wav', response.content, 'audio/wav'))
                 )

@@ -75,7 +75,7 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
             * self.client.sampling_rate
             * self.client.samples_width
         )
-        if len(self.client.buffer) > chunk_length_in_bytes:
+        if len(self.client.buffer) > chunk_length_in_bytes and self.scratch_buffer:
             if self.processing_flag:
                 return
             self.client.scratch_buffer += self.client.buffer
@@ -123,23 +123,14 @@ class SilenceAtEndOfChunk(BufferingStrategyInterface):
                 tts_text, updated_history = await llm_pipeline.generate(
                     self.client.history, transcription["text"]
                 )
-                speech_audio, text, *_ = await tts_pipeline.text_to_speech(tts_text, "liuyifei", False) 
+                tts_generator, *_ = await tts_pipeline.text_to_speech(tts_text, "liuyifei", False)
+                for audio_data, _ in tts_generator:
+                    await websocket.send_bytes(audio_data)
                 end = time.time()
                 logging.debug(f"processing_time: {end - start}, text: {tts_text}")
-                
-                # # 使用 pydub 获取音频的时长（以毫秒为单位）
-                # audio = AudioSegment.from_file(BytesIO(speech_audio), format="wav")
-                # duration_ms = len(audio)  # 获取音频时长，单位是毫秒
-                # logging.debug(f"Audio duration: {duration_ms / 1000} seconds")
 
-                try:
-                    await websocket.send_bytes(speech_audio)
-                except Exception as e:
-                    logging.error(f"Error sending WebSocket message: {e}")
                 self.client.history = updated_history
                 self.client.scratch_buffer.clear()
-                self.client.increment_file_counter()             
+                self.client.increment_file_counter()
 
-        # 临时处理音频重叠
-        await asyncio.sleep(3)
         self.processing_flag = False

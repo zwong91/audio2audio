@@ -62,7 +62,7 @@ class XTTS_v2(TTSInterface):
         wav = (wav * 32767).astype(np.int16)
         return wav
 
-    async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str, str]: 
+    async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]: 
         start_time = time.time()
         language = detect(text)
 
@@ -91,25 +91,17 @@ class XTTS_v2(TTSInterface):
             stream_chunk_size=1024,
         )
         wav_chunks = []
+        output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
         for i, chunk in enumerate(chunks):
             wav_chunks.append(chunk)
+            processed_chunk = self.wav_postprocess(chunk)
+            processed_bytes = processed_chunk.tobytes()
+            yield processed_bytes, output_path
+  
         wav = torch.cat(wav_chunks, dim=0)
         wav_audio = wav.squeeze().unsqueeze(0).cpu()
 
-        output_path = None
         # Saving to a file on disk
         if gen_file:
-            output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
             torchaudio.save(output_path, wav_audio, 22050, format="wav")
 
-        # Saving to a temporary file or directly converting to a byte array
-        with torch.no_grad():
-            # Use torchaudio to save the tensor to a buffer (or file)
-            # Using a buffer to save the audio data as bytes
-            buffer = BytesIO()
-            torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
-            audio_data = buffer.getvalue()
-
-        end_time = time.time()
-        print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
-        return audio_data, text, output_path
