@@ -30,8 +30,9 @@ export default function Home() {
     playNewAudio: async (audioBlob: Blob) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
+      // Ensure the duration is set after the audio metadata is loaded
       audio.onloadedmetadata = () => {
-        setAudioDuration(audio.duration); // Set the audio duration
+        setAudioDuration(audio.duration); // Set the audio duration after loading metadata
       };
 
       // Play the audio
@@ -106,10 +107,6 @@ export default function Home() {
     }
   }
 
-  type HistoryItem = [string, string]; // [用户输入, AI响应]
-  type History = HistoryItem[];
-
-  const [history, setHistory] = useState<History>([]);
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
 
   // Initialize WebSocket and media devices
@@ -265,7 +262,7 @@ export default function Home() {
         socket.close();
       }
     };
-  }, [mediaRecorder]);
+  }, []);
 
   // Handle media recorder pause/resume
   useEffect(() => {
