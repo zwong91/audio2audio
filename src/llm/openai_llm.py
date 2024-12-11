@@ -36,32 +36,30 @@ class OpenAILLM(LLMInterface):
         openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://xyz-api.jongun2038.win/v1/"
         
-        # self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        # # Load initial content from vault.txt
-        # self.vault_content = []
-        # if os.path.exists("vault.txt"):
-        #     with open("vault.txt", "r", encoding="utf-8") as vault_file:
-        #         vault_content = vault_file.readlines()
-        # self.vault_embeddings = self.embedding_model.encode(vault_content) if vault_content else []
-        # self.vault_embeddings_tensor = torch.tensor(self.vault_embeddings)
+        self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # Load initial content from vault.txt
+        self.vault_content = []
+        if os.path.exists("vault.txt"):
+            with open("vault.txt", "r", encoding="utf-8") as vault_file:
+                vault_content = vault_file.readlines()
+        self.vault_embeddings = self.embedding_model.encode(vault_content) if vault_content else []
 
     
-    def get_relevant_context(self, user_input, top_k=3):
+    def get_relevant_context(self, user_input, vault_embeddings, top_k=3):
         """
         Retrieves the top-k most relevant context from the vault based on the user input.
         Local RAG embedding search
         """
-        if len(self.vault_embeddings) == 0: # Check if the tensor has any elements
+        if vault_embeddings.nelement() == 0: # Check if the tensor has any elements
             return []
         # Encode the user input
         input_embedding = self.embedding_model.encode([user_input])
         # Compute cosine similarity between the input and vault embeddings
-        cos_scores = util.cos_sim(input_embedding, self.vault_embeddings)[0]
+        cos_scores = util.cos_sim(torch.tensor(input_embedding).unsqueeze(0), vault_embeddings)
         # Adjust top_k if it's greater than the number of available scores
         top_k = min(top_k, len(cos_scores))
         # Sort the scores and get the top-k indices
         top_indices = torch.topk(cos_scores, k=top_k)[1].tolist()
-        top_indices = [idx for idx in top_indices if idx < len(self.vault_content)]
         # Get the corresponding context from the vault
         relevant_context = [self.vault_content[idx].strip() for idx in top_indices]
         return relevant_context
@@ -73,14 +71,14 @@ class OpenAILLM(LLMInterface):
         #     vault_file.write(vault_input + "\n")
         # vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
         # vault_embeddings = self.embedding_model.encode(vault_content)
-        # vault_embeddings_tensor = torch.tensor(vault_embeddings)
 
-        # Get relevant context from the vault
-        # relevant_context = self.get_relevant_context(vault_input)
+        #Get relevant context from the vault
+        relevant_context = self.get_relevant_context(vault_input, torch.tensor(self.vault_embeddings))
         query = vault_input
-        # if relevant_context:
-        #     query = "\n".join(relevant_context) + "\n\n" + vault_input
+        if relevant_context:
+            query = "\n".join(relevant_context) + "\n\n" + vault_input
 
+        print(f"query: {query}")
         """根据对话历史生成回复"""
         if history is None:
             history = []
