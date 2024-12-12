@@ -99,15 +99,6 @@ class XTTS_v2(TTSInterface):
         self.gpt_cond_latent = gpt_cond_latent
         self.speaker_embedding = speaker_embedding
 
-    def wav_postprocess(self, wav):
-        """Post process the output waveform"""
-        if isinstance(wav, list):
-            wav = torch.cat(wav, dim=0)
-        wav = wav.clone().detach().cpu().numpy()
-        wav = np.clip(wav, -1, 1)
-        wav = (wav * 32767).astype(np.int16)
-        return wav
-
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]: 
         start_time = time.time()
         language, _ = langid.classify(text)
@@ -141,7 +132,7 @@ class XTTS_v2(TTSInterface):
             repetition_penalty=10.0,
             top_k=50,
             top_p=0.5,
-            do_sample=False,
+            do_sample=True,
             speed=1.0,
             enable_text_splitting=True,
         )
@@ -149,9 +140,6 @@ class XTTS_v2(TTSInterface):
         output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
         for i, chunk in enumerate(chunks):
             wav_chunks.append(chunk)
-            #processed_chunk = self.wav_postprocess(chunk)
-            #processed_bytes = processed_chunk.tobytes()
-            #yield processed_bytes, output_path
   
         wav = torch.cat(wav_chunks, dim=0)
         wav_audio = wav.squeeze().unsqueeze(0).cpu()
