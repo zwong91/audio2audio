@@ -15,15 +15,6 @@ import glob
 
 from openvoice import se_extractor
 from openvoice.api import ToneColorConverter
-
-ckpt_converter = 'checkpoints_v2/converter'
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-output_dir = 'outputs_v2'
- 
-tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
-tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
- 
-os.makedirs(output_dir, exist_ok=True)
  
 from melo.api import TTS
 
@@ -34,6 +25,9 @@ class OpenVoice_v2(TTSInterface):
     def __init__(self, voice: str = ''):
         self.voice = voice
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        ckpt_converter = 'checkpoints_v2/converter'
+        self.tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+        self.tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]:
         audio_buffer = BytesIO()
@@ -52,7 +46,7 @@ class OpenVoice_v2(TTSInterface):
         print(f"Target wav files:{target_wav}, Detected language: {language}, tts text: {text}")
         
         reference_speaker = target_wav # This is the voice you want to clone
-        target_se, audio_name = se_extractor.get_se(reference_speaker, tone_color_converter, vad=False)
+        target_se, audio_name = se_extractor.get_se(reference_speaker, self.tone_color_converter, vad=False)
 
 
         model = TTS(language=language, device=self.device)
@@ -67,7 +61,7 @@ class OpenVoice_v2(TTSInterface):
 
             # Run the tone color converter
             encode_message = "@MyShell"
-            tone_color_converter.convert(
+            self.tone_color_converter.convert(
                 audio_src_path=src_path,
                 src_se=source_se,
                 tgt_se=target_se,
