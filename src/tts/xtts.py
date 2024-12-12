@@ -51,7 +51,7 @@ class XTTS(TTSInterface):
         target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
         target_wav = target_wav_files[0] if target_wav_files else os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
-        speech_file_path = f"/tmp/audio_{uuid4().hex[:8]}.wav"
+        speech_file_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
 
         tts_task = asyncio.create_task(
             asyncio.to_thread(
