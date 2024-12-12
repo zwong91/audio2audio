@@ -111,7 +111,8 @@ class XTTS_v2(TTSInterface):
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]: 
         start_time = time.time()
         language, _ = langid.classify(text)
-
+        if language == 'zh':
+            language = 'zh-cn'
         # 构造目标路径，获取匹配的 .wav 文件
         target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
