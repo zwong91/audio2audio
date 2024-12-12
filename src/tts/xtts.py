@@ -131,7 +131,7 @@ class XTTS_v2(TTSInterface):
             length_penalty=1.0,
             repetition_penalty=10.0,
             top_k=10,
-            top_p=0.1,
+            top_p=0.9,
             do_sample=True,
             speed=1.0,
             enable_text_splitting=True,
