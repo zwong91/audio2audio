@@ -133,7 +133,7 @@ class XTTS_v2(TTSInterface):
             gpt_cond_latent,
             speaker_embedding,
             # Streaming
-            stream_chunk_size=4096,
+            stream_chunk_size=20,
             overlap_wav_len=1024,
             # GPT inference
             temperature=0.7,
@@ -142,8 +142,8 @@ class XTTS_v2(TTSInterface):
             top_k=50,
             top_p=0.85,
             do_sample=True,
-            speed=1.2,
-            enable_text_splitting=False,
+            speed=1.0,
+            enable_text_splitting=True,
         )
         wav_chunks = []
         output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
