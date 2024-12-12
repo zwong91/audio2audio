@@ -11,7 +11,8 @@ from .tts_interface import TTSInterface
 
 import numpy as np
 
-from langdetect import detect
+import langid
+
 import glob
 
 sys.path.insert(1, "../vc")
@@ -77,7 +78,7 @@ class XTTS_v2(TTSInterface):
         config = XttsConfig()
         config.load_json("XTTS-v2/config.json")
         self.model = Xtts.init_from_config(config)
-        self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2")#, use_deepspeed=True)
+        self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2", use_deepspeed=True)
         self.model.to(device)
         
         # model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
@@ -109,7 +110,7 @@ class XTTS_v2(TTSInterface):
 
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]: 
         start_time = time.time()
-        language = detect(text)
+        language, _ = langid.classify(text)
 
         # 构造目标路径，获取匹配的 .wav 文件
         target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
@@ -123,7 +124,7 @@ class XTTS_v2(TTSInterface):
 
         # 调用模型函数，传递匹配的文件列表
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=target_wav_files)
-        print(f"Target WAV files:{target_wav_files}, language: {language}, tts text: {text}")
+        print(f"Target wav files:{target_wav_files}, Detected language: {language}, tts text: {text}")
 
         chunks = self.model.inference_stream(
             text,
