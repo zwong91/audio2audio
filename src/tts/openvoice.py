@@ -48,7 +48,6 @@ class OpenVoice_v2(TTSInterface):
         reference_speaker = target_wav # This is the voice you want to clone
         target_se, audio_name = se_extractor.get_se(reference_speaker, self.tone_color_converter, vad=False)
 
-
         model = TTS(language=language, device=self.device)
         speaker_ids = model.hps.data.spk2id
     
