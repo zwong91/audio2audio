@@ -14,7 +14,7 @@ import glob
 
 
 sys.path.insert(1, "../vc")
-sys.path.insert(1, "../OpenVoice")
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "OpenVoice")))
 
 from OpenVoice.openvoice import se_extractor
 from OpenVoice.openvoice.api import ToneColorConverter
