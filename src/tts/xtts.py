@@ -36,29 +36,29 @@ class XTTS(TTSInterface):
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
         language, _ = langid.classify(text)
-        temp_file = f"/tmp/audio_{uuid4().hex[:8]}.wav"    
+        source_wav = f"/tmp/audio_{uuid4().hex[:8]}.wav"    
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
-        await communicate.save(temp_file)
+        await communicate.save(source_wav)
 
         # 使用 os.path 确保路径正确拼接
         target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
         target_wav = target_wav_files[0] if target_wav_files else os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
-        speech_file_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
+        output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
 
         print(f"Target wav files:{target_wav}, Detected language: {language}, tts text: {text}")
         tts_task = asyncio.create_task(
             asyncio.to_thread(
                 self.tts.voice_conversion_to_file,
-                source_wav=temp_file,
+                source_wav=source_wav,
                 target_wav=target_wav,
-                file_path=speech_file_path
+                file_path=output_path
             )
         )
         await tts_task
 
         # 将生成的音频文件读入内存缓冲区
-        with open(speech_file_path, 'rb') as f:
+        with open(output_path, 'rb') as f:
             audio_buffer.write(f.read())
 
         audio_buffer.seek(0)
@@ -67,7 +67,7 @@ class XTTS(TTSInterface):
         end_time = time.time()
         print(f"XTTS text_to_speech time: {end_time - start_time:.4f} seconds")
 
-        return audio_data, speech_file_path
+        return audio_data, output_path
 
 class XTTS_v2(TTSInterface):
     def __init__(self, voice: str = 'liuyifei'):
