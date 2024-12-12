@@ -13,13 +13,14 @@ import langid
 import glob
 
 
+sys.path.insert(1, "../vc")
+sys.path.insert(1, "../OpenVoice")
+
 from OpenVoice.openvoice import se_extractor
 from OpenVoice.openvoice.api import ToneColorConverter
  
 from melo.api import TTS
 
-sys.path.insert(1, "../vc")
-sys.path.insert(1, "../OpenVoice")
 
 class OpenVoice_v2(TTSInterface):
     def __init__(self, voice: str = ''):
