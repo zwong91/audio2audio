@@ -84,7 +84,7 @@ class XTTS_v2(TTSInterface):
         config = XttsConfig()
         config.load_json("XTTS-v2/config.json")
         self.model = Xtts.init_from_config(config)
-        self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2", use_deepspeed=True)
+        self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2")#, use_deepspeed=True)
         self.model.to(device)
         
         # model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
