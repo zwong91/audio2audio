@@ -35,16 +35,8 @@ class XTTS(TTSInterface):
         audio_buffer = BytesIO()
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
-
-        rate: int = 20
-        pitch: int = 20
-        volume: int = 110
-        rate_str = f"{rate:+d}%"
-        pitch_str = f"{pitch:+d}Hz"
-        volume_str = f"{volume:+d}%"
-
         temp_file = f"/tmp/audio_{uuid4().hex[:8]}.wav"    
-        communicate = edge_tts.Communicate(text=text, voice=self.voice, pitch=pitch_str, volume=volume_str)
+        communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
 
         # 使用 os.path 确保路径正确拼接
