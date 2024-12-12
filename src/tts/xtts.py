@@ -116,14 +116,14 @@ class XTTS_v2(TTSInterface):
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
 
         if not target_wav_files:
-            target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
-            print(f"No WAV files found matching pattern, use default: {target_wav_pattern}")
+            target_wav_files = [os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")]
+            print(f"No WAV files found matching pattern, use default: {target_wav_files}")
 
         print("Computing speaker latents...")
 
         # 调用模型函数，传递匹配的文件列表
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=target_wav_files)
-        print("Target WAV files:", target_wav_files)
+        print(f"Target WAV files:{target_wav_files}, language: {language}, tts text: {text}")
 
         chunks = self.model.inference_stream(
             text,
