@@ -16,8 +16,8 @@ import glob
 sys.path.insert(1, "../vc")
 sys.path.insert(1, "../OpenVoice")
 
-from OpenVoice import se_extractor
-from OpenVoice.api import ToneColorConverter
+from OpenVoice.openvoice import se_extractor
+from OpenVoice.openvoice.api import ToneColorConverter
  
 from melo.api import TTS
 
