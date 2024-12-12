@@ -19,7 +19,7 @@ from openvoice.api import ToneColorConverter
 from melo.api import TTS
 
 sys.path.insert(1, "../vc")
-
+sys.path.insert(1, "../OpenVoice")
 
 class OpenVoice_v2(TTSInterface):
     def __init__(self, voice: str = ''):
