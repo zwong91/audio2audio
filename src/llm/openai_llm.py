@@ -36,15 +36,14 @@ class OpenAILLM(LLMInterface):
         openai.api_key = OPENAI_API_KEY
         openai.base_url = "https://xyz-api.jongun2038.win/v1/"
         
-        self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        # Load initial content from vault.txt
-        self.vault_content = []
-        vault_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio")), "vault.txt")
-        if os.path.exists(vault_path):
-            with open(vault_path, "r", encoding="utf-8") as vault_file:
-                self.vault_content = vault_file.readlines()
-        self.vault_embeddings = self.embedding_model.encode(self.vault_content, convert_to_tensor=True) if self.vault_content else []
-        print(f"Length of vault_content: {len(self.vault_content)}")
+        # self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # # Load initial content from vault.txt
+        # self.vault_content = []
+        # vault_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio")), "vault.txt")
+        # if os.path.exists(vault_path):
+        #     with open(vault_path, "r", encoding="utf-8") as vault_file:
+        #         self.vault_content = vault_file.readlines()
+        # self.vault_embeddings = self.embedding_model.encode(self.vault_content, convert_to_tensor=True) if self.vault_content else []
     
     def get_relevant_context(self, user_input, vault_embeddings, top_k=3):
         """
@@ -74,12 +73,11 @@ class OpenAILLM(LLMInterface):
         #     vault_file.write(vault_input + "\n")
         # vault_content = open("vault.txt", "r", encoding="utf-8").readlines()
         # vault_embeddings = self.embedding_model.encode(vault_content)
-
-        #Get relevant context from the vault
-        relevant_context = self.get_relevant_context(vault_input, self.vault_embeddings)
-        query = vault_input
-        if relevant_context:
-            query = "\n".join(relevant_context) + "\n\n" + vault_input
+        # print(f"Length of vault_content: {len(vault_content)}")
+        # relevant_context = self.get_relevant_context(vault_input, self.vault_embeddings)
+        # query = vault_input
+        # if relevant_context:
+        #     query = "\n".join(relevant_context) + "\n\n" + vault_input
 
         print(f"query: {query}")
         """根据对话历史生成回复"""
