@@ -159,13 +159,13 @@ class XTTS_v2(TTSInterface):
         # Saving to a file on disk
         if gen_file:
             torchaudio.save(output_path, wav_audio, 22050, format="wav")
-        else:
-            with torch.no_grad():
-                # Use torchaudio to save the tensor to a buffer (or file)
-                # Using a buffer to save the audio data as bytes
-                buffer = BytesIO()
-                torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
-                audio_data = buffer.getvalue()
+
+        with torch.no_grad():
+            # Use torchaudio to save the tensor to a buffer (or file)
+            # Using a buffer to save the audio data as bytes
+            buffer = BytesIO()
+            torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
+            audio_data = buffer.getvalue()
 
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
