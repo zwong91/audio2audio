@@ -13,8 +13,8 @@ import langid
 import glob
 
 
-from openvoice import se_extractor
-from openvoice.api import ToneColorConverter
+from OpenVoice.openvoice import se_extractor
+from OpenVoice.openvoice.api import ToneColorConverter
  
 from melo.api import TTS
 
