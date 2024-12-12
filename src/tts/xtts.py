@@ -35,6 +35,7 @@ class XTTS(TTSInterface):
         audio_buffer = BytesIO()
         """使用 x_tts 库将文本转语音"""
         start_time = time.time()
+        language, _ = langid.classify(text)
         temp_file = f"/tmp/audio_{uuid4().hex[:8]}.wav"    
         communicate = edge_tts.Communicate(text=text, voice=self.voice)
         await communicate.save(temp_file)
@@ -45,6 +46,7 @@ class XTTS(TTSInterface):
         target_wav = target_wav_files[0] if target_wav_files else os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
         speech_file_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
 
+        print(f"Target wav files:{target_wav}, Detected language: {language}, tts text: {text}")
         tts_task = asyncio.create_task(
             asyncio.to_thread(
                 self.tts.voice_conversion_to_file,
