@@ -136,12 +136,12 @@ class XTTS_v2(TTSInterface):
             stream_chunk_size=20,
             overlap_wav_len=1024,
             # GPT inference
-            temperature=0.7,
+            temperature=0.5,
             length_penalty=1.0,
             repetition_penalty=10.0,
             top_k=50,
-            top_p=0.85,
-            do_sample=True,
+            top_p=0.5,
+            do_sample=False,
             speed=1.0,
             enable_text_splitting=True,
         )
@@ -159,14 +159,13 @@ class XTTS_v2(TTSInterface):
         # Saving to a file on disk
         if gen_file:
             torchaudio.save(output_path, wav_audio, 22050, format="wav")
-
-        # Saving to a temporary file or directly converting to a byte array
-        with torch.no_grad():
-            # Use torchaudio to save the tensor to a buffer (or file)
-            # Using a buffer to save the audio data as bytes
-            buffer = BytesIO()
-            torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
-            audio_data = buffer.getvalue()
+        else:
+            with torch.no_grad():
+                # Use torchaudio to save the tensor to a buffer (or file)
+                # Using a buffer to save the audio data as bytes
+                buffer = BytesIO()
+                torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
+                audio_data = buffer.getvalue()
 
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
