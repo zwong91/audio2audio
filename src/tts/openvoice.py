@@ -24,9 +24,9 @@ sys.path.insert(1, "../vc")
 class OpenVoice_v2(TTSInterface):
     def __init__(self, voice: str = ''):
         self.voice = voice
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         ckpt_converter = 'checkpoints_v2/converter'
-        self.tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+        self.tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=self.device)
         self.tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]:
