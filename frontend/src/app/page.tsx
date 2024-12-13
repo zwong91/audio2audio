@@ -128,13 +128,17 @@ export default function VoiceCall() {
     const websocket = new WebSocket(SOCKET_URL);
     setSocket(websocket);
 
+    websocket.binaryType = 'arraybuffer'; // 确保接收的是二进制数据
+
     websocket.onopen = () => {
       setConnectionStatus("已连接");
+      
+      // 在 WebSocket 连接成功后启动录音器
       const newRecorder = new RecordRTC(mediaStream, {
         type: 'audio',
         recorderType: StereoAudioRecorder,
         mimeType: 'audio/wav',
-        timeSlice: 500,
+        timeSlice: 500, // 每隔500ms触发ondataavailable
         desiredSampRate: 16000,
         numberOfAudioChannels: 1,
         ondataavailable: handleAudioData
