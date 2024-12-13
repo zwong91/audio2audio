@@ -245,7 +245,7 @@ export default function Home() {
 
             websocket.onclose = () => {
               console.log("WebSocket connection closed.");
-              if (!manualDisconnect && isInCall && connectionStatus !== "Closed") {
+              if (!manualDisconnect && isInCall) {
                 setConnectionStatus("Reconnecting...");
                 setTimeout(reconnectWebSocket, 5000);
               }
@@ -298,7 +298,6 @@ export default function Home() {
 
   // 定义结束通话的函数
   function endCall() {
-    manualDisconnect = true;
     // 关闭 WebSocket 连接
     if (socket) {
       socket.close();
