@@ -163,9 +163,6 @@ export default function Home() {
           let websocket: WebSocket | null = null;
 
           const reconnectWebSocket = () => {
-            if (isInCall === false) {
-              return;
-            }
             if (websocket) websocket.close();
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
