@@ -1,33 +1,19 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import styles from "./page.module.css";
+
 export default function Home() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isRecording, setIsRecording] = useState(true); // true means listening, false means speaking
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
-  const [audioDuration, setAudioDuration] = useState<number>(0);
+  const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
   const [connectionStatus, setConnectionStatus] = useState<string>("Connecting..."); // State to track connection status
+
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
-  // Check if AudioContext is available in the browser
-  if (typeof window !== "undefined" && window.AudioContext) {
-    audioContext = new AudioContext();
-  }
-
-  // 新增通话时长状态
-  const [callDuration, setCallDuration] = useState<number>(0);
-
-  // 添加通话计时器
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
 
   // Check if AudioContext is available in the browser
   if (typeof window !== "undefined" && window.AudioContext) {
@@ -122,11 +108,12 @@ export default function Home() {
     }
   }
 
-
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
+
   // Initialize WebSocket and media devices
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
+
     // Request screen wake lock to prevent the screen from going to sleep
     async function requestWakeLock() {
       try {
@@ -136,7 +123,9 @@ export default function Home() {
         console.error("Failed to acquire wake lock", error);
       }
     }
+
     requestWakeLock();
+
     return () => {
       if (wakeLock) {
         wakeLock.release().then(() => {
@@ -147,6 +136,7 @@ export default function Home() {
       }
     };
   }, []);
+
   // Access the microphone and start recording
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -159,6 +149,7 @@ export default function Home() {
       console.error("Media devices API not supported.");
     }
   }, []);
+
   // Handle WebSocket connection and messaging
   useEffect(() => {
     const script = document.createElement("script");
@@ -166,16 +157,20 @@ export default function Home() {
     script.onload = () => {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
+
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           let websocket: WebSocket | null = null;
+
           const reconnectWebSocket = () => {
             if (websocket) websocket.close();
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
+
             websocket.onopen = () => {
               console.log("client connected to websocket");
               setConnectionStatus("Connected");
+
               const recorder = new RecordRTC(stream, {
                 type: 'audio',
                 recorderType: StereoAudioRecorder,
@@ -189,12 +184,14 @@ export default function Home() {
                     reader.onloadend = () => {
                       if (reader.result) {
                         const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
+
                         const dataToSend = [
                           [],
                           "xiaoxiao",
                           base64data
                         ];
                         const jsonData = JSON.stringify(dataToSend);
+
                         if (websocket) {
                           websocket.send(jsonData);
                         } else {
@@ -208,8 +205,10 @@ export default function Home() {
                   }
                 }
               });
+
               recorder.startRecording();
             };
+
             websocket.onmessage = (event) => {
               setIsRecording(false);
               setIsPlayingAudio(true);
@@ -238,16 +237,19 @@ export default function Home() {
                 console.error("Error processing WebSocket message:", error);
               }
             };
+
             websocket.onclose = () => {
               console.log("WebSocket connection closed, attempting to reconnect...");
               setConnectionStatus("Reconnecting...");
               setTimeout(reconnectWebSocket, 5000);
             };
+
             websocket.onerror = (error) => {
               console.error("WebSocket error:", error);
               websocket?.close();
             };
           };
+
           reconnectWebSocket();
         }).catch((error) => {
           console.error("Error with getUserMedia", error);
@@ -255,12 +257,14 @@ export default function Home() {
       }
     };
     document.body.appendChild(script);
+
     return () => {
       if (socket) {
         socket.close();
       }
     };
   }, []);
+
   // Handle media recorder pause/resume
   useEffect(() => {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -271,6 +275,7 @@ export default function Home() {
       }
     }
   }, [isRecording, mediaRecorder]);
+
   function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
     let binary = '';
     const uint8Array = new Uint8Array(arrayBuffer);
@@ -280,6 +285,7 @@ export default function Home() {
     }
     return btoa(binary);
   }
+
   return (
     <div className={styles.container}>
       <div className={styles.statusBar}>
