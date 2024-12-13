@@ -1,67 +1,43 @@
-.title {
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.header {
   font-size: 24px;
-  text-align: center;
   margin-bottom: 20px;
 }
 
-.center-vertical {
+.callContainer {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.user-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.user-avatar {
-  width: 50px;
-  height: 50px;
-  margin-right: 10px;
-}
-
-.user-avatar img {
+  justify-content: space-around;
   width: 100%;
-  height: 100%;
-  border-radius: 50%;
+  max-width: 600px;
+  margin-bottom: 20px;
 }
 
-.user-status {
+.participant {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.speaker-indicator {
-  width: 10px;
-  height: 10px;
+.avatar {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background-color: red;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
-.you-speaking {
-  background-color: green;
+.status {
+  font-size: 16px;
+  color: #555;
 }
 
-.machine-speaking {
-  background-color: blue;
-}
-
-.pulsate {
-  animation: pulsate 1s infinite;
-}
-
-@keyframes pulsate {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
+.info {
+  font-size: 14px;
+  color: #777;
+  text-align: center;
 }
