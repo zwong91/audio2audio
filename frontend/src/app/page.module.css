@@ -102,6 +102,28 @@
   padding: 20px;
 }
 
+@keyframes speaking {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes listening {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.speakingAnimation {
+  display: inline-block;
+  animation: speaking 1.5s ease-in-out infinite;
+  color: #1890ff;
+}
+
+.listeningAnimation {
+  display: inline-block;
+  animation: listening 2s ease-in-out infinite;
+  color: #52c41a;
+}
+
 .endCallButton {
   width: 64px;
   height: 64px;
