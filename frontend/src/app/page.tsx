@@ -297,7 +297,6 @@ export default function Home() {
           />
           {connectionStatus}
         </div>
-        <div className={styles.duration}>{callDuration}s</div>
       </div>
   
       <div className={styles.mainContent}>
