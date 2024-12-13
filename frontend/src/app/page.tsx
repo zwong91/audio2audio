@@ -243,7 +243,7 @@ export default function Home() {
 
             websocket.onclose = () => {
               console.log("WebSocket connection closed, attempting to reconnect...");
-              if (connectionStatus !== "Closed") {
+              if (isInCall && connectionStatus !== "Closed") {
                 setConnectionStatus("Reconnecting...");
                 setTimeout(reconnectWebSocket, 5000);
               }
