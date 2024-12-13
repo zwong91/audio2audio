@@ -345,8 +345,8 @@ export default function Home() {
             <img src="/ai-avatar.png" alt="AI" className={styles.avatar} />
           </div>
           <div className={styles.status}>
-            <span className={isPlayingAudio ? styles.speakingAnimation : styles.listeningAnimation}>
-              {isPlayingAudio ? "AI正在说话" : "AI正在听"}
+            <span className={isInCall ? isPlayingAudio ? styles.speakingAnimation : styles.listeningAnimation : styles.offlineAnimation}>
+              {isInCall ? isPlayingAudio ? "AI正在说话" : "AI正在听" : "AI 离线"}
             </span>
           </div>
         </div>
