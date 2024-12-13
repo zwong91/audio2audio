@@ -10,7 +10,11 @@ export default function Home() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
   const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
-  const [connectionStatus, setConnectionStatus] = useState<string>("Connecting..."); // State to track connection status
+
+  // 定义可能的连接状态类型
+  type ConnectionStatus = "Connecting" | "Connected" | "Disconnected" | "Closed";
+
+  const [connectionStatus, setConnectionStatus] = useState<string>("Connecting"); // State to track connection status
 
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
@@ -240,7 +244,7 @@ export default function Home() {
 
             websocket.onclose = () => {
               console.log("WebSocket connection closed, attempting to reconnect...");
-              if (isInCall && connectionStatus !== "Closed") {
+              if (isInCall && connectionStatus != "Closed") {
                 setConnectionStatus("Reconnecting...");
                 setTimeout(reconnectWebSocket, 5000);
               }
