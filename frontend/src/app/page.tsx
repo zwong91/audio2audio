@@ -355,6 +355,7 @@ export default function Home() {
             className={isInCall ? styles.endCallButton : styles.startCallButton}
             onClick={() => {
               if (isInCall) {
+                manualDisconnect = true;
                 endCall();
               } else {
                 window.location.reload();
