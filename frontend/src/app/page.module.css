@@ -127,6 +127,21 @@
   transform: scale(0.95);
 }
 
+.startCallButton {
+  background-color: #52c41a;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.startCallButton:hover {
+  background-color: #73d13d;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .avatarContainer {
@@ -140,6 +155,11 @@
   }
 
   .endCallButton {
+    width: 50px;
+    height: 50px;
+  }
+
+  .startCallButton {
     width: 50px;
     height: 50px;
   }

@@ -286,6 +286,31 @@ export default function Home() {
     return btoa(binary);
   }
 
+  // 添加状态来跟踪是否在通话中
+  const [isInCall, setIsInCall] = useState(true);
+
+  // 定义结束通话的函数
+  function endCall() {
+    // 关闭 WebSocket 连接
+    if (socket) {
+      socket.close();
+      setSocket(null);
+    }
+
+    // 停止 MediaRecorder
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      setMediaRecorder(null);
+    }
+
+    // 更新状态
+    setIsInCall(false);
+    setIsRecording(false);
+    setIsPlayingAudio(false);
+    setConnectionStatus("Disconnected");
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.statusBar}>
@@ -315,13 +340,19 @@ export default function Home() {
       </div>
   
       <div className={styles.controls}>
-        <button
-          className={styles.endCallButton}
-          onClick={() => window.location.reload()}
-        >
-          结束通话
-        </button>
-      </div>
+          <button
+            className={isInCall ? styles.endCallButton : styles.startCallButton}
+            onClick={() => {
+              if (isInCall) {
+                endCall();
+              } else {
+                window.location.reload();
+              }
+            }}
+          >
+            {isInCall ? "结束通话" : "重新通话"}
+          </button>
+        </div>
     </div>
   );
 }
