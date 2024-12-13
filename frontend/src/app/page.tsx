@@ -16,14 +16,24 @@ export default function Home() {
     audioContext = new AudioContext();
   }
 
+  // 新增通话时长状态
+  const [callDuration, setCallDuration] = useState<number>(0);
+
   // 添加通话计时器
   useEffect(() => {
     const timer = setInterval(() => {
-      setAudioDuration(prev => prev + 1);
+      setCallDuration(prev => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
+
+  // 格式化时间显示
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const audioManager = {
     stopCurrentAudio: () => {
