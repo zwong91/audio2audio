@@ -166,10 +166,6 @@ export default function VoiceCall() {
           recorderRef.current.stopRecording();
         }
         
-        if (heartbeatIntervalRef.current) {
-          clearInterval(heartbeatIntervalRef.current);
-        }
-        
         reconnectTimeoutRef.current = setTimeout(() => {
           initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder);
         }, 5000);
