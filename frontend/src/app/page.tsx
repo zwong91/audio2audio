@@ -125,27 +125,14 @@ export default function VoiceCall() {
         try {
           newRecorder.startRecording();
           recorderRef.current = newRecorder;
-          
-          // 心跳检测
-          heartbeatIntervalRef.current = setInterval(() => {
-            if (websocket.readyState === WebSocket.OPEN) {
-              websocket.send(JSON.stringify({ type: 'ping' }));
-            }
-          }, 30000);
+
         } catch (error) {
           console.error('启动录音失败:', error);
           setConnectionStatus('录音启动失败');
         }
       };
 
-      websocket.onmessage = (event: MessageEvent) => {
-        if (typeof event.data === 'string') {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'pong') return;
-          } catch (e) {}
-        }
-        
+      websocket.onmessage = (event: MessageEvent) => {        
         setIsRecording(false);
         setIsPlayingAudio(true);
 
