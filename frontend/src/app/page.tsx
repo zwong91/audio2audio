@@ -258,8 +258,9 @@ export default function Home() {
               websocket?.close();
             };
           };
-          
-          reconnectWebSocket();
+          if (!manualDisconnect) {
+              reconnectWebSocket();
+          }
         }).catch((error) => {
           console.error("Error with getUserMedia", error);
         });
