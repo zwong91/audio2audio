@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "./page.module.css";
 
 export default function VoiceCall() {
+  // 状态管理
   const [isRecording, setIsRecording] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioDuration, setAudioDuration] = useState<number>(0);
@@ -12,19 +13,26 @@ export default function VoiceCall() {
   const [networkStatus, setNetworkStatus] = useState<boolean>(navigator.onLine);
   const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
 
+  // Refs
   const socketRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioBufferQueue = useRef<AudioBuffer[]>([]);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
 
+  // 初始化 AudioContext
   useEffect(() => {
     if (typeof window !== "undefined" && window.AudioContext) {
       audioContextRef.current = new AudioContext();
     }
+    return () => {
+      audioContextRef.current?.close();
+    };
   }, []);
 
+  // 通话计时器
   useEffect(() => {
     const timer = setInterval(() => {
       setCallDuration((prev) => prev + 1);
@@ -32,12 +40,14 @@ export default function VoiceCall() {
     return () => clearInterval(timer);
   }, []);
 
+  // 时间格式化
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // 音频播放队列处理
   const playAudioBufferQueue = useCallback(() => {
     if (audioBufferQueue.current.length === 0) {
       setIsPlayingAudio(false);
@@ -56,6 +66,7 @@ export default function VoiceCall() {
     }
   }, []);
 
+  // 音频缓冲处理
   const bufferAudio = useCallback((data: ArrayBuffer) => {
     if (audioContextRef.current) {
       audioContextRef.current.decodeAudioData(data, (buffer) => {
@@ -67,6 +78,7 @@ export default function VoiceCall() {
     }
   }, [isPlayingAudio, playAudioBufferQueue]);
 
+  // WebSocket 初始化
   const initWebSocket = useCallback(
     (mediaStream: MediaStream, RecordRTC: any, StereoAudioRecorder: any) => {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -81,11 +93,12 @@ export default function VoiceCall() {
       websocket.onopen = () => {
         setConnectionStatus("已连接");
         
+        // 配置录音器
         const newRecorder = new RecordRTC(mediaStream, {
           type: 'audio',
           mimeType: 'audio/wav',
           recorderType: StereoAudioRecorder,
-          timeSlice: 200,
+          timeSlice: 500,
           desiredSampRate: 16000,
           numberOfAudioChannels: 1,
           bufferSize: 4096,
@@ -112,14 +125,13 @@ export default function VoiceCall() {
         try {
           newRecorder.startRecording();
           recorderRef.current = newRecorder;
-
-          const heartbeat = setInterval(() => {
+          
+          // 心跳检测
+          heartbeatIntervalRef.current = setInterval(() => {
             if (websocket.readyState === WebSocket.OPEN) {
               websocket.send(JSON.stringify({ type: 'ping' }));
             }
           }, 30000);
-
-          websocket.addEventListener('close', () => clearInterval(heartbeat));
         } catch (error) {
           console.error('启动录音失败:', error);
           setConnectionStatus('录音启动失败');
@@ -127,6 +139,13 @@ export default function VoiceCall() {
       };
 
       websocket.onmessage = (event: MessageEvent) => {
+        if (typeof event.data === 'string') {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'pong') return;
+          } catch (e) {}
+        }
+        
         setIsRecording(false);
         setIsPlayingAudio(true);
 
@@ -155,6 +174,10 @@ export default function VoiceCall() {
           recorderRef.current.stopRecording();
         }
         
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+        }
+        
         reconnectTimeoutRef.current = setTimeout(() => {
           initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder);
         }, 5000);
@@ -168,6 +191,7 @@ export default function VoiceCall() {
     [bufferAudio]
   );
 
+  // 初始化
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
@@ -191,6 +215,9 @@ export default function VoiceCall() {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
       if (socketRef.current) {
         socketRef.current.close();
       }
@@ -199,9 +226,6 @@ export default function VoiceCall() {
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
       }
       document.body.removeChild(script);
     };
