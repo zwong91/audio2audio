@@ -1,21 +1,21 @@
 // page.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "./page.module.css";
 
 export default function VoiceCall() {
   const [isRecording, setIsRecording] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
   const [audioDuration, setAudioDuration] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<string>("连接中...");
   const [callDuration, setCallDuration] = useState<number>(0);
   const [networkStatus, setNetworkStatus] = useState<boolean>(navigator.onLine);
   const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [recorder, setRecorder] = useState<any>(null);
+
+  const socketRef = useRef<WebSocket | null>(null);
+  const recorderRef = useRef<any>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
@@ -27,7 +27,7 @@ export default function VoiceCall() {
   // 通话计时器
   useEffect(() => {
     const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
+      setCallDuration((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -35,7 +35,9 @@ export default function VoiceCall() {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const audioManager = {
@@ -60,11 +62,8 @@ export default function VoiceCall() {
         setIsRecording(true);
 
         setTimeout(() => {
-          if (audioQueue.length > 0) {
-            const nextAudioBlob = audioQueue.shift();
-            if (nextAudioBlob) {
-              audioManager.playNewAudio(nextAudioBlob);
-            }
+          if (audioBufferQueue.length > 0) {
+            playAudioBufferQueue();
           }
         }, 100);
       };
@@ -75,7 +74,7 @@ export default function VoiceCall() {
         console.error("播放失败:", error);
         audioManager.stopCurrentAudio();
       }
-    }
+    },
   };
 
   function bufferAudio(data: ArrayBuffer) {
@@ -114,75 +113,83 @@ export default function VoiceCall() {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (reader.result) {
-          const base64data = arrayBufferToBase64(reader.result as ArrayBuffer);
+          const base64data = arrayBufferToBase64(
+            reader.result as ArrayBuffer
+          );
           const dataToSend = [[], "xiaoxiao", base64data];
-          socket?.send(JSON.stringify(dataToSend));
+          socketRef.current?.send(JSON.stringify(dataToSend));
         }
       };
       reader.readAsArrayBuffer(blob);
     }
-  }, [socket]);
+  }, []);
 
-  const initWebSocket = useCallback((mediaStream: MediaStream, RecordRTC: any, StereoAudioRecorder: any) => {
-    const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
-    const websocket = new WebSocket(SOCKET_URL);
-    setSocket(websocket);
+  const initWebSocket = useCallback(
+    (mediaStream: MediaStream, RecordRTC: any, StereoAudioRecorder: any) => {
+      const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
+      const websocket = new WebSocket(SOCKET_URL);
+      socketRef.current = websocket;
 
-    websocket.binaryType = 'arraybuffer'; // 确保接收的是二进制数据
+      websocket.binaryType = "arraybuffer"; // 确保接收的是二进制数据
 
-    websocket.onopen = () => {
-      setConnectionStatus("已连接");
-      
-      // 在 WebSocket 连接成功后启动录音器
-      const newRecorder = new RecordRTC(mediaStream, {
-        type: 'audio',
-        recorderType: StereoAudioRecorder,
-        mimeType: 'audio/wav',
-        timeSlice: 500, // 每隔500ms触发ondataavailable
-        desiredSampRate: 16000,
-        numberOfAudioChannels: 1,
-        ondataavailable: handleAudioData
-      });
+      websocket.onopen = () => {
+        setConnectionStatus("已连接");
 
-      newRecorder.startRecording();
-      setRecorder(newRecorder);
-    };
+        // 在 WebSocket 连接成功后启动录音器
+        const newRecorder = new RecordRTC(mediaStream, {
+          type: "audio",
+          recorderType: StereoAudioRecorder,
+          mimeType: "audio/wav",
+          timeSlice: 500, // 每隔500ms触发ondataavailable
+          desiredSampRate: 16000,
+          numberOfAudioChannels: 1,
+          ondataavailable: handleAudioData,
+        });
 
-    websocket.onmessage = (event: MessageEvent) => {
-      setIsRecording(false);
-      setIsPlayingAudio(true);
+        newRecorder.startRecording();
+        recorderRef.current = newRecorder;
+      };
 
-      try {
-        let audioData: ArrayBuffer;
-        if (event.data instanceof ArrayBuffer) {
-          audioData = event.data;
-          bufferAudio(audioData);
-        } else if (event.data instanceof Blob) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            audioData = reader.result as ArrayBuffer;
+      websocket.onmessage = (event: MessageEvent) => {
+        setIsRecording(false);
+        setIsPlayingAudio(true);
+
+        try {
+          let audioData: ArrayBuffer;
+          if (event.data instanceof ArrayBuffer) {
+            audioData = event.data;
             bufferAudio(audioData);
-          };
-          reader.readAsArrayBuffer(event.data);
-        } else {
-          throw new Error("未知的数据类型");
+          } else if (event.data instanceof Blob) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              audioData = reader.result as ArrayBuffer;
+              bufferAudio(audioData);
+            };
+            reader.readAsArrayBuffer(event.data);
+          } else {
+            throw new Error("未知的数据类型");
+          }
+        } catch (error) {
+          console.error("音频处理失败:", error);
         }
-      } catch (error) {
-        console.error("音频处理失败:", error);
-      }
-    };
+      };
 
-    websocket.onclose = () => {
-      console.log("WebSocket连接已断开，正在重连...");
-      setConnectionStatus("重新连接中...");
-      setTimeout(() => initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder), 5000);
-    };
+      websocket.onclose = () => {
+        console.log("WebSocket连接已断开，正在重连...");
+        setConnectionStatus("重新连接中...");
+        recorderRef.current?.stopRecording();
+        setTimeout(() => {
+          initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder);
+        }, 5000);
+      };
 
-    websocket.onerror = (error: Event) => {
-      console.error("WebSocket错误:", error);
-      websocket.close();
-    };
-  }, [handleAudioData]);
+      websocket.onerror = (error: Event) => {
+        console.error("WebSocket错误:", error);
+        websocket.close();
+      };
+    },
+    [handleAudioData]
+  );
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -192,41 +199,42 @@ export default function VoiceCall() {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
 
-      navigator.mediaDevices?.getUserMedia({ audio: true })
+      navigator.mediaDevices
+        ?.getUserMedia({ audio: true })
         .then((mediaStream) => {
-          setStream(mediaStream);
+          streamRef.current = mediaStream;
           initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder);
         })
-        .catch(error => console.error("麦克风访问失败:", error));
+        .catch((error) => console.error("麦克风访问失败:", error));
     };
 
     document.body.appendChild(script);
 
     return () => {
-      socket?.close();
-      recorder?.stopRecording();
-      stream?.getTracks().forEach(track => track.stop());
+      socketRef.current?.close();
+      recorderRef.current?.stopRecording();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     };
-  }, []);
+  }, [initWebSocket]);
 
   useEffect(() => {
     const handleNetworkChange = () => {
       setNetworkStatus(navigator.onLine);
     };
 
-    window.addEventListener('online', handleNetworkChange);
-    window.addEventListener('offline', handleNetworkChange);
+    window.addEventListener("online", handleNetworkChange);
+    window.addEventListener("offline", handleNetworkChange);
 
     return () => {
-      window.removeEventListener('online', handleNetworkChange);
-      window.removeEventListener('offline', handleNetworkChange);
+      window.removeEventListener("online", handleNetworkChange);
+      window.removeEventListener("offline", handleNetworkChange);
     };
   }, []);
 
   useEffect(() => {
     const requestWakeLock = async () => {
       try {
-        const wl = await navigator.wakeLock.request('screen');
+        const wl = await navigator.wakeLock.request("screen");
         setWakeLock(wl);
         console.log("屏幕常亮已启用");
       } catch (err) {
@@ -237,9 +245,9 @@ export default function VoiceCall() {
     requestWakeLock();
 
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && !wakeLock) {
+      if (document.visibilityState === "visible" && !wakeLock) {
         try {
-          const wl = await navigator.wakeLock.request('screen');
+          const wl = await navigator.wakeLock.request("screen");
           setWakeLock(wl);
         } catch (err) {
           console.error("重新激活屏幕常亮失败:", err);
@@ -247,18 +255,21 @@ export default function VoiceCall() {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
       wakeLock?.release().catch(console.error);
     };
   }, [wakeLock]);
 
   function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
     const uint8Array = new Uint8Array(arrayBuffer);
-    let binary = '';
-    uint8Array.forEach(byte => binary += String.fromCharCode(byte));
+    let binary = "";
+    uint8Array.forEach((byte) => (binary += String.fromCharCode(byte)));
     return btoa(binary);
   }
 
@@ -266,7 +277,11 @@ export default function VoiceCall() {
     <div className={styles.container}>
       <div className={styles.statusBar}>
         <div className={styles.connectionStatus}>
-          <div className={`${styles.statusDot} ${connectionStatus === '已连接' ? styles.connected : ''}`} />
+          <div
+            className={`${styles.statusDot} ${
+              connectionStatus === "已连接" ? styles.connected : ""
+            }`}
+          />
           {connectionStatus}
         </div>
         <div className={styles.duration}>{formatTime(callDuration)}</div>
@@ -274,12 +289,23 @@ export default function VoiceCall() {
 
       <div className={styles.mainContent}>
         <div className={styles.avatarSection}>
-          <div className={`${styles.avatarContainer} ${isPlayingAudio ? styles.speaking : ''}`}>
+          <div
+            className={`${styles.avatarContainer} ${
+              isPlayingAudio ? styles.speaking : ""
+            }`}
+          >
             <img src="/ai-avatar.png" alt="AI" className={styles.avatar} />
             <div className={styles.audioWaves}>
-              {Array(3).fill(0).map((_, i) => (
-                <div key={i} className={`${styles.wave} ${isPlayingAudio ? styles.active : ''}`} />
-              ))}
+              {Array(3)
+                .fill(0)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className={`${styles.wave} ${
+                      isPlayingAudio ? styles.active : ""
+                    }`}
+                  />
+                ))}
             </div>
           </div>
           <div className={styles.status}>
@@ -289,7 +315,7 @@ export default function VoiceCall() {
       </div>
 
       <div className={styles.controls}>
-        <button 
+        <button
           className={styles.endCallButton}
           onClick={() => window.location.reload()}
         >
