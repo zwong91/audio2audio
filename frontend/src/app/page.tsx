@@ -165,6 +165,7 @@ export default function Home() {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           let websocket: WebSocket | null = null;
+          let manualDisconnect = false; // 标志位
 
           const reconnectWebSocket = () => {
             if (websocket) websocket.close();
@@ -244,7 +245,7 @@ export default function Home() {
 
             websocket.onclose = () => {
               console.log("WebSocket connection closed.");
-              if (isInCall && connectionStatus !== "Closed") {
+              if (!manualDisconnect && isInCall && connectionStatus !== "Closed") {
                 setConnectionStatus("Reconnecting...");
                 setTimeout(reconnectWebSocket, 5000);
               }
@@ -315,6 +316,7 @@ export default function Home() {
     setIsRecording(false);
     setIsPlayingAudio(false);
     setConnectionStatus("Closed");
+    manualDisconnect = true; // 设置手动断开标志位
   }
 
   return (
