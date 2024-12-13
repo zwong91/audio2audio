@@ -113,6 +113,7 @@ export default function Home() {
   }
 
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
+  let manualDisconnect = false; // 标志位
 
   // Initialize WebSocket and media devices
   useEffect(() => {
@@ -165,7 +166,6 @@ export default function Home() {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           let websocket: WebSocket | null = null;
-          let manualDisconnect = false; // 标志位
 
           const reconnectWebSocket = () => {
             if (websocket) websocket.close();
