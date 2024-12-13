@@ -1,7 +1,7 @@
 // page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import styles from "./page.module.css";
 
 export default function VoiceCall() {
@@ -21,12 +21,11 @@ export default function VoiceCall() {
     audioContext = new AudioContext();
   }
 
-  // 添加通话计时器
+  // 通话计时器
   useEffect(() => {
     const timer = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -42,7 +41,6 @@ export default function VoiceCall() {
         setIsPlayingAudio(false);
       }
     },
-
     playNewAudio: async (audioBlob: Blob) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
@@ -108,59 +106,7 @@ export default function VoiceCall() {
     }
   }
 
-  // WebSocket连接和音频处理逻辑
-  useEffect(() => {
-    const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
-    const script = document.createElement("script");
-    script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
-    
-    script.onload = () => {
-      const RecordRTC = (window as any).RecordRTC;
-      const StereoAudioRecorder = (window as any).StereoAudioRecorder;
-
-      navigator.mediaDevices?.getUserMedia({ audio: true })
-        .then((stream) => {
-          let websocket: WebSocket | null = null;
-
-          const reconnectWebSocket = () => {
-            if (websocket) websocket.close();
-            websocket = new WebSocket(SOCKET_URL);
-            setSocket(websocket);
-
-            websocket.onopen = () => {
-              setConnectionStatus("已连接");
-              const recorder = new RecordRTC(stream, {
-                type: 'audio',
-                recorderType: StereoAudioRecorder,
-                mimeType: 'audio/wav',
-                timeSlice: 500,
-                desiredSampRate: 16000,
-                numberOfAudioChannels: 1,
-                ondataavailable: handleAudioData
-              });
-
-              recorder.startRecording();
-            };
-
-            websocket.onmessage = handleWebSocketMessage;
-            websocket.onclose = handleWebSocketClose;
-            websocket.onerror = handleWebSocketError;
-          };
-
-          reconnectWebSocket();
-        })
-        .catch(error => console.error("麦克风访问失败:", error));
-    };
-
-    document.body.appendChild(script);
-
-    return () => {
-      socket?.close();
-    };
-  }, []);
-
-  // 音频数据处理函数
-  const handleAudioData = (blob: Blob) => {
+  const handleAudioData = useCallback((blob: Blob) => {
     if (blob.size > 0) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -172,44 +118,86 @@ export default function VoiceCall() {
       };
       reader.readAsArrayBuffer(blob);
     }
-  };
+  }, [socket]);
 
-  // WebSocket消息处理函数
-  const handleWebSocketMessage = (event: MessageEvent) => {
-    setIsRecording(false);
-    setIsPlayingAudio(true);
+  const reconnectWebSocket = useCallback((stream: MediaStream, RecordRTC: any, StereoAudioRecorder: any) => {
+    const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
+    const websocket = new WebSocket(SOCKET_URL);
+    setSocket(websocket);
 
-    try {
-      let audioData: ArrayBuffer;
-      if (event.data instanceof ArrayBuffer) {
-        audioData = event.data;
-      } else if (event.data instanceof Blob) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          audioData = reader.result as ArrayBuffer;
-          bufferAudio(audioData);
-        };
-        reader.readAsArrayBuffer(event.data);
-        return;
-      } else {
-        throw new Error("未知的数据类型");
+    websocket.onopen = () => {
+      setConnectionStatus("已连接");
+      const recorder = new RecordRTC(stream, {
+        type: 'audio',
+        recorderType: StereoAudioRecorder,
+        mimeType: 'audio/wav',
+        timeSlice: 500,
+        desiredSampRate: 16000,
+        numberOfAudioChannels: 1,
+        ondataavailable: handleAudioData
+      });
+
+      recorder.startRecording();
+    };
+
+    websocket.onmessage = (event: MessageEvent) => {
+      setIsRecording(false);
+      setIsPlayingAudio(true);
+
+      try {
+        let audioData: ArrayBuffer;
+        if (event.data instanceof ArrayBuffer) {
+          audioData = event.data;
+        } else if (event.data instanceof Blob) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            audioData = reader.result as ArrayBuffer;
+            bufferAudio(audioData);
+          };
+          reader.readAsArrayBuffer(event.data);
+          return;
+        } else {
+          throw new Error("未知的数据类型");
+        }
+        bufferAudio(audioData);
+      } catch (error) {
+        console.error("音频处理失败:", error);
       }
-      bufferAudio(audioData);
-    } catch (error) {
-      console.error("音频处理失败:", error);
-    }
-  };
+    };
 
-  const handleWebSocketClose = () => {
-    console.log("WebSocket连接已断开，正在重连...");
-    setConnectionStatus("重新连接中...");
-    setTimeout(reconnectWebSocket, 5000);
-  };
+    websocket.onclose = () => {
+      console.log("WebSocket连接已断开，正在重连...");
+      setConnectionStatus("重新连接中...");
+      setTimeout(() => reconnectWebSocket(stream, RecordRTC, StereoAudioRecorder), 5000);
+    };
 
-  const handleWebSocketError = (error: Event) => {
-    console.error("WebSocket错误:", error);
-    socket?.close();
-  };
+    websocket.onerror = (error: Event) => {
+      console.error("WebSocket错误:", error);
+      websocket.close();
+    };
+  }, [handleAudioData]);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
+    
+    script.onload = () => {
+      const RecordRTC = (window as any).RecordRTC;
+      const StereoAudioRecorder = (window as any).StereoAudioRecorder;
+
+      navigator.mediaDevices?.getUserMedia({ audio: true })
+        .then((stream) => {
+          reconnectWebSocket(stream, RecordRTC, StereoAudioRecorder);
+        })
+        .catch(error => console.error("麦克风访问失败:", error));
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      socket?.close();
+    };
+  }, [reconnectWebSocket]);
 
   function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
     const uint8Array = new Uint8Array(arrayBuffer);
