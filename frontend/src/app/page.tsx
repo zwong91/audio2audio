@@ -151,19 +151,24 @@ export default function VoiceCall() {
 
         try {
           let audioData: ArrayBuffer;
+          // 如果 event.data 是 ArrayBuffer，直接处理
           if (event.data instanceof ArrayBuffer) {
             audioData = event.data;
-            bufferAudio(audioData);
           } else if (event.data instanceof Blob) {
+            // 如果是 Blob 类型，使用 FileReader 将其转换为 ArrayBuffer
             const reader = new FileReader();
             reader.onloadend = () => {
               audioData = reader.result as ArrayBuffer;
-              bufferAudio(audioData);
+              bufferAudio(audioData); // Buffer the audio
             };
             reader.readAsArrayBuffer(event.data);
+            return;
+          } else {
+            throw new Error("Received unexpected data type from WebSocket");
           }
+          bufferAudio(audioData);
         } catch (error) {
-          console.error("音频处理失败:", error);
+          console.error("Error processing WebSocket message:", error);
         }
       };
 
