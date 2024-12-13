@@ -124,11 +124,10 @@
   color: #52c41a;
 }
 
-.endCallButton {
+.buttonBase {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #ff3b30;
   border: none;
   color: white;
   font-size: 14px;
@@ -137,6 +136,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.endCallButton {
+  composes: buttonBase;
+  background: #ff3b30;
   box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
 }
 
@@ -145,23 +149,21 @@
   box-shadow: 0 6px 16px rgba(255, 59, 48, 0.5);
 }
 
-.endCallButton:active {
-  transform: scale(0.95);
-}
-
 .startCallButton {
-  background-color: #52c41a;
-  color: white;
-  border: none;
-  border-radius: 24px;
-  padding: 12px 24px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  composes: buttonBase;
+  background: #52c41a;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
 }
 
 .startCallButton:hover {
-  background-color: #73d13d;
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(82, 196, 26, 0.5);
+}
+
+/* 共用的按钮点击效果 */
+.endCallButton:active,
+.startCallButton:active {
+  transform: scale(0.95);
 }
 
 /* 响应式设计 */

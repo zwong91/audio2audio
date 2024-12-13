@@ -163,6 +163,9 @@ export default function Home() {
           let websocket: WebSocket | null = null;
 
           const reconnectWebSocket = () => {
+            if (isInCall === false) {
+              return;
+            }
             if (websocket) websocket.close();
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
@@ -249,7 +252,7 @@ export default function Home() {
               websocket?.close();
             };
           };
-
+          
           reconnectWebSocket();
         }).catch((error) => {
           console.error("Error with getUserMedia", error);
