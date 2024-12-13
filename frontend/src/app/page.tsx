@@ -298,6 +298,7 @@ export default function Home() {
 
   // 定义结束通话的函数
   function endCall() {
+    manualDisconnect = true;
     // 关闭 WebSocket 连接
     if (socket) {
       socket.close();
