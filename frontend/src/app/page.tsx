@@ -132,6 +132,7 @@ export default function Home() {
     requestWakeLock();
 
     return () => {
+      manualDisconnect = true;
       if (wakeLock) {
         wakeLock.release().then(() => {
           console.log("Screen wake lock released");
@@ -168,6 +169,7 @@ export default function Home() {
           let websocket: WebSocket | null = null;
 
           const reconnectWebSocket = () => {
+            if (manualDisconnect) return;
             if (websocket) websocket.close();
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
@@ -266,6 +268,7 @@ export default function Home() {
     document.body.appendChild(script);
 
     return () => {
+      manualDisconnect = true;
       if (socket) {
         socket.close();
       }
@@ -298,6 +301,8 @@ export default function Home() {
 
   // 定义结束通话的函数
   function endCall() {
+    manualDisconnect = true; // 设置手动断开标志位
+
     // 关闭 WebSocket 连接
     if (socket) {
       socket.close();
@@ -316,7 +321,6 @@ export default function Home() {
     setIsRecording(false);
     setIsPlayingAudio(false);
     setConnectionStatus("Closed");
-    manualDisconnect = true; // 设置手动断开标志位
   }
 
   return (
@@ -354,7 +358,6 @@ export default function Home() {
             className={isInCall ? styles.endCallButton : styles.startCallButton}
             onClick={() => {
               if (isInCall) {
-                manualDisconnect = true;
                 endCall();
               } else {
                 window.location.reload();
