@@ -5,7 +5,6 @@ import { useEffect, useState, useCallback } from "react";
 import styles from "./page.module.css";
 
 export default function VoiceCall() {
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isRecording, setIsRecording] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -15,6 +14,8 @@ export default function VoiceCall() {
   const [callDuration, setCallDuration] = useState<number>(0);
   const [networkStatus, setNetworkStatus] = useState<boolean>(navigator.onLine);
   const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [recorder, setRecorder] = useState<any>(null);
 
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
@@ -46,7 +47,7 @@ export default function VoiceCall() {
     playNewAudio: async (audioBlob: Blob) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
+
       audio.onloadedmetadata = () => {
         setAudioDuration(audio.duration);
       };
@@ -122,14 +123,14 @@ export default function VoiceCall() {
     }
   }, [socket]);
 
-  const reconnectWebSocket = useCallback((stream: MediaStream, RecordRTC: any, StereoAudioRecorder: any) => {
+  const initWebSocket = useCallback((mediaStream: MediaStream, RecordRTC: any, StereoAudioRecorder: any) => {
     const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
     const websocket = new WebSocket(SOCKET_URL);
     setSocket(websocket);
 
     websocket.onopen = () => {
       setConnectionStatus("已连接");
-      const recorder = new RecordRTC(stream, {
+      const newRecorder = new RecordRTC(mediaStream, {
         type: 'audio',
         recorderType: StereoAudioRecorder,
         mimeType: 'audio/wav',
@@ -139,7 +140,8 @@ export default function VoiceCall() {
         ondataavailable: handleAudioData
       });
 
-      recorder.startRecording();
+      newRecorder.startRecording();
+      setRecorder(newRecorder);
     };
 
     websocket.onmessage = (event: MessageEvent) => {
@@ -150,6 +152,7 @@ export default function VoiceCall() {
         let audioData: ArrayBuffer;
         if (event.data instanceof ArrayBuffer) {
           audioData = event.data;
+          bufferAudio(audioData);
         } else if (event.data instanceof Blob) {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -157,11 +160,9 @@ export default function VoiceCall() {
             bufferAudio(audioData);
           };
           reader.readAsArrayBuffer(event.data);
-          return;
         } else {
           throw new Error("未知的数据类型");
         }
-        bufferAudio(audioData);
       } catch (error) {
         console.error("音频处理失败:", error);
       }
@@ -170,7 +171,7 @@ export default function VoiceCall() {
     websocket.onclose = () => {
       console.log("WebSocket连接已断开，正在重连...");
       setConnectionStatus("重新连接中...");
-      setTimeout(() => reconnectWebSocket(stream, RecordRTC, StereoAudioRecorder), 5000);
+      setTimeout(() => initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder), 5000);
     };
 
     websocket.onerror = (error: Event) => {
@@ -182,14 +183,15 @@ export default function VoiceCall() {
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://www.WebRTC-Experiment.com/RecordRTC.js";
-    
+
     script.onload = () => {
       const RecordRTC = (window as any).RecordRTC;
       const StereoAudioRecorder = (window as any).StereoAudioRecorder;
 
       navigator.mediaDevices?.getUserMedia({ audio: true })
-        .then((stream) => {
-          reconnectWebSocket(stream, RecordRTC, StereoAudioRecorder);
+        .then((mediaStream) => {
+          setStream(mediaStream);
+          initWebSocket(mediaStream, RecordRTC, StereoAudioRecorder);
         })
         .catch(error => console.error("麦克风访问失败:", error));
     };
@@ -198,8 +200,10 @@ export default function VoiceCall() {
 
     return () => {
       socket?.close();
+      recorder?.stopRecording();
+      stream?.getTracks().forEach(track => track.stop());
     };
-  }, [reconnectWebSocket]);
+  }, []);
 
   useEffect(() => {
     const handleNetworkChange = () => {
@@ -218,8 +222,8 @@ export default function VoiceCall() {
   useEffect(() => {
     const requestWakeLock = async () => {
       try {
-        const wakeLock = await navigator.wakeLock.request('screen');
-        setWakeLock(wakeLock);
+        const wl = await navigator.wakeLock.request('screen');
+        setWakeLock(wl);
         console.log("屏幕常亮已启用");
       } catch (err) {
         console.error("屏幕常亮启用失败:", err);
@@ -231,8 +235,8 @@ export default function VoiceCall() {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && !wakeLock) {
         try {
-          const wakeLock = await navigator.wakeLock.request('screen');
-          setWakeLock(wakeLock);
+          const wl = await navigator.wakeLock.request('screen');
+          setWakeLock(wl);
         } catch (err) {
           console.error("重新激活屏幕常亮失败:", err);
         }
