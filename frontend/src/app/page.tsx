@@ -290,18 +290,25 @@ export default function Home() {
     <>
       <div className={styles.title}>AudioChat - your voice AI assistant</div>
       <div className={styles["center-vertical"]}>
-        <div
-          className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording && !isPlayingAudio ? styles.pulsate : ""}`}
-        ></div>
-        <br />
-        <div>{isRecording && !isPlayingAudio ? "Listening..." : "Speaking..."}</div>
-        <br />
-        <div
-          className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate : ""}`}
-        ></div>
-        <br />
+        <div className={styles["user-container"]}>
+          <div className={styles["user-avatar"]}>
+            <img src="/player.png" alt="User Avatar" />
+          </div>
+          <div className={styles["user-status"]}>
+            <div className={`${styles["speaker-indicator"]} ${styles["you-speaking"]} ${isRecording && !isPlayingAudio ? styles.pulsate : ""}`}></div>
+            <div>{isRecording && !isPlayingAudio ? "Listening..." : "Speaking..."}</div>
+          </div>
+        </div>
+        <div className={styles["user-container"]}>
+          <div className={styles["user-avatar"]}>
+            <img src="/robot.png" alt="Machine Avatar" />
+          </div>
+          <div className={styles["user-status"]}>
+            <div className={`${styles["speaker-indicator"]} ${styles["machine-speaking"]} ${!isRecording && isPlayingAudio ? styles.pulsate : ""}`}></div>
+            <div>{!isRecording && isPlayingAudio ? "Speaking..." : "Listening..."}</div>
+          </div>
+        </div>
         <div>当前音频时长: {audioDuration.toFixed(2)} 秒</div>
-        <br />
         <div>WebSocket状态: {connectionStatus}</div>
       </div>
     </>

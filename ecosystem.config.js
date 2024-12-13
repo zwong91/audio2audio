@@ -11,16 +11,6 @@ module.exports = {
       },
     },
     {
-      name: "rt-audio-vc-gpu2",
-      script: "./start_app_vc_gpu2.sh",
-      cwd: "/root/rt-audio",
-      interpreter: "/bin/bash",
-      env: {
-        CONDA_DEFAULT_ENV: "rt",
-        OPENAI_API_KEY: "sk-xxxx"
-      },
-    },
-    {
       name: "rt-audio-vc-gpu",
       script: "./start_app_vc_gpu.sh",
       cwd: "/root/rt-audio",
