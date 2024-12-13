@@ -12,9 +12,9 @@ export default function Home() {
   const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
 
   // 定义可能的连接状态类型
-  type ConnectionStatus = "Connecting" | "Connected" | "Disconnected" | "Closed";
+  type ConnectionStatus = "Connecting..." | "Connected" | "Disconnected" | "Closed";
 
-  const [connectionStatus, setConnectionStatus] = useState<string>("Connecting"); // State to track connection status
+  const [connectionStatus, setConnectionStatus] = useState<string>("Connecting..."); // State to track connection status
 
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
