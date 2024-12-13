@@ -132,30 +132,39 @@ export default function VoiceCall() {
         }
       };
 
-      websocket.onmessage = (event: MessageEvent) => {        
-        setIsRecording(false);
-        setIsPlayingAudio(true);
-
+      websocket.onmessage = (event: MessageEvent) => {
         try {
-          let audioData: ArrayBuffer;
-          // 如果 event.data 是 ArrayBuffer，直接处理
+          // 处理音频数据
+          setIsRecording(false);
+          setIsPlayingAudio(true);
+      
+          // 处理二进制数据
+          const handleBinaryData = (binaryData: ArrayBuffer) => {
+            try {
+              bufferAudio(binaryData);
+            } catch (error) {
+              console.error("处理音频数据失败:", error);
+            }
+          };
+      
           if (event.data instanceof ArrayBuffer) {
-            audioData = event.data;
+            handleBinaryData(event.data);
           } else if (event.data instanceof Blob) {
-            // 如果是 Blob 类型，使用 FileReader 将其转换为 ArrayBuffer
             const reader = new FileReader();
             reader.onloadend = () => {
-              audioData = reader.result as ArrayBuffer;
-              bufferAudio(audioData); // Buffer the audio
+              if (reader.result) {
+                handleBinaryData(reader.result as ArrayBuffer);
+              }
+            };
+            reader.onerror = (error) => {
+              console.error("读取Blob数据失败:", error);
             };
             reader.readAsArrayBuffer(event.data);
-            return;
           } else {
-            throw new Error("Received unexpected data type from WebSocket");
+            console.warn("收到未知类型的消息:", typeof event.data);
           }
-          bufferAudio(audioData);
         } catch (error) {
-          console.error("Error processing WebSocket message:", error);
+          console.error("处理WebSocket消息失败:", error);
         }
       };
 
