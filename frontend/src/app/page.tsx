@@ -28,12 +28,11 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // 格式化时间显示
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+
+  // Check if AudioContext is available in the browser
+  if (typeof window !== "undefined" && window.AudioContext) {
+    audioContext = new AudioContext();
+  }
 
   const audioManager = {
     stopCurrentAudio: () => {
@@ -41,20 +40,24 @@ export default function Home() {
         setIsPlayingAudio(false);
       }
     },
+
     playNewAudio: async (audioBlob: Blob) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
+
       // When the metadata of the audio is loaded, set its duration
       audio.onloadedmetadata = () => {
         setAudioDuration(audio.duration); // Set the audio duration after loading metadata
       };
+
       // Play the audio
       setIsPlayingAudio(true);
+
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         setIsPlayingAudio(false);
         setIsRecording(true);
+
         // 延迟 0.1 秒再进行操作
         setTimeout(() => {
           if (audioQueue.length > 0) {
@@ -65,6 +68,7 @@ export default function Home() {
           }
         }, 100); // 延迟 0.1 秒再进行操作
       };
+
       try {
         await audio.play();
       } catch (error) {
@@ -73,12 +77,14 @@ export default function Home() {
       }
     }
   };
+
   // Buffer audio and add it to the queue
   function bufferAudio(data: ArrayBuffer) {
     if (audioContext) {
       audioContext.decodeAudioData(data, (buffer) => {
         // Buffer the audio chunk and push it to the queue
         audioBufferQueue.push(buffer);
+
         // If we are not already playing, start playing the audio
         if (!isPlayingAudio) {
           playAudioBufferQueue();
@@ -86,6 +92,7 @@ export default function Home() {
       });
     }
   }
+
   // Play the buffered audio chunks from the queue
   function playAudioBufferQueue() {
     if (audioBufferQueue.length === 0) {
@@ -93,22 +100,29 @@ export default function Home() {
       setIsRecording(true); // Start recording again
       return;
     }
+
     const buffer = audioBufferQueue.shift(); // Get the next audio buffer
     if (buffer && audioContext) {
       const source = audioContext.createBufferSource();
       source.buffer = buffer;
+
       // Connect the source to the audio context's output
       source.connect(audioContext.destination);
+
       // When this audio ends, play the next one
       source.onended = () => {
         playAudioBufferQueue(); // Continue playing the next buffer
       };
+
       // Start playing the audio
       source.start();
+
       // Update the state to reflect the playing status
       setIsPlayingAudio(true);
     }
   }
+
+
   const SOCKET_URL = "wss://gtp.aleopool.cc/stream";
   // Initialize WebSocket and media devices
   useEffect(() => {
@@ -199,8 +213,10 @@ export default function Home() {
             websocket.onmessage = (event) => {
               setIsRecording(false);
               setIsPlayingAudio(true);
+
               try {
                 let audioData: ArrayBuffer;
+
                 // 如果 event.data 是 ArrayBuffer，直接处理
                 if (event.data instanceof ArrayBuffer) {
                   audioData = event.data;
@@ -216,6 +232,7 @@ export default function Home() {
                 } else {
                   throw new Error("Received unexpected data type from WebSocket");
                 }
+
                 bufferAudio(audioData);
               } catch (error) {
                 console.error("Error processing WebSocket message:", error);
@@ -289,7 +306,6 @@ export default function Home() {
           <div className={styles.status}>
             {isPlayingAudio ? "AI正在说话" : "AI正在听"}
           </div>
-          <div>当前音频时长: {audioDuration.toFixed(2)} 秒</div>
         </div>
       </div>
   
