@@ -7,7 +7,7 @@ export default function Home() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false); // State to track audio playback
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [audioQueue, setAudioQueue] = useState<Blob[]>([]);
-  const [audioDuration, setAudioDuration] = useState<number>(0); // State to track audio duration
+  const [audioDuration, setAudioDuration] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<string>("Connecting..."); // State to track connection status
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
@@ -15,6 +15,16 @@ export default function Home() {
   if (typeof window !== "undefined" && window.AudioContext) {
     audioContext = new AudioContext();
   }
+
+  // 添加通话计时器
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAudioDuration(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const audioManager = {
     stopCurrentAudio: () => {
       if (isPlayingAudio) {
