@@ -13,6 +13,8 @@ export default function VoiceCall() {
   const [audioDuration, setAudioDuration] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<string>("连接中...");
   const [callDuration, setCallDuration] = useState<number>(0);
+  const [networkStatus, setNetworkStatus] = useState<boolean>(navigator.onLine);
+  const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
 
   let audioContext: AudioContext | null = null;
   let audioBufferQueue: AudioBuffer[] = [];
@@ -198,6 +200,52 @@ export default function VoiceCall() {
       socket?.close();
     };
   }, [reconnectWebSocket]);
+
+  useEffect(() => {
+    const handleNetworkChange = () => {
+      setNetworkStatus(navigator.onLine);
+    };
+
+    window.addEventListener('online', handleNetworkChange);
+    window.addEventListener('offline', handleNetworkChange);
+
+    return () => {
+      window.removeEventListener('online', handleNetworkChange);
+      window.removeEventListener('offline', handleNetworkChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        const wakeLock = await navigator.wakeLock.request('screen');
+        setWakeLock(wakeLock);
+        console.log("屏幕常亮已启用");
+      } catch (err) {
+        console.error("屏幕常亮启用失败:", err);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && !wakeLock) {
+        try {
+          const wakeLock = await navigator.wakeLock.request('screen');
+          setWakeLock(wakeLock);
+        } catch (err) {
+          console.error("重新激活屏幕常亮失败:", err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wakeLock?.release().catch(console.error);
+    };
+  }, [wakeLock]);
 
   function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
     const uint8Array = new Uint8Array(arrayBuffer);
