@@ -169,7 +169,6 @@ export default function Home() {
           let websocket: WebSocket | null = null;
 
           const reconnectWebSocket = () => {
-            if (manualDisconnect) return;
             if (websocket) websocket.close();
             websocket = new WebSocket(SOCKET_URL);
             setSocket(websocket);
@@ -246,8 +245,8 @@ export default function Home() {
             };
 
             websocket.onclose = () => {
-              console.log("WebSocket connection closed.");
-              if (!manualDisconnect && isInCall) {
+              console.log("WebSocket connection closed...");
+              if (isInCall) {
                 setConnectionStatus("Reconnecting...");
                 setTimeout(reconnectWebSocket, 5000);
               }
@@ -258,9 +257,8 @@ export default function Home() {
               websocket?.close();
             };
           };
-          if (!manualDisconnect) {
-              reconnectWebSocket();
-          }
+          console.log("client start connect to websocket");
+          reconnectWebSocket();
         }).catch((error) => {
           console.error("Error with getUserMedia", error);
         });
