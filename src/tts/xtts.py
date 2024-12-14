@@ -41,9 +41,9 @@ class XTTS(TTSInterface):
         await communicate.save(source_wav)
 
         # 使用 os.path 确保路径正确拼接
-        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
+        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "vc")), f"{vc_uid}*.wav")
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
-        target_wav = target_wav_files[0] if target_wav_files else os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
+        target_wav = target_wav_files[0] if target_wav_files else os.path.join(os.path.abspath(os.path.join(os.getcwd(), "vc")), "liuyifei.wav")
         output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
 
         print(f"Target wav files:{target_wav}, Detected language: {language}, tts text: {text}")
@@ -73,7 +73,7 @@ class XTTS_v2(TTSInterface):
     def __init__(self, voice: str = 'liuyifei'):
         device = "cuda"
         # 使用 os.path 确保路径正确拼接
-        target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")
+        target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "vc")), "liuyifei.wav")
         print("Loading model...")
         config = XttsConfig()
         config.load_json("XTTS-v2/config.json")
@@ -105,11 +105,11 @@ class XTTS_v2(TTSInterface):
         if language == 'zh':
             language = 'zh-cn'
         # 构造目标路径，获取匹配的 .wav 文件
-        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), f"{vc_uid}*.wav")
+        target_wav_pattern = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "vc")), f"{vc_uid}*.wav")
         target_wav_files = glob.glob(target_wav_pattern)  # 使用 glob 扩展通配符
 
         if not target_wav_files:
-            target_wav_files = [os.path.join(os.path.abspath(os.path.join(os.getcwd(), "../rt-audio/vc")), "liuyifei.wav")]
+            target_wav_files = [os.path.join(os.path.abspath(os.path.join(os.getcwd(), "vc")), "liuyifei.wav")]
             print(f"No WAV files found matching pattern, use default: {target_wav_files}")
 
         print("Computing speaker latents...")
