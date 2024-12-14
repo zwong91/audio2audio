@@ -5,7 +5,8 @@ import edge_tts
 from io import BytesIO
 from .tts_interface import TTSInterface
 
-from langdetect import detect
+
+import langid
 
 class EdgeTTS(TTSInterface):
     def __init__(self, voice: str = 'zh-CN-XiaoxiaoNeural'):
@@ -14,7 +15,9 @@ class EdgeTTS(TTSInterface):
     async def text_to_speech(self, text: str, vc_uid: str, gen_file: bool) -> Tuple[bytes, str]:
         start_time = time.time()
         audio_buffer = BytesIO()
-        language = detect(text)
+        language, _ = langid.classify(text)
+        if language == "zh":
+            language = "zh-CN"
         """使用 edge_tts 库将文本转语音"""
         rate: int = 20
         pitch: int = 20
