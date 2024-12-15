@@ -23,6 +23,13 @@ from pydantic import BaseModel
 from typing import List
 import shutil
 
+path = '/asset'
+
+# 检查路径是否存在
+if not os.path.exists(path):
+    os.makedirs(path)
+    print(f"目录 {path} 已创建")
+
 class TTSRequest(BaseModel):
     tts_text: str
     vc_uid: str

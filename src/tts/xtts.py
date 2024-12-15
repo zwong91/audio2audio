@@ -10,7 +10,7 @@ from typing import Tuple
 from .tts_interface import TTSInterface
 
 import numpy as np
-
+import logging
 import langid
 
 import glob
@@ -74,25 +74,18 @@ class XTTS_v2(TTSInterface):
         device = "cuda"
         # 使用 os.path 确保路径正确拼接
         target_wav = os.path.join(os.path.abspath(os.path.join(os.getcwd(), "vc")), "liuyifei.wav")
-        print("Loading model...")
-        config = XttsConfig()
-        config.load_json("XTTS-v2/config.json")
-        self.model = Xtts.init_from_config(config)
-        self.model.load_checkpoint(config, checkpoint_dir="XTTS-v2")#, use_deepspeed=True)
-        self.model.to(device)
         
-        # model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
-        # logging.info("⏳Downloading model")
-        # ModelManager().download_model(model_name)
-        # model_path = os.path.join(
-        #     get_user_data_dir("tts"), model_name.replace("/", "--")
-        # )
-
-        # config = XttsConfig()
-        # config.load_json(os.path.join(model_path, "config.json"))
-        # self.model = Xtts.init_from_config(config)
-        # self.model.load_checkpoint(config, checkpoint_dir=model_path, eval=True)
-        # self.model.to(device)
+        model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
+        logging.info("⏳Downloading model")
+        ModelManager().download_model(model_name)
+        model_path = os.path.join(
+            get_user_data_dir("tts"), model_name.replace("/", "--")
+        )
+        config = XttsConfig()
+        config.load_json(os.path.join(model_path, "config.json"))
+        self.model = Xtts.init_from_config(config)
+        self.model.load_checkpoint(config, checkpoint_dir=model_path, use_deepspeed=True)
+        self.model.to(device)
 
         print("Computing speaker latents...")
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=[target_wav])
@@ -118,44 +111,34 @@ class XTTS_v2(TTSInterface):
         gpt_cond_latent, speaker_embedding = self.model.get_conditioning_latents(audio_path=target_wav_files)
         print(f"Target wav files:{target_wav_files}, Detected language: {language}, tts text: {text}")
 
-        chunks = self.model.inference_stream(
+        out = self.model.inference(
             text,
             language,
             gpt_cond_latent,
             speaker_embedding,
-            # Streaming
-            stream_chunk_size=512,
-            overlap_wav_len=1024,
-            # GPT inference
-            temperature=0.1,
-            length_penalty=1.0,
-            repetition_penalty=10.0,
-            top_k=5,
-            top_p=0.95,
-            do_sample=True,
-            speed=1.0,
-            enable_text_splitting=True,
         )
-        wav_chunks = []
+        torchaudio.save("xtts.wav", torch.tensor(out["wav"]).unsqueeze(0), 24000)
+        #print(out["wav"])  # 确认数据是否有效
+
         output_path = f"/asset/audio_{uuid4().hex[:8]}.wav"
-        for i, chunk in enumerate(chunks):
-            wav_chunks.append(chunk)
-  
-        wav = torch.cat(wav_chunks, dim=0)
-        wav_audio = wav.squeeze().unsqueeze(0).cpu()
 
-        # Saving to a file on disk
+        #wav = torch.cat(wav_chunks, dim=0)
+        #wav_audio = wav.squeeze().unsqueeze(0).cpu()
+
         if gen_file:
-            torchaudio.save(output_path, wav_audio, 22050, format="wav")
+            print("Saving to file...")
+            torchaudio.save(output_path, torch.tensor(out["wav"]).unsqueeze(0), 24000)
+        else:
+            print("Skipping file save.")
 
-        with torch.no_grad():
-            # Use torchaudio to save the tensor to a buffer (or file)
-            # Using a buffer to save the audio data as bytes
-            buffer = BytesIO()
-            torchaudio.save(buffer, wav_audio, 22050, format="wav")  # Adjust sample rate if needed
-            audio_data = buffer.getvalue()
+        audio_buffer = BytesIO()
+        # 将生成的音频文件读入内存缓冲区
+        with open(output_path, 'rb') as f:
+            audio_buffer.write(f.read())
+
+        audio_buffer.seek(0)
+        audio_data = audio_buffer.read()
 
         end_time = time.time()
         print(f"XTTSv2 text_to_speech time: {end_time - start_time:.4f} seconds")
         return audio_data, output_path
-
