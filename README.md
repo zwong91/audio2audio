@@ -21,7 +21,6 @@ apt-get install vim  ffmpeg  git-lfs -y
 
 git clone https://github.com/zwong91/rt-audio.git
 cd /workspace/rt-audio
-git checkout dev
 git pull
 
 #1 pre_install.sh
