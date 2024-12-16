@@ -1,4 +1,3 @@
-import openai
 from .llm_interface import LLMInterface
 from typing import List, Optional, Tuple, Dict
 import os
@@ -13,6 +12,8 @@ import asyncio
 #from sentence_transformers import SentenceTransformer, util
 
 # 初始化模型
+from openai import AsyncOpenAI
+aclient = AsyncOpenAI()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # 定义默认系统消息
@@ -33,8 +34,8 @@ default_system = """
 class OpenAILLM(LLMInterface):
     def __init__(self, model: str = "gpt-4o-mini"):
         self.model = model
-        openai.api_key = OPENAI_API_KEY
-        openai.base_url = "https://xyz-api.jongun2038.win/v1/"
+        aclient.api_key = OPENAI_API_KEY
+        aclient.base_url = "https://xyz-api.jongun2038.win/v1/"
         
         # self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
         # # Load initial content from vault.txt
@@ -88,15 +89,12 @@ class OpenAILLM(LLMInterface):
             {"role": "system", "content": default_system}
         ]
         messages.extend(history)
-        gpt_task = asyncio.create_task(
-            asyncio.to_thread(
-                openai.chat.completions.create,
-                model=self.model,
-                messages=messages,
-                max_tokens=max_tokens
-            )
+        response = await aclient.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": query}],
+            max_tokens=512,
+            temperature=1,
         )
-        response = await gpt_task
 
         role = response.choices[0].message.role
         response_content = response.choices[0].message.content
